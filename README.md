@@ -28,10 +28,11 @@ Antes de comenzar, asegúrese de tener instalado:
 ### Paso 1: Clonar o Descargar el Proyecto
 
 Si tiene el proyecto en un repositorio Git:
-git clone <url-del-repositorio>
-cd Proyecto-Integracion
-Si ya tiene el proyecto descargado, navegue a la carpeta:
-cd "Proyecto-Integracion"### Paso 2: Crear el Entorno Virtual de Python
+
+git clone https://github.com/conEFE/Proyecto-Aurora.git
+cd Proyecto-AuroraSi ya tiene el proyecto descargado, navegue a la carpeta:
+
+cd "Proyecto Aurora"### Paso 2: Crear el Entorno Virtual de Python
 
 Abra una terminal (PowerShell o CMD) en la carpeta del proyecto y ejecute:
 
@@ -71,8 +72,8 @@ ALTER USER "Aurora" CREATEDB;**O utilice el script automatizado:**
 1. Cree un archivo `.env` en la carpeta `backend` con el siguiente contenido:
 
 # Configuración de PostgreSQL
-# Reemplace 'tu_contraseña_postgres' con la contraseña del usuario postgres
-DB_DSN=postgresql+psycopg2://postgres:tu_contraseña_postgres@localhost:5432/postgres
+Reemplace 'tu_contraseña_postgres' con la contraseña del usuario postgres
+   DB_DSN=postgresql+psycopg2://Aurora:tu_contraseña_postgres@localhost:5432/postgres
 
 # Clave de encriptación (genere una nueva con el script generate_key.py)
 ENCRYPTION_KEY=tu_clave_de_encriptacion_aqui
