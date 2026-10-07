@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Loader2, Save, User } from 'lucide-react';
 import { apiClient } from '../services/api';
 import type { CaseSymptoms, ClinicalCase, Me } from '../types';
-import { StatusBadge } from './Badges';
+import { LevelBadge, StatusBadge } from './Badges';
 import CaseImages from './CaseImages';
 import SymptomsForm from './SymptomsForm';
+import TriageDetail from './TriageDetail';
 import { cardClass, errorBox, formatDate, formatDateTime, primaryButton } from './ui';
 
 interface CaseDetailProps {
@@ -36,6 +37,18 @@ export default function CaseDetail({ caseId, me, onChanged }: CaseDetailProps) {
   const [symptoms, setSymptoms] = useState<CaseSymptoms | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [triageKey, setTriageKey] = useState(0);
+
+  const reload = () => {
+    apiClient.getCase(caseId).then((r) => {
+      if (r.data) {
+        setData(r.data);
+        setSymptoms(symptomsOf(r.data));
+      }
+    });
+    setTriageKey((k) => k + 1);
+    onChanged();
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +85,7 @@ export default function CaseDetail({ caseId, me, onChanged }: CaseDetailProps) {
       setData(r.data);
       setSymptoms(symptomsOf(r.data));
       setError(null);
+      setTriageKey((k) => k + 1);
       onChanged();
     } else setError(r.error || 'No se pudo guardar');
   };
@@ -84,7 +98,10 @@ export default function CaseDetail({ caseId, me, onChanged }: CaseDetailProps) {
             <h3 className="text-sm font-bold text-foreground">{data.code}</h3>
             <p className="text-[10px] text-muted-foreground">Creado el {formatDateTime(data.created_at)}</p>
           </div>
-          <StatusBadge status={data.status} />
+          <div className="flex items-center gap-2">
+            <LevelBadge level={data.triage_level} />
+            <StatusBadge status={data.status} />
+          </div>
         </div>
 
         {data.patient && (
@@ -118,6 +135,10 @@ export default function CaseDetail({ caseId, me, onChanged }: CaseDetailProps) {
         )}
 
       </div>
+
+      {me.role === 'MEDICO' && (
+        <TriageDetail key={triageKey} caseId={data.id} closed={closed} onChanged={reload} />
+      )}
 
       <div className={`${cardClass} p-4`}>
         <h4 className="text-xs font-semibold text-foreground mb-2">Imágenes ({data.image_count})</h4>

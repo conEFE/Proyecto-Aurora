@@ -23,6 +23,17 @@ def _resolve_test_dsn() -> str:
     import pgserver
 
     server = pgserver.get_server(str(_TMP / "aurora_pg_test"), cleanup_mode=None)
+    # Instancia desechable solo para pruebas: sin fsync (TRUNCATE por test es mucho más rápido en Windows)
+    server.psql("ALTER SYSTEM SET fsync = off;")
+    server.psql("ALTER SYSTEM SET synchronous_commit = off;")
+    server.psql("ALTER SYSTEM SET full_page_writes = off;")
+    server.psql("SELECT pg_reload_conf();")
+    # Borrar BDs de corridas anteriores
+    old = server.psql("SELECT datname FROM pg_database WHERE datname LIKE 'aurora_test_%';")
+    for line in old.splitlines():
+        name = line.strip()
+        if name.startswith("aurora_test_"):
+            server.psql(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE);')
     db_name = f"aurora_test_{uuid.uuid4().hex[:8]}"
     server.psql(f'CREATE DATABASE "{db_name}";')
     return server.get_uri(db_name).replace("postgresql://", "postgresql+psycopg2://", 1)

@@ -208,8 +208,8 @@ def test_upload_reopens_prioritized_case(client, tokens, db):
     db.commit()
     upload(client, h, case["id"], make_png())
     db.expire_all()
-    # Sin triage (S5) el caso queda ABIERTO hasta recalcular
-    assert db.get(Case, case["id"]).status in (CaseStatus.ABIERTO, CaseStatus.PRIORIZADO)
+    # Vuelve a ABIERTO al subir y la inferencia recalcula el triage → PRIORIZADO otra vez
+    assert db.get(Case, case["id"]).status == CaseStatus.PRIORIZADO
 
 
 def test_upload_to_missing_case_is_404(client, tokens):

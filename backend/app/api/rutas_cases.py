@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.rbac import require_roles
 from app.db.models.case import CaseStatus
+from app.db.models.triage import TriageLevel
 from app.db.models.user import User, UserRole
 from app.deps import get_db
 from app.schemas.cases import CaseCreate, CaseOut, CasePage, CaseUpdate
@@ -28,14 +29,15 @@ def create_case(
 @router.get("", response_model=CasePage)
 def list_cases(
     status: CaseStatus | None = None,
+    level: TriageLevel | None = None,
     patient_id: int | None = None,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     _: User = Depends(clinical_staff),
     db: Session = Depends(get_db),
 ):
-    """Lista casos con filtros por estado y paciente."""
-    items, total = case_service.list_cases(db, status, patient_id, page, size)
+    """Lista casos con filtros por estado, nivel de triage vigente y paciente."""
+    items, total = case_service.list_cases(db, status, patient_id, page, size, level)
     return CasePage(items=[case_service.to_out(db, c) for c in items], total=total, page=page, size=size)
 
 

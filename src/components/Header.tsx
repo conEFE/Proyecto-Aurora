@@ -1,13 +1,26 @@
-import { Activity, Upload, FolderOpen, FileText, LogOut, User, Settings, type LucideIcon } from 'lucide-react';
+import {
+  Activity,
+  Upload,
+  FolderOpen,
+  FileText,
+  ListOrdered,
+  LogOut,
+  User,
+  Settings,
+  SlidersHorizontal,
+  type LucideIcon,
+} from 'lucide-react';
 import { apiClient } from '../services/api';
 import type { Me, Role } from '../types';
 import { ROLE_LABELS } from '../types';
+import NotificationBell from './NotificationBell';
 
-export type Section = 'home' | 'upload' | 'cases' | 'reports' | 'panel';
+export type Section = 'home' | 'queue' | 'upload' | 'cases' | 'reports' | 'config' | 'panel';
 
 interface HeaderProps {
   currentSection: Section;
   onSectionChange: (section: Section) => void;
+  onOpenCase: (caseId: number) => void;
   me: Me;
 }
 
@@ -22,14 +35,16 @@ const CLINICAL: Role[] = ['MEDICO', 'ADMINISTRATIVO'];
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Inicio', icon: Activity, roles: CLINICAL },
+  { id: 'queue', label: 'Cola de triage', icon: ListOrdered, roles: CLINICAL },
   { id: 'cases', label: 'Casos', icon: FolderOpen, roles: CLINICAL },
   { id: 'upload', label: 'Imágenes', icon: Upload, roles: CLINICAL },
   { id: 'reports', label: 'Reportes', icon: FileText, roles: ['MEDICO'] },
+  { id: 'config', label: 'Parámetros', icon: SlidersHorizontal, roles: ['MEDICO', 'ADMIN'] },
   { id: 'panel', label: 'Mi panel', icon: User, roles: CLINICAL },
   { id: 'panel', label: 'Administración', icon: Settings, roles: ['ADMIN'] },
 ];
 
-export default function Header({ currentSection, onSectionChange, me }: HeaderProps) {
+export default function Header({ currentSection, onSectionChange, onOpenCase, me }: HeaderProps) {
   const navItems = NAV_ITEMS.filter((item) => item.roles.includes(me.role));
 
   return (
@@ -48,6 +63,8 @@ export default function Header({ currentSection, onSectionChange, me }: HeaderPr
             </div>
           </div>
 
+          <div className="flex items-center gap-1">
+          {me.role === 'MEDICO' && <NotificationBell onOpenCase={onOpenCase} />}
           <button
             onClick={() => {
               apiClient.setToken(null);
@@ -58,6 +75,7 @@ export default function Header({ currentSection, onSectionChange, me }: HeaderPr
             <LogOut className="w-3 h-3" />
             <span className="hidden sm:inline">Salir</span>
           </button>
+          </div>
         </div>
 
         <nav className="flex space-x-1 pb-1 overflow-x-auto">

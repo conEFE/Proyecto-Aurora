@@ -8,6 +8,8 @@ import UserPanel from './components/UserPanel';
 import AdminPanel from './components/AdminPanel';
 import Login from './components/Login';
 import Footer from './components/Footer';
+import TriageQueue from './components/TriageQueue';
+import TriageConfigPanel from './components/TriageConfigPanel';
 import { apiClient } from './services/api';
 import type { Me } from './types';
 
@@ -15,6 +17,14 @@ function App() {
   const [currentSection, setCurrentSection] = useState<Section>('home');
   const [me, setMe] = useState<Me | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [openCaseId, setOpenCaseId] = useState<number | null>(null);
+  const [openCaseNonce, setOpenCaseNonce] = useState(0);
+
+  const openCase = (caseId: number) => {
+    setOpenCaseId(caseId);
+    setOpenCaseNonce((n) => n + 1);
+    setCurrentSection('cases');
+  };
 
   const loadMe = async () => {
     const response = await apiClient.getMe();
@@ -53,11 +63,15 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header currentSection={currentSection} onSectionChange={setCurrentSection} me={me} />
+      <Header currentSection={currentSection} onSectionChange={setCurrentSection} onOpenCase={openCase} me={me} />
       <main className="flex-grow">
-        {currentSection === 'home' && <Home onGetStarted={() => setCurrentSection('cases')} />}
+        {currentSection === 'home' && <Home onGetStarted={() => setCurrentSection('queue')} />}
+        {currentSection === 'queue' && <TriageQueue me={me} onOpenCase={openCase} />}
+        {currentSection === 'config' && <TriageConfigPanel me={me} />}
         {currentSection === 'upload' && <ImageUpload me={me} />}
-        {currentSection === 'cases' && <CaseManagement me={me} />}
+        {currentSection === 'cases' && (
+          <CaseManagement key={openCaseNonce} me={me} initialCaseId={openCaseId} />
+        )}
         {currentSection === 'reports' && <Reports />}
         {currentSection === 'panel' && (me.role === 'ADMIN' ? <AdminPanel /> : <UserPanel />)}
       </main>

@@ -1,5 +1,10 @@
 import type {
   AdminStats,
+  AppNotification,
+  QueueItem,
+  TriageConfig,
+  TriageParams,
+  TriageResult,
   AuditEntry,
   CaseImage,
   ExamType,
@@ -230,6 +235,54 @@ class ApiClient {
     } catch {
       return null;
     }
+  }
+
+  // --- Triage ----------------------------------------------------------------
+  async getTriage(caseId: number) {
+    return this.request<TriageResult>(`/cases/${caseId}/triage`);
+  }
+
+  async getTriageHistory(caseId: number) {
+    return this.request<TriageResult[]>(`/cases/${caseId}/triage/history`);
+  }
+
+  async recalculateTriage(caseId: number) {
+    return this.request<TriageResult>(`/cases/${caseId}/triage`, { method: 'POST' });
+  }
+
+  async overrideTriage(caseId: number, level: TriageLevel, reason: string) {
+    return this.request<TriageResult>(`/cases/${caseId}/triage/override`, {
+      method: 'POST',
+      body: JSON.stringify({ level, reason }),
+    });
+  }
+
+  async getQueue(includeInReview = true) {
+    return this.request<QueueItem[]>(`/triage/queue?include_in_review=${includeInReview}`);
+  }
+
+  async getTriageConfig() {
+    return this.request<TriageConfig>('/triage/config');
+  }
+
+  async getTriageConfigHistory() {
+    return this.request<TriageConfig[]>('/triage/config/history');
+  }
+
+  async createTriageConfig(params: TriageParams, change_reason: string) {
+    return this.request<{ config: TriageConfig; recalculated_cases: number }>('/triage/config', {
+      method: 'POST',
+      body: JSON.stringify({ params, change_reason }),
+    });
+  }
+
+  // --- Notificaciones ------------------------------------------------------
+  async getNotifications(unreadOnly = false) {
+    return this.request<AppNotification[]>(`/notifications?unread_only=${unreadOnly}`);
+  }
+
+  async markNotificationRead(id: number) {
+    return this.request<AppNotification>(`/notifications/${id}/read`, { method: 'PATCH' });
   }
 
   async getStatistics() {

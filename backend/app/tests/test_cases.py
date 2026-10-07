@@ -68,7 +68,9 @@ def test_create_case_for_patient_with_consent(client, tokens, users, role):
     h = auth(tokens[role])
     case = create_case(client, h, palpable_mass=True, birads_reported=3)
     assert CODE_RE.match(case["code"])
-    assert case["status"] == "ABIERTO"
+    # Desde S5 el triage se calcula al crear el caso, que pasa de ABIERTO a PRIORIZADO
+    assert case["status"] == "PRIORIZADO"
+    assert case["triage_level"] in ("ALTA", "MEDIA", "BAJA")
     assert case["created_by"] == users[role].id
     assert case["palpable_mass"] is True and case["birads_reported"] == 3
     assert case["patient"]["first_name"] == "Paciente"
@@ -136,12 +138,12 @@ def test_list_cases_with_status_filter(client, tokens, db):
     a = create_case(client, h)
     create_case(client, h)
     db_case = db.get(Case, a["id"])
-    db_case.status = CaseStatus.PRIORIZADO
+    db_case.status = CaseStatus.EN_REVISION
     db.commit()
 
     r = client.get("/cases", headers=h)
     assert r.status_code == 200 and r.json()["total"] == 2
-    r = client.get("/cases?status=PRIORIZADO", headers=h)
+    r = client.get("/cases?status=EN_REVISION", headers=h)
     assert r.json()["total"] == 1
     assert r.json()["items"][0]["id"] == a["id"]
 

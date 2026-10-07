@@ -11,6 +11,7 @@ from app.api import (
     rutas_images,
     rutas_patients,
     rutas_reports,
+    rutas_triage,
     rutas_user,
 )
 from app.config import settings
@@ -45,6 +46,9 @@ def health():
 app.include_router(rutas_auth.router, prefix="/auth", tags=["auth"])
 app.include_router(rutas_cases.router, prefix="/cases", tags=["cases"])
 app.include_router(rutas_images.router, prefix="/cases", tags=["images"])
+app.include_router(rutas_triage.case_router, prefix="/cases", tags=["triage"])
+app.include_router(rutas_triage.triage_router, prefix="/triage", tags=["triage"])
+app.include_router(rutas_triage.notifications_router, prefix="/notifications", tags=["notifications"])
 app.include_router(rutas_reports.router, prefix="/reports", tags=["reports"])
 app.include_router(rutas_patients.router, prefix="/patients", tags=["patients"])
 app.include_router(rutas_admin.router, prefix="/admin", tags=["admin"])

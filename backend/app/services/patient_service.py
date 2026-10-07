@@ -87,4 +87,7 @@ def update_patient(
 
 
 def on_patient_updated(db: Session, patient: Patient) -> None:
-    """Hook: los antecedentes del paciente influyen en el triage (se conecta en S5)."""
+    """Los antecedentes y la edad del paciente influyen en el triage de sus casos abiertos."""
+    from app.services import triage_service
+
+    triage_service.recalculate_for_patient(db, patient.id)

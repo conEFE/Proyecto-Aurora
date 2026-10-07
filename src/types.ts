@@ -127,6 +127,78 @@ export interface ClinicalCase extends CaseSymptoms {
 
 export type TriageLevel = 'ALTA' | 'MEDIA' | 'BAJA';
 
+export interface TriageFactor {
+  value: number | boolean;
+  normalized: number;
+  weight: number;
+  points: number;
+}
+
+export interface TriageBreakdown {
+  ai: TriageFactor;
+  age: TriageFactor;
+  family_history: TriageFactor;
+  previous_cancer: TriageFactor;
+  wait_time: TriageFactor;
+  escalation_rule: string | null;
+  ai_is_simulated: boolean | null;
+  images_analyzed?: number;
+}
+
+export interface TriageResult {
+  id: number;
+  case_id: number;
+  config_version: number;
+  score: number;
+  computed_level: TriageLevel;
+  escalation_rule: string | null;
+  breakdown: TriageBreakdown | null;
+  final_level: TriageLevel;
+  override_by: number | null;
+  override_reason: string | null;
+  is_current: boolean;
+  computed_at: string;
+}
+
+export interface QueueItem {
+  code: string;
+  level: TriageLevel;
+  status: CaseStatus;
+  waiting_hours: number;
+  case_id?: number;
+  score?: number;
+  escalation_rule?: string | null;
+  overridden?: boolean;
+  patient_name?: string;
+  created_at?: string;
+}
+
+export interface TriageParams {
+  escalation: { birads_alta: number[]; symptoms_alta: boolean };
+  weights: { ai: number; age: number; family_history: number; previous_cancer: number; wait_time: number };
+  age_bands: { high: [number, number]; medium: Array<[number, number]> };
+  max_wait_days: number;
+  thresholds: { alta: number; media: number };
+}
+
+export interface TriageConfig {
+  id: number;
+  version: number;
+  params: TriageParams;
+  is_active: boolean;
+  created_by: number | null;
+  created_at: string | null;
+  change_reason: string;
+}
+
+export interface AppNotification {
+  id: number;
+  case_id: number;
+  message: string;
+  read_at: string | null;
+  created_at: string | null;
+}
+
 export type ExamType = 'MAMOGRAFIA' | 'ECOGRAFIA' | 'OTRO';
 
 export const EXAM_TYPE_LABELS: Record<ExamType, string> = {

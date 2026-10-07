@@ -52,10 +52,17 @@ def _get(db: Session, case_id: int) -> Case:
     return case
 
 
-def to_out(db: Session, case: Case, triage_level: str | None = None) -> CaseOut:
+def to_out(db: Session, case: Case) -> CaseOut:
+    from app.db.models.triage import TriageResult
+
     out = CaseOut.model_validate(case)
     out.image_count = db.query(func.count(Image.id)).filter(Image.case_id == case.id).scalar() or 0
-    out.triage_level = triage_level
+    level = (
+        db.query(TriageResult.final_level)
+        .filter(TriageResult.case_id == case.id, TriageResult.is_current.is_(True))
+        .scalar()
+    )
+    out.triage_level = level.value if level is not None else None
     return out
 
 
@@ -95,10 +102,17 @@ def list_cases(
     patient_id: int | None = None,
     page: int = 1,
     size: int = 20,
+    level=None,
 ) -> tuple[list[Case], int]:
+    from app.db.models.triage import TriageResult
+
     q = db.query(Case)
     if status is not None:
         q = q.filter(Case.status == status)
+    if level is not None:
+        q = q.join(
+            TriageResult, (TriageResult.case_id == Case.id) & TriageResult.is_current.is_(True)
+        ).filter(TriageResult.final_level == level)
     if patient_id is not None:
         q = q.filter(Case.patient_id == patient_id)
     total = q.count()
@@ -115,6 +129,7 @@ def update_case(db: Session, case_id: int, data: CaseUpdate, actor: User, ip: st
         if field != "birads_reported" and value is None:
             continue
         setattr(case, field, value)
+    mark_data_changed(case)
     audit(db, actor, "UPDATE", "case", case.id, {"fields": sorted(changes)}, ip, commit=False)
     db.commit()
     db.refresh(case)
@@ -129,4 +144,7 @@ def mark_data_changed(case: Case) -> None:
 
 
 def on_case_data_changed(db: Session, case: Case, actor: User | None = None) -> None:
-    """Hook: se dispara al crear el caso o editar síntomas/BI-RADS (el triage se conecta en S5)."""
+    """Al crear el caso o editar síntomas/BI-RADS se recalcula el triage."""
+    from app.services import triage_service
+
+    triage_service.recalculate(db, case)

@@ -177,3 +177,57 @@ También se quitaron del repo las imágenes de prueba de `backend/data/images/` 
 - Archivo cifrado en disco: distinto del original, no descifrable con otra clave, recuperable con la correcta.
 - ADMINISTRATIVO sube pero recibe 403 al ver el archivo o la inferencia; ADMIN sin acceso.
 - Inferencia automática marcada `is_simulated=true`; proveedor simulado determinístico y sin esperas.
+
+---
+
+## Sprint 5 — Triage y priorización
+
+### Backend
+- Migración `e5c9a7f4b305` (reversible): tablas `triage_configs`, `triage_results` y `notifications`, enum
+  `triagelevel` y **seed de la configuración v1** (sección 5). Índices únicos parciales garantizan en la BD una
+  sola configuración activa y un solo triage vigente por caso; un CHECK exige motivo cuando hay override.
+- `services/triage_engine.compute_triage(case, patient, inferences, params, now)`: función pura, sin BD
+  (re-exportada en `services/triage_service.py`). Paso 1 reglas `R_BIRADS` y `R_SINTOMA`; paso 2 puntaje
+  ponderado 0–100 con aritmética decimal (redondeo a 2 decimales, para que los límites 59,99/60 sean exactos);
+  paso 3 umbrales. El `breakdown` guarda valor, normalizado, peso y aporte de cada factor, la regla disparada y
+  si la IA usada era simulada.
+- Validación Pydantic de parámetros: pesos que suman 100, `alta > media`, BI-RADS 0–6, bandas de edad válidas.
+- Recálculo automático al terminar la inferencia, al crear/editar el caso, al editar antecedentes del paciente
+  (sus casos abiertos) y al activar una configuración nueva (todos los casos no cerrados). Manual con
+  `POST /cases/{id}/triage`. Al calcular, el caso pasa de ABIERTO a PRIORIZADO; los resultados anteriores
+  quedan con `is_current=false` (historial en `GET /cases/{id}/triage/history`).
+- `POST /cases/{id}/triage/override` (solo MEDICO, motivo obligatorio, registra OVERRIDE con nivel anterior y
+  nuevo). `GET /triage/queue` (ADMINISTRATIVO recibe solo código, nivel, estado y antigüedad).
+  `GET /triage/config`, `GET /triage/config/history` (MEDICO y ADMIN) y `POST /triage/config` (solo MEDICO,
+  registra CONFIG_CHANGE). `GET /cases?level=` filtra por nivel vigente.
+- Notificaciones a los médicos activos cuando un caso pasa a ALTA (no se repiten mientras siga en ALTA).
+  `GET /notifications`, `PATCH /notifications/{id}/read` (solo las propias).
+- KPI creación → primer triage registrado en el log (`aurora.triage`). Como el triage se calcula al crear el
+  caso, el primer valor queda en segundos (meta ≤ 5 min).
+
+### Decisiones de interpretación (para confirmar con el equipo)
+- **Puntaje con escalamiento:** cuando se dispara una regla el nivel es ALTA sin mirar el puntaje, pero el puntaje
+  se calcula y se guarda igual, como dato informativo y para ordenar la cola dentro de ALTA.
+- **Override y recálculo:** si se recalcula por un cambio de configuración (mismos datos clínicos) se conserva el
+  override del médico. Si cambian los datos del caso (imagen nueva, síntomas, antecedentes) el override no se
+  arrastra: el nivel vuelve al calculado y el médico debe reevaluar. El override anterior queda en el historial.
+- **Triage al crear el caso:** se calcula de inmediato aunque no haya imágenes (la IA aporta 0). Así las reglas
+  de BI-RADS y síntomas priorizan el caso desde el primer momento.
+- La cola incluye casos PRIORIZADOS y EN_REVISION (este último se puede ocultar con `include_in_review=false`).
+
+### Frontend
+- **Cola de triage**: tabla ordenada con color por nivel, contadores por nivel, antigüedad y refresco cada 30 s.
+  El ADMINISTRATIVO ve la versión mínima.
+- **Detalle de triage** en el caso (MEDICO): desglose por factor, regla disparada, badge IA SIMULADA cuando
+  corresponde, recálculo, historial y cambio de nivel con motivo obligatorio.
+- **Parámetros de triage**: edición de pesos (validación de suma 100), umbrales, reglas y bandas de edad, motivo
+  del cambio e historial de versiones. MEDICO edita; ADMIN solo consulta.
+- **Campana de notificaciones** para MEDICO con los casos ALTA; al hacer clic abre el caso.
+
+### Pruebas (DoD)
+- `compute_triage`: cada regla de escalamiento (R_BIRADS 4 y 5, cada síntoma, regla desactivable, precedencia),
+  cada banda de edad (39/40/49/50/69/70/120), límites 59,99 / 60 / 29,99 / 30 (directo y vía cálculo),
+  factor IA, tope del tiempo de espera, ejemplo completo y validaciones de parámetros.
+- API: pesos que no suman 100 → 422; override sin motivo → 422; orden correcto de la cola (nivel, puntaje y
+  antigüedad); vista mínima para ADMINISTRATIVO; nueva versión recalcula; override conservado al cambiar la
+  configuración; notificaciones; permisos y auditoría.

@@ -155,7 +155,12 @@ def run_inference_task(image_id: int) -> None:
 
 
 def on_inference_completed(db: Session, case_id: int) -> None:
-    """Hook: recalcula el triage del caso al terminar la inferencia (se conecta en S5)."""
+    """Recalcula el triage del caso al terminar la inferencia."""
+    from app.services import triage_service
+
+    case = db.get(Case, case_id)
+    if case is not None:
+        triage_service.recalculate(db, case)
 
 
 def list_images(db: Session, case_id: int, viewer: User) -> list[ImageOut]:
