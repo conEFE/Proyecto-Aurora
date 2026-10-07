@@ -47,7 +47,7 @@ def get_image_results(
         raise HTTPException(status_code=404, detail="Imagen no encontrada")
 
     # Verificar permisos (a través del caso)
-    if imagen.case.medico_id != current_user.id and current_user.role.value != "ADMIN":
+    if current_user.role.value != "MEDICO":
         raise HTTPException(status_code=403, detail="No tienes acceso a esta imagen")
 
     # Verificar si ya existe un resultado guardado

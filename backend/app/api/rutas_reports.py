@@ -59,7 +59,7 @@ def get_statistics(current_user: User = Depends(get_current_user), db: Session =
 
     # Si no es ADMIN, solo sus casos
     if current_user.role.value != "ADMIN":
-        cases_query = cases_query.filter(Case.medico_id == current_user.id)
+        cases_query = cases_query.filter(Case.created_by == current_user.id)
 
     total_cases = cases_query.count()
 
@@ -81,7 +81,7 @@ def get_statistics(current_user: User = Depends(get_current_user), db: Session =
     # Estadísticas de inferencia
     results_query = db.query(InferenceResult).join(Image).join(Case)
     if current_user.role.value != "ADMIN":
-        results_query = results_query.filter(Case.medico_id == current_user.id)
+        results_query = results_query.filter(Case.created_by == current_user.id)
 
     results = results_query.all()
 
@@ -117,7 +117,7 @@ def get_monthly_data(
     # Base query
     cases_query = db.query(Case)
     if current_user.role.value != "ADMIN":
-        cases_query = cases_query.filter(Case.medico_id == current_user.id)
+        cases_query = cases_query.filter(Case.created_by == current_user.id)
 
     # Filtrar por año
     cases_query = cases_query.filter(extract("year", Case.created_at) == year)

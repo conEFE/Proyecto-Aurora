@@ -46,7 +46,7 @@ async def upload_image(
         raise HTTPException(status_code=404, detail="Caso no encontrado")
 
     # Verificar permisos
-    if caso.medico_id != current_user.id and current_user.role.value != "ADMIN":
+    if current_user.role.value not in ("MEDICO", "ADMINISTRATIVO"):
         raise HTTPException(status_code=403, detail="No tienes acceso a este caso")
 
     # Leer contenido del archivo
@@ -96,7 +96,7 @@ def get_case_images(
         raise HTTPException(status_code=404, detail="Caso no encontrado")
 
     # Verificar permisos
-    if caso.medico_id != current_user.id and current_user.role.value != "ADMIN":
+    if current_user.role.value not in ("MEDICO", "ADMINISTRATIVO"):
         raise HTTPException(status_code=403, detail="No tienes acceso a este caso")
 
     # Obtener imágenes del caso
@@ -116,7 +116,7 @@ async def get_image_file(
         raise HTTPException(status_code=404, detail="Caso no encontrado")
 
     # Verificar permisos
-    if caso.medico_id != current_user.id and current_user.role.value != "ADMIN":
+    if current_user.role.value not in ("MEDICO", "ADMINISTRATIVO"):
         raise HTTPException(status_code=403, detail="No tienes acceso a este caso")
 
     # Obtener imagen de BD

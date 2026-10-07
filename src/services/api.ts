@@ -1,6 +1,10 @@
 import type {
   AdminStats,
   AuditEntry,
+  CaseStatus,
+  CaseSymptoms,
+  ClinicalCase,
+  TriageLevel,
   Me,
   Page,
   Patient,
@@ -140,38 +144,25 @@ class ApiClient {
     return this.request<Patient[]>(`/patients?${params.toString()}`);
   }
 
-  async createCase(patientCode: string, patientId?: number, description?: string) {
-    return this.request<{ id: number; code: string; created_at: string; medico_id: number; patient_id?: number }>('/cases', {
-      method: 'POST',
-      body: JSON.stringify({
-        patient_code_anon: patientCode,
-        patient_id: patientId,
-        descripcion: description,
-      }),
-    });
+  // --- Casos ---------------------------------------------------------------
+  async createCase(data: CaseSymptoms & { patient_id: number }) {
+    return this.request<ClinicalCase>('/cases', { method: 'POST', body: JSON.stringify(data) });
   }
 
-  async getCases(page = 1, size = 10, fromDate?: string, toDate?: string) {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      size: size.toString(),
+  async getCases(filters: { status?: CaseStatus; level?: TriageLevel; patient_id?: number; page?: number; size?: number } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined) params.append(k, String(v));
     });
-    if (fromDate) params.append('from_date', fromDate);
-    if (toDate) params.append('to_date', toDate);
-
-    return this.request<Array<{ id: number; code: string; created_at: string; medico_id: number; descripcion?: string }>>(
-      `/cases?${params.toString()}`
-    );
+    return this.request<Page<ClinicalCase>>(`/cases?${params.toString()}`);
   }
 
   async getCase(caseId: number) {
-    return this.request<{
-      id: number;
-      code: string;
-      created_at: string;
-      medico_id: number;
-      descripcion?: string;
-    }>(`/cases/${caseId}`);
+    return this.request<ClinicalCase>(`/cases/${caseId}`);
+  }
+
+  async updateCase(caseId: number, data: Partial<CaseSymptoms>) {
+    return this.request<ClinicalCase>(`/cases/${caseId}`, { method: 'PATCH', body: JSON.stringify(data) });
   }
 
   async uploadImage(caseId: number, file: File, tipoImagen?: string) {

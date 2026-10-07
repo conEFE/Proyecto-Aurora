@@ -92,3 +92,41 @@ También se quitaron del repo las imágenes de prueba de `backend/data/images/` 
 - RUT inválido → 422 (usuarios y pacientes); paciente sin consentimiento → 422; duplicados → 409.
 - Auditoría verificada (LOGIN_OK/LOGIN_FAIL, CREATE/UPDATE/VIEW) y sin RUT ni nombre en `detail`.
 - `audit_log` rechaza UPDATE y DELETE a nivel de BD.
+
+---
+
+## Sprint 3 — Casos clínicos y antecedentes
+
+### Backend
+- Migración `c3a7e5d2f103` (reversible):
+  - `cases.patient_id` NOT NULL; `medico_id` renombrado a `created_by`; nuevos `assigned_medico_id`,
+    `status` (enum `casestatus`), `palpable_mass`, `nipple_discharge`, `skin_or_nipple_changes`,
+    `birads_reported` (CHECK 0–6), `updated_at`, `closed_at`; `code` VARCHAR(20).
+  - **Decisión sobre casos sin paciente:** se asignan a un paciente de prueba `SIN-ASIGNAR` (RUT ficticio `1-9`,
+    sin consentimiento) en lugar de borrarlos, para no perder imágenes de desarrollo. El `downgrade` deshace la
+    asignación y elimina ese paciente.
+  - **Decisión sobre códigos existentes:** se regeneran todos con el formato `AUR-AAAA-NNNNNN`. En la v1.0 el
+    código era texto libre escrito a mano (podía contener nombres u otros datos identificables).
+- Generador de código `AUR-AAAA-NNNNNN` con la secuencia de BD `case_code_seq` (única y sin colisiones entre
+  requests concurrentes; el año es el de creación y el correlativo es global).
+- Máquina de estados en `services/case_service.py`: `ABIERTO → PRIORIZADO → EN_REVISION → CERRADO` y
+  `PRIORIZADO → ABIERTO` cuando cambian los datos. Toda otra transición → 409.
+- Endpoints: `POST /cases` (409 si el paciente no tiene consentimiento), `GET /cases` (filtros por estado y
+  paciente, paginado), `GET /cases/{id}`, `PATCH /cases/{id}` (síntomas y BI-RADS; 409 si está CERRADO).
+  El filtro por nivel de triage se agrega en S5, cuando existe el triage.
+- Casos visibles para todo el personal clínico (MEDICO y ADMINISTRATIVO), no solo para su creador: la cola
+  de triage es compartida. ADMIN recibe 403 (D11).
+- Auditoría de CREATE, VIEW y UPDATE de casos.
+- Rutas heredadas (imágenes, resultados, reportes, `/user`) adaptadas a `created_by` hasta su reemplazo en S4–S6.
+
+### Frontend
+- CaseManagement reescrito: creación ligada a un paciente (buscar o registrar con consentimiento), formulario de
+  síntomas y BI-RADS, badge de estado, filtro por estado y paginación. El detalle permite editar antecedentes
+  y queda en solo lectura si el caso está cerrado.
+- ImageUpload ya no crea casos con un código escrito a mano: se elige un caso abierto existente.
+
+### Pruebas (DoD)
+- Transiciones válidas (4) e inválidas (8, todas 409); reapertura de un caso priorizado al cambiar datos.
+- Caso sin consentimiento → 409; paciente inexistente → 404; BI-RADS fuera de rango → 422; caso cerrado no
+  editable → 409; ADMIN sin acceso a casos; auditoría de casos.
+- Migración con datos de la v1.0 (caso sin paciente, código libre, paciente sin nombre) probada.

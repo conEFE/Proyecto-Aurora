@@ -84,6 +84,49 @@ export interface Page<T> {
   size: number;
 }
 
+export type CaseStatus = 'ABIERTO' | 'PRIORIZADO' | 'EN_REVISION' | 'CERRADO';
+
+export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
+  ABIERTO: 'Abierto',
+  PRIORIZADO: 'Priorizado',
+  EN_REVISION: 'En revisión',
+  CERRADO: 'Cerrado',
+};
+
+export interface CaseSymptoms {
+  palpable_mass: boolean;
+  nipple_discharge: boolean;
+  skin_or_nipple_changes: boolean;
+  birads_reported: number | null;
+}
+
+export interface PatientSummary {
+  id: number;
+  rut: string;
+  first_name: string;
+  last_name: string;
+  birth_date: string;
+  family_history_first_degree: boolean;
+  previous_breast_cancer: boolean;
+}
+
+export interface ClinicalCase extends CaseSymptoms {
+  id: number;
+  code: string;
+  status: CaseStatus;
+  patient_id: number;
+  patient?: PatientSummary | null;
+  created_by: number;
+  assigned_medico_id?: number | null;
+  created_at: string;
+  updated_at?: string | null;
+  closed_at?: string | null;
+  image_count: number;
+  triage_level?: TriageLevel | null;
+}
+
+export type TriageLevel = 'ALTA' | 'MEDIA' | 'BAJA';
+
 export interface AdminStats {
   total_users: number;
   active_users: number;

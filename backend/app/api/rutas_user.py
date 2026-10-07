@@ -51,7 +51,7 @@ def get_user_info(current_user: User = Depends(get_current_user), db: Session = 
 def get_user_patients(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Obtiene los pacientes asociados al médico actual"""
     # Obtener todos los casos del médico
-    cases = db.query(Case).filter(Case.medico_id == current_user.id).all()
+    cases = db.query(Case).filter(Case.created_by == current_user.id).all()
 
     # Extraer los IDs de pacientes únicos
     patient_ids = set()

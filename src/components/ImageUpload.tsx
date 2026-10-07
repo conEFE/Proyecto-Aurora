@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Upload, Image as ImageIcon, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { apiClient } from '../services/api';
-import PatientModal from './PatientModal';
+import type { ClinicalCase } from '../types';
 
 interface DetectionBox {
   x: number;
@@ -25,15 +25,11 @@ interface InferenceResult {
 export default function ImageUpload() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [patientCode, setPatientCode] = useState('');
+  const [openCases, setOpenCases] = useState<ClinicalCase[]>([]);
   const [currentCaseId, setCurrentCaseId] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InferenceResult | null>(null);
-  const [showPatientModal, setShowPatientModal] = useState(false);
-  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
-  const [selectedPatient, setSelectedPatient] = useState<{ id: number; rut: string; name?: string } | null>(null);
   const [processingProgress, setProcessingProgress] = useState(0); // 0-100
   const [processingMessage, setProcessingMessage] = useState('');
 
@@ -52,42 +48,11 @@ export default function ImageUpload() {
     }
   };
 
-  const handleCreateCase = async () => {
-    if (!patientCode.trim()) {
-      setError('Por favor ingresa un código de paciente');
-      return;
-    }
-
-    setIsUploading(true);
-    setError(null);
-
-    try {
-      const response = await apiClient.createCase(
-        patientCode.trim(),
-        selectedPatientId || undefined
-      );
-      
-      console.log('Respuesta de createCase:', response); // Debug
-      
-      if (response.data && response.data.id) {
-        setCurrentCaseId(response.data.id);
-        setError(null);
-        console.log('Caso creado con ID:', response.data.id); // Debug
-      } else {
-        const errorMsg = response.error || 'Error al crear caso';
-        setError(errorMsg);
-        console.error('Error al crear caso:', errorMsg, response); // Debug
-        setCurrentCaseId(null);
-      }
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Error al crear caso';
-      setError(errorMsg);
-      console.error('Excepción al crear caso:', err); // Debug
-      setCurrentCaseId(null); 
-    } finally {
-      setIsUploading(false);
-    }
-  };
+  useEffect(() => {
+    apiClient.getCases({ size: 100 }).then((r) => {
+      if (r.data) setOpenCases(r.data.items.filter((c) => c.status !== 'CERRADO'));
+    });
+  }, []);
 
   const handleProcess = async () => {
     if (!selectedFile) {
@@ -96,7 +61,7 @@ export default function ImageUpload() {
     }
 
     if (!currentCaseId) {
-      setError('Por favor crea un caso primero');
+      setError('Selecciona un caso primero');
       return;
     }
 
@@ -184,51 +149,21 @@ export default function ImageUpload() {
           <div className="bg-card border border-border rounded-lg p-4">
             <h4 className="text-xs font-semibold text-foreground mb-2">Caso Clínico</h4>
             
-            {selectedPatient && (
-              <div className="mb-2 p-2 bg-primary/10 border border-primary/20 rounded">
-                <p className="text-[10px] text-muted-foreground mb-0.5">Paciente asignado:</p>
-                <p className="text-xs font-semibold text-foreground">
-                  {selectedPatient.name || 'Sin nombre'} - RUT: {selectedPatient.rut}
-                </p>
-                <button
-                  onClick={() => {
-                    setSelectedPatient(null);
-                    setSelectedPatientId(null);
-                  }}
-                  className="mt-1 text-[10px] text-primary hover:text-primary/80"
-                >
-                  Cambiar paciente
-                </button>
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={patientCode}
-                onChange={(e) => setPatientCode(e.target.value)}
-                placeholder="Código de paciente"
-                className="flex-1 px-3 py-1.5 bg-background border border-input rounded text-xs text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
-                disabled={isUploading || isProcessing}
-              />
-              <button
-                onClick={() => setShowPatientModal(true)}
-                className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground font-semibold rounded text-xs transition-colors"
-                title="Asignar paciente existente o crear nuevo"
-              >
-                Paciente
-              </button>
-              <button
-                onClick={handleCreateCase}
-                disabled={isUploading || isProcessing || !patientCode.trim()}
-                className="px-3 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground font-semibold rounded text-xs transition-colors"
-              >
-                {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear Caso'}
-              </button>
-            </div>
-            {currentCaseId && (
-              <p className="mt-1.5 text-[10px] text-green-400">Caso #{currentCaseId} creado</p>
-            )}
+            <select
+              className="w-full px-3 py-1.5 bg-background border border-input rounded text-xs text-foreground"
+              value={currentCaseId ?? ''}
+              onChange={(e) => setCurrentCaseId(e.target.value ? Number(e.target.value) : null)}
+              disabled={isProcessing}
+              aria-label="Caso"
+            >
+              <option value="">Seleccione un caso abierto...</option>
+              {openCases.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.code} · {c.patient ? `${c.patient.first_name} ${c.patient.last_name}` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-[10px] text-muted-foreground">Los casos se crean en la sección Casos.</p>
           </div>
 
           {/* Sección de carga de imagen */}
@@ -282,7 +217,7 @@ export default function ImageUpload() {
               
               {!currentCaseId && (
                 <p className="mt-1.5 text-[10px] text-orange-400 text-center">
-                  ⚠️ Debes crear un caso clínico antes de procesar la imagen
+                  ⚠️ Selecciona un caso antes de procesar la imagen
                 </p>
               )}
             </div>
@@ -446,18 +381,6 @@ export default function ImageUpload() {
         </div>
       </div>
 
-      <PatientModal
-        isOpen={showPatientModal}
-        onClose={() => setShowPatientModal(false)}
-        onSelectPatient={(patient) => {
-          setSelectedPatientId(patient.id);
-          setSelectedPatient({
-            id: patient.id,
-            rut: patient.rut,
-            name: `${patient.first_name} ${patient.last_name}`.trim(),
-          });
-        }}
-      />
     </div>
   );
 }
