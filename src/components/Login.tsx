@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lock, User, Activity, Shield, CheckCircle } from 'lucide-react';
+import { Lock, User, Activity, Shield } from 'lucide-react';
 import { apiClient } from '../services/api';
 
 interface LoginProps {
@@ -17,8 +17,8 @@ export default function Login({ onLogin, onSignup }: LoginProps) {
     
     const response = await apiClient.login(rut, password);
     
-    if (response.data && response.data.token) {
-      apiClient.setToken(response.data.token);
+    if (response.data && response.data.access_token) {
+      apiClient.setToken(response.data.access_token);
       onLogin();
     } else {
       alert(response.error || 'Error al iniciar sesión');

@@ -1,26 +1,40 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.api import (
+    rutas_admin,
+    rutas_auth,
+    rutas_cases,
+    rutas_images,
+    rutas_patients,
+    rutas_reports,
+    rutas_results,
+    rutas_user,
+)
 from app.config import settings
-from app.api import rutas_auth, rutas_cases, rutas_images, rutas_results, rutas_reports, rutas_patients, rutas_admin, rutas_user
+from app.middleware import ProcessTimeMiddleware
 
-app = FastAPI(title="Plataforma Médica API", version="0.1.0")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
-# Configurar CORS antes de agregar las rutas
+app = FastAPI(title="Proyecto Aurora API", version="1.1.0")
+
+app.add_middleware(ProcessTimeMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",  # Puerto actual del frontend
-        "http://localhost:3000"
-    ],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Process-Time-Ms"],
 )
+
 
 @app.get("/health")
 def health():
     return {"status": "ok", "message": "API is running"}
+
 
 app.include_router(rutas_auth.router, prefix="/auth", tags=["auth"])
 app.include_router(rutas_cases.router, prefix="/cases", tags=["cases"])

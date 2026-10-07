@@ -1,13 +1,20 @@
-from fastapi import Depends, HTTPException
-from app.auth.bearer import get_token_from_header, get_role_from_token
+"""Autorización por rol. El rol se lee del usuario en la BD, nunca del token."""
 
-def require_role(allowed_roles: list[str]):
-    def role_checker(token: str = Depends(get_token_from_header)):
-        role = get_role_from_token(token)
-        if role not in allowed_roles:
-            raise HTTPException(status_code=403, detail=f"Role {role} not allowed")
-        return role
-    return role_checker
+from fastapi import Depends, HTTPException, status
 
-def get_current_user_role(token: str = Depends(get_token_from_header)) -> str:
-    return get_role_from_token(token)
+from app.auth.bearer import get_current_user
+from app.db.models.user import User, UserRole
+
+
+def require_roles(*roles: UserRole):
+    allowed = {r.value if isinstance(r, UserRole) else str(r) for r in roles}
+
+    def checker(user: User = Depends(get_current_user)) -> User:
+        if user.role.value not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tiene permisos para realizar esta acción",
+            )
+        return user
+
+    return checker

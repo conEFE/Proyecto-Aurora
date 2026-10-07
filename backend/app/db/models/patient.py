@@ -1,10 +1,11 @@
-from sqlalchemy import Column, Integer, String, Date, Text, DateTime, func
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Date, DateTime, Integer, String, Text, func
+
 from app.db.base import Base
+
 
 class Patient(Base):
     __tablename__ = "patients"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     rut = Column(String, unique=True, nullable=False, index=True)
     first_name = Column(String, nullable=True)

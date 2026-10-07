@@ -53,9 +53,9 @@ export async function generateCaseReport(
   let yPosition = margin;
 
   // Colores
-  const primaryColor = [231, 30, 99]; // Pink
-  const successColor = [34, 197, 94]; // Green
-  const warningColor = [249, 115, 22]; // Orange
+  const primaryColor: [number, number, number] = [231, 30, 99]; // Pink
+  const successColor: [number, number, number] = [34, 197, 94]; // Green
+  const warningColor: [number, number, number] = [249, 115, 22]; // Orange
 
   // Header
   doc.setFillColor(...primaryColor);
@@ -98,7 +98,7 @@ export async function generateCaseReport(
     styles: { fontSize: 9 },
   });
 
-  yPosition = (doc as any).lastAutoTable.finalY + 15;
+  yPosition = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
 
   // Información del Paciente (si existe)
   if (caseData.patient) {
@@ -124,7 +124,7 @@ export async function generateCaseReport(
       styles: { fontSize: 9 },
     });
 
-    yPosition = (doc as any).lastAutoTable.finalY + 15;
+    yPosition = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
   }
 
   // Resultados del Análisis
@@ -171,7 +171,7 @@ export async function generateCaseReport(
       styles: { fontSize: 9 },
     });
 
-    yPosition = (doc as any).lastAutoTable.finalY + 15;
+    yPosition = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
 
     // Detecciones (si existen)
     if (result.detections && result.detections.length > 0) {
@@ -202,7 +202,7 @@ export async function generateCaseReport(
         styles: { fontSize: 8 },
       });
 
-      yPosition = (doc as any).lastAutoTable.finalY + 15;
+      yPosition = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
     }
   }
 
@@ -255,7 +255,7 @@ export async function generateCaseReport(
         );
         doc.setTextColor(0, 0, 0);
         yPosition += 10;
-      } catch (error) {
+      } catch {
         doc.setFontSize(10);
         doc.setTextColor(255, 0, 0);
         doc.text('Error al cargar la imagen', margin, yPosition);

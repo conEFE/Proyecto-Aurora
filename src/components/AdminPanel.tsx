@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Settings, Shield, BarChart3, Activity, Loader2, AlertCircle } from 'lucide-react';
+import { Users, UserPlus, Settings, Shield, BarChart3, Activity, Loader2 } from 'lucide-react';
 import { apiClient } from '../services/api';
 
 interface SystemStats {

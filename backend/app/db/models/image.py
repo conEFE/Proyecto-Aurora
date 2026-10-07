@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import relationship
+
 from app.db.base import Base
+
 
 class Image(Base):
     __tablename__ = "images"
@@ -18,6 +20,6 @@ class Image(Base):
 
     case_id = Column(Integer, ForeignKey("cases.id"), nullable=False)
     case = relationship("Case", back_populates="images")
-    
+
     # Relación con resultado de inferencia
     inference_result = relationship("InferenceResult", back_populates="image", uselist=False)

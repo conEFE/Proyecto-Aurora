@@ -1,0 +1,7 @@
+pytest==9.1.1
+pytest-cov==7.1.0
+httpx==0.27.2
+ruff==0.16.10
+black==26.10.0
+# PostgreSQL embebido para la BD de pruebas aislada (si no se define TEST_DB_DSN)
+pgserver==0.1.4

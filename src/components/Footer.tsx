@@ -1,4 +1,4 @@
-import { Mail, Heart, Users } from 'lucide-react';
+
 
 export default function Footer() {
   return (

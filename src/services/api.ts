@@ -25,74 +25,81 @@ class ApiClient {
     }
   }
 
+  /** Ante un 401 con sesión activa: cerrar sesión y volver al login. */
+  private handleUnauthorized() {
+    if (this.getToken()) {
+      this.setToken(null);
+      window.location.reload();
+    }
+  }
+
+  private authHeaders(): Record<string, string> {
+    const token = this.getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  private static errorMessage(data: unknown, status: number): string {
+    if (data && typeof data === 'object' && 'detail' in data) {
+      const detail = (data as { detail: unknown }).detail;
+      if (typeof detail === 'string') return detail;
+      if (Array.isArray(detail) && detail.length > 0) {
+        const first = detail[0] as { msg?: string };
+        return first.msg ? `Datos inválidos: ${first.msg}` : 'Datos inválidos';
+      }
+    }
+    return `Error ${status}`;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string> | undefined),
+      ...this.authHeaders(),
     };
 
-    const token = this.getToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
+      const response = await fetch(url, { ...options, headers });
 
-      // Verificar si la respuesta es JSON antes de intentar parsearla
       const contentType = response.headers.get('content-type');
-      let data: any = {};
-
+      let data: unknown = null;
       if (contentType && contentType.includes('application/json')) {
         try {
           data = await response.json();
-        } catch (e) {
-          console.error('Error parsing JSON response:', e);
-          return {
-            error: 'Invalid JSON response from server',
-            status: response.status,
-          };
+        } catch {
+          return { error: 'Respuesta inválida del servidor', status: response.status };
         }
-      } else {
-        // Si no es JSON, probablemente es HTML (página de error)
-        const text = await response.text();
-        console.error('Server returned non-JSON response:', text.substring(0, 200));
+      } else if (response.status !== 204) {
         return {
-          error: `Server error (${response.status}): Expected JSON but received ${contentType || 'unknown'}`,
+          error: `Error del servidor (${response.status})`,
           status: response.status,
         };
       }
 
       if (!response.ok) {
-        if (response.status === 401) {
-          this.setToken(null);
-          window.location.reload();
-        }
-        return {
-          error: data.detail || data.message || `Error ${response.status}`,
-          status: response.status,
-        };
+        if (response.status === 401) this.handleUnauthorized();
+        return { error: ApiClient.errorMessage(data, response.status), status: response.status };
       }
 
-      return { data, status: response.status };
+      return { data: data as T, status: response.status };
     } catch (error) {
-      console.error('Network error:', error);
       return {
-        error: error instanceof Error ? error.message : 'Network error',
+        error: error instanceof Error ? error.message : 'Error de red',
         status: 0,
       };
     }
   }
 
   async login(rut: string, password: string) {
-    return this.request<{ token: string; role: string }>('/auth/login', {
+    return this.request<{
+      access_token: string;
+      token_type: string;
+      role: string;
+      full_name?: string | null;
+    }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ rut, password }),
     });
@@ -165,7 +172,9 @@ class ApiClient {
     if (fromDate) params.append('from_date', fromDate);
     if (toDate) params.append('to_date', toDate);
 
-    return this.request(`/cases?${params.toString()}`);
+    return this.request<Array<{ id: number; code: string; created_at: string; medico_id: number; descripcion?: string }>>(
+      `/cases?${params.toString()}`
+    );
   }
 
   async getCase(caseId: number) {
@@ -185,39 +194,21 @@ class ApiClient {
       formData.append('tipo_imagen', tipoImagen);
     }
 
-    const url = `${this.baseURL}/cases/${caseId}/images`;
-    const headers: HeadersInit = {};
-    
-    const token = this.getToken(); // Leer del localStorage en cada petición
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     try {
-      const response = await fetch(url, {
+      const response = await fetch(`${this.baseURL}/cases/${caseId}/images`, {
         method: 'POST',
-        headers,
+        headers: this.authHeaders(),
         body: formData,
       });
-
-      const data = await response.json().catch(() => ({}));
-
+      const data: unknown = await response.json().catch(() => null);
       if (!response.ok) {
-        // Si es error 401, limpiar token
-        if (response.status === 401) {
-          this.setToken(null);
-          window.location.reload();
-        }
-        return {
-          error: data.detail || `Error ${response.status}`,
-          status: response.status,
-        };
+        if (response.status === 401) this.handleUnauthorized();
+        return { error: ApiClient.errorMessage(data, response.status), status: response.status };
       }
-
-      return { data, status: response.status };
+      return { data: data as { id: number }, status: response.status };
     } catch (error) {
       return {
-        error: error instanceof Error ? error.message : 'Network error',
+        error: error instanceof Error ? error.message : 'Error de red',
         status: 0,
       };
     }

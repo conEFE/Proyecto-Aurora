@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Users, MessageSquare, Calendar, Mail, Phone, Loader2, AlertCircle } from 'lucide-react';
+import { User, Users, MessageSquare, Calendar, Mail, Loader2 } from 'lucide-react';
 import { apiClient } from '../services/api';
 
 interface UserInfo {
@@ -21,7 +21,7 @@ interface SupportTicket {
   id: number;
   title: string;
   description: string;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  status: string;
   created_at: string;
 }
 

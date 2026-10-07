@@ -57,7 +57,7 @@ export default function PatientModal({ isOpen, onClose, onSelectPatient, onCreat
       } else {
         setError(response.error || 'Error al buscar pacientes');
       }
-    } catch (err) {
+    } catch {
       setError('Error al buscar pacientes');
     } finally {
       setLoading(false);
@@ -86,7 +86,7 @@ export default function PatientModal({ isOpen, onClose, onSelectPatient, onCreat
       } else {
         setError(response.error || 'Error al crear paciente');
       }
-    } catch (err) {
+    } catch {
       setError('Error al crear paciente');
     } finally {
       setLoading(false);

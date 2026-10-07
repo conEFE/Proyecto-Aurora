@@ -35,6 +35,7 @@ interface InferenceResult {
     class_name: string;
   }>;
   processing_time_ms: number;
+  model_version: string;
   message: string;
 }
 
@@ -51,7 +52,6 @@ export default function CaseManagement() {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [totalCases, setTotalCases] = useState(0);
   const pageSize = 10;
 
   useEffect(() => {
@@ -65,11 +65,10 @@ export default function CaseManagement() {
       const response = await apiClient.getCases(page, pageSize);
       if (response.data) {
         setCases(response.data);
-        setTotalCases(response.data.length); 
       } else {
         setError(response.error || 'Error al cargar casos');
       }
-    } catch (err) {
+    } catch {
       setError('Error al cargar casos');
     } finally {
       setLoading(false);
@@ -120,7 +119,7 @@ export default function CaseManagement() {
       };
 
       setSelectedCase(caseWithDetails);
-    } catch (err) {
+    } catch {
       setError('Error al cargar detalles del caso');
     } finally {
       setLoadingDetails(false);

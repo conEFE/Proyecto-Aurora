@@ -147,9 +147,10 @@ export default function ImageUpload() {
       setProcessingProgress(100);
       setProcessingMessage('Análisis completado');
 
-      if (resultsResponse.data) {
+      const resultData = resultsResponse.data;
+      if (resultData) {
         setTimeout(() => {
-          setResult(resultsResponse.data);
+          setResult(resultData);
           setIsProcessing(false);
           setProcessingProgress(0);
           setProcessingMessage('');
@@ -160,7 +161,7 @@ export default function ImageUpload() {
         setProcessingProgress(0);
         setProcessingMessage('');
       }
-    } catch (err) {
+    } catch {
       setError('Error al procesar imagen');
       setIsProcessing(false);
       setProcessingProgress(0);

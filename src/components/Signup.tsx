@@ -7,7 +7,7 @@ interface SignupProps {
   onBack: () => void;
 }
 
-export default function Signup({ onSignup, onBack }: SignupProps) {
+export default function Signup({ onBack }: SignupProps) {
   const [rut, setRut] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,7 +39,7 @@ export default function Signup({ onSignup, onBack }: SignupProps) {
       } else {
         setError(response.error || 'Error al crear usuario');
       }
-    } catch (err) {
+    } catch {
       setError('Error al crear usuario');
     } finally {
       setLoading(false);

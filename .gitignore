@@ -28,3 +28,14 @@ __pycache__/
 *.sln
 *.sw?
 .bolt/
+# Secretos y datos locales (nunca versionar)
+.env
+.env.*
+!.env.example
+backend/.env
+backend/create_user.sql
+backend/data/
+backend/.coverage
+backend/htmlcov/
+.pytest_cache/
+.ruff_cache/

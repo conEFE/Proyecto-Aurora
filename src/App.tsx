@@ -11,11 +11,11 @@ import Footer from './components/Footer';
 import Signup from './components/Signup';
 import { apiClient } from './services/api';
 
-type Section = 'home' | 'upload' | 'cases' | 'reports' | 'panel' | 'login'; // AGREGAR 'panel'
+type Section = 'home' | 'upload' | 'cases' | 'reports' | 'panel';
 
 function App() {
   const [showSignup, setShowSignup] = useState(false);
-  const [currentSection, setCurrentSection] = useState<Section>('login');
+  const [currentSection, setCurrentSection] = useState<Section>('home');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<string>('MEDICO');
