@@ -85,11 +85,13 @@ def get_queue(
 
 @triage_router.get("/config", response_model=TriageConfigOut)
 def get_active_config(_: User = Depends(config_readers), db: Session = Depends(get_db)):
+    """Configuración de triage activa."""
     return triage_service.active_config(db)
 
 
 @triage_router.get("/config/history", response_model=list[TriageConfigOut])
 def get_config_history(_: User = Depends(config_readers), db: Session = Depends(get_db)):
+    """Todas las versiones de la configuración de triage."""
     return triage_service.list_configs(db)
 
 
@@ -114,6 +116,7 @@ def create_config(
 def list_notifications(
     unread_only: bool = False, user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
+    """Notificaciones del usuario autenticado (no leídas primero)."""
     return triage_service.list_notifications(db, user, unread_only)
 
 
@@ -121,4 +124,5 @@ def list_notifications(
 def mark_notification_read(
     notification_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
+    """Marca como leída una notificación propia."""
     return triage_service.mark_read(db, notification_id, user)

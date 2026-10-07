@@ -165,7 +165,7 @@ export default function TriageDetail({ caseId, closed, onChanged }: TriageDetail
       )}
 
       <p className="text-[10px] text-muted-foreground">
-        Calculado el {formatDateTime(triage.computed_at)}. Propuesta técnica de priorización, no un criterio clínico
+        Calculado el {formatDateTime(triage.computed_at)} · Propuesta técnica de priorización, no un criterio clínico
         validado.
       </p>
 

@@ -5,6 +5,7 @@ import type { CaseSymptoms, ClinicalCase, Me } from '../types';
 import { LevelBadge, StatusBadge } from './Badges';
 import CaseImages from './CaseImages';
 import SymptomsForm from './SymptomsForm';
+import ReviewPanel from './ReviewPanel';
 import TriageDetail from './TriageDetail';
 import { cardClass, errorBox, formatDate, formatDateTime, primaryButton } from './ui';
 
@@ -137,7 +138,10 @@ export default function CaseDetail({ caseId, me, onChanged }: CaseDetailProps) {
       </div>
 
       {me.role === 'MEDICO' && (
-        <TriageDetail key={triageKey} caseId={data.id} closed={closed} onChanged={reload} />
+        <>
+          <ReviewPanel key={`rv-${data.status}`} caseData={data} me={me} onChanged={reload} />
+          <TriageDetail key={triageKey} caseId={data.id} closed={closed} onChanged={reload} />
+        </>
       )}
 
       <div className={`${cardClass} p-4`}>

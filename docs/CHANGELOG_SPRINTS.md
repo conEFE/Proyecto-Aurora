@@ -231,3 +231,67 @@ También se quitaron del repo las imágenes de prueba de `backend/data/images/` 
 - API: pesos que no suman 100 → 422; override sin motivo → 422; orden correcto de la cola (nivel, puntaje y
   antigüedad); vista mínima para ADMINISTRATIVO; nueva versión recalcula; override conservado al cambiar la
   configuración; notificaciones; permisos y auditoría.
+
+---
+
+## Sprint 6 — Dashboard y reportes
+
+### Backend
+- Migración `f6d0b8a5c406` (reversible): `clinical_reviews` (una por caso, CHECK de BI-RADS 0–6 y de
+  recomendación), `reports` y `request_metrics`.
+- `POST /cases/{id}/take` (PRIORIZADO → EN_REVISION, asigna al médico) y `POST /cases/{id}/review`
+  (EN_REVISION → CERRADO con `closed_at`). **Un caso solo se cierra con revisión**: no hay otra vía en la API y
+  la máquina de estados no permite saltar a CERRADO. `GET /cases/{id}/review`.
+- Reportes (SC-02): `GET /cases/{id}/reports/metadata` entrega los metadatos tipo DICOM (`PatientID` = código del
+  caso, `StudyDate`, `Modality=MG`, hallazgos, BI-RADS, recomendación, nivel de triage, versiones del modelo y si la
+  IA es simulada) y `POST /cases/{id}/reports` con `{content_hash}` registra el PDF y devuelve esos metadatos,
+  con auditoría EXPORT. Solo para casos cerrados con revisión.
+  - **Ajuste respecto de la especificación:** la especificación pide que el POST devuelva los metadatos que el
+    frontend incrusta en el PDF, pero el POST también recibe el SHA-256 de ese mismo PDF: no se puede calcular el
+    hash de un archivo que todavía no tiene los metadatos. Por eso se agregó el GET previo; el POST conserva el
+    contrato pedido.
+- `GET /dashboard/metrics?from=&to=&alta_pending_hours=` (los 3 roles, solo agregados): casos por estado y por nivel,
+  promedio creación → primer triage (KPI ≤ 5 min), promedio triage → revisión por nivel, casos ALTA pendientes por
+  más de X horas (`ALTA_PENDING_HOURS`, 24 por defecto), p95 de la API desde la tabla `request_metrics` (la llena el
+  middleware de S1 con la plantilla de la ruta, sin ids), proporción de overrides y casos por semana.
+- **Endpoints eliminados** (reportado aquí antes de borrar):
+  - `GET /reports/statistics` y `GET /reports/monthly`: reemplazados por `/dashboard/metrics`.
+  - `GET /user/tickets`: devolvía dos tickets de soporte escritos a mano en el código; no tiene respaldo en los
+    informes ni modelo de datos.
+  - `GET /user/info` y `GET /user/patients`: duplicaban `/auth/me` y `/patients`.
+  - (En S4 ya se había quitado `POST /images/{id}/results`.)
+- `scripts/seed_dev.py`: 3 usuarios (uno por rol), 10 pacientes ficticios y 10 casos que cubren ALTA, MEDIA y BAJA.
+  La contraseña de prueba se lee de `AURORA_SEED_PASSWORD`; es idempotente.
+- `scripts/gen_docs.py`: genera `docs/modelo_datos.md` desde los modelos SQLAlchemy y `docs/endpoints.md` desde las
+  rutas (con los roles leídos de las dependencias `require_roles`).
+
+### Frontend
+- **Dashboard** (reemplaza a Reportes, visible para los 3 roles): tarjetas de KPI con indicador de meta, barras por
+  nivel, línea de casos por semana con tooltip, tiempos triage → revisión, proporción de overrides, filtro de
+  fechas y vista de tabla.
+- **Revisión médica** en el detalle del caso: tomar caso, formulario de BI-RADS final, hallazgos y recomendación;
+  resumen cuando el caso está cerrado.
+- `generatePdf.ts` reescrito: código anónimo (sin nombre ni RUT; solo la edad), nivel de triage y desglose, badge
+  IA SIMULADA, revisión médica, metadatos DICOM (tabla y propiedades del PDF), fecha y médico. Se calcula el SHA-256
+  de los bytes exactos que se descargan y se registran con `POST /cases/{id}/reports`.
+- Se quitó «Mi panel» (dependía de `/user/*` y de tickets ficticios). Título de la página: «Proyecto Aurora».
+
+### Pruebas (DoD)
+- Métricas con datos de prueba controlados (tiempos exactos, p95 sobre 100 valores, ALTA pendientes, overrides,
+  filtro de fechas) y percentil unitario.
+- Cierre solo con revisión; revisión duplicada (409); validaciones (422); solo MEDICO.
+- Reporte registrado, auditado (EXPORT) y sin datos identificables en los metadatos.
+- **E2E**: paciente → caso → imagen → triage → revisión → reporte, con ADMINISTRATIVO y MEDICO, más dashboard y
+  auditoría vistos por ADMIN.
+- Total: 178 tests aprobados, cobertura 96% (servicios ≈ 94%). Detalle en `docs/resultados_tests.md`.
+
+### Limitación conocida (para el equipo)
+- El factor «tiempo de espera» se fija al calcular el triage. Un caso que no recibe datos nuevos no sube de puntaje
+  solo por esperar hasta que se recalcule (manualmente o al cambiar la configuración). Un recálculo periódico
+  (tarea programada) se puede sumar en S7 junto con la infraestructura.
+
+---
+
+## Pendiente para S7–S8 (no implementado, según la regla 2)
+Docker y docker-compose, GitHub Actions, `S3EncryptedStorage`, rate limiting y bloqueo de login, revisión OWASP,
+despliegue en AWS, `HttpYoloProvider` real, pruebas de carga con Locust y soporte DICOM en la carga.

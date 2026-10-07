@@ -44,6 +44,7 @@ def list_users(
     _: User = Depends(admin_only),
     db: Session = Depends(get_db),
 ):
+    """Lista usuarios (filtros por rol y estado)."""
     return user_service.list_users(db, role, active)
 
 
@@ -54,6 +55,7 @@ def create_user(
     actor: User = Depends(admin_only),
     db: Session = Depends(get_db),
 ):
+    """Crea un usuario con su rol (reemplaza al signup público)."""
     return user_service.create_user(db, data, actor, client_ip(request))
 
 
@@ -65,6 +67,7 @@ def update_user(
     actor: User = Depends(admin_only),
     db: Session = Depends(get_db),
 ):
+    """Cambia rol, datos o estado activo de un usuario."""
     return user_service.update_user(db, user_id, data, actor, client_ip(request))
 
 

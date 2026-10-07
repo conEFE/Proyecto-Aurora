@@ -30,6 +30,7 @@ def list_patients(
     actor: User = Depends(clinical_staff),
     db: Session = Depends(get_db),
 ):
+    """Busca pacientes por RUT o nombre (registra VIEW)."""
     return patient_service.search_patients(db, actor, search, ip=client_ip(request))
 
 
@@ -40,6 +41,7 @@ def get_patient(
     actor: User = Depends(clinical_staff),
     db: Session = Depends(get_db),
 ):
+    """Detalle del paciente (registra VIEW)."""
     return patient_service.get_patient(db, patient_id, actor, client_ip(request))
 
 
@@ -51,4 +53,5 @@ def update_patient(
     actor: User = Depends(clinical_staff),
     db: Session = Depends(get_db),
 ):
+    """Edita datos y antecedentes del paciente; recalcula el triage de sus casos abiertos."""
     return patient_service.update_patient(db, patient_id, data, actor, client_ip(request))

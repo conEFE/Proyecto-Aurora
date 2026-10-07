@@ -3,8 +3,7 @@ import Header, { type Section } from './components/Header';
 import Home from './components/Home';
 import ImageUpload from './components/ImageUpload';
 import CaseManagement from './components/CaseManagement';
-import Reports from './components/Reports';
-import UserPanel from './components/UserPanel';
+import Dashboard from './components/Dashboard';
 import AdminPanel from './components/AdminPanel';
 import Login from './components/Login';
 import Footer from './components/Footer';
@@ -72,8 +71,8 @@ function App() {
         {currentSection === 'cases' && (
           <CaseManagement key={openCaseNonce} me={me} initialCaseId={openCaseId} />
         )}
-        {currentSection === 'reports' && <Reports />}
-        {currentSection === 'panel' && (me.role === 'ADMIN' ? <AdminPanel /> : <UserPanel />)}
+        {currentSection === 'dashboard' && <Dashboard />}
+        {currentSection === 'panel' && me.role === 'ADMIN' && <AdminPanel />}
       </main>
       <Footer />
     </div>

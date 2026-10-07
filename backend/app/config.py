@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     INFERENCE_PROVIDER: str = "simulated"
     INFERENCE_URL: str = "http://localhost:8080"
 
+    # Guarda la duración de cada request en request_metrics (p95 del dashboard)
+    REQUEST_METRICS_ENABLED: bool = True
+    # Casos ALTA sin revisar por más de estas horas se marcan en el dashboard
+    ALTA_PENDING_HOURS: int = 24
+
     @field_validator("SECRET_KEY")
     @classmethod
     def secret_key_not_empty(cls, v: str) -> str:

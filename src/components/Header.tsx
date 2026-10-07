@@ -2,10 +2,9 @@ import {
   Activity,
   Upload,
   FolderOpen,
-  FileText,
+  BarChart3,
   ListOrdered,
   LogOut,
-  User,
   Settings,
   SlidersHorizontal,
   type LucideIcon,
@@ -15,7 +14,7 @@ import type { Me, Role } from '../types';
 import { ROLE_LABELS } from '../types';
 import NotificationBell from './NotificationBell';
 
-export type Section = 'home' | 'queue' | 'upload' | 'cases' | 'reports' | 'config' | 'panel';
+export type Section = 'home' | 'queue' | 'upload' | 'cases' | 'dashboard' | 'config' | 'panel';
 
 interface HeaderProps {
   currentSection: Section;
@@ -38,9 +37,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'queue', label: 'Cola de triage', icon: ListOrdered, roles: CLINICAL },
   { id: 'cases', label: 'Casos', icon: FolderOpen, roles: CLINICAL },
   { id: 'upload', label: 'Imágenes', icon: Upload, roles: CLINICAL },
-  { id: 'reports', label: 'Reportes', icon: FileText, roles: ['MEDICO'] },
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3, roles: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'] },
   { id: 'config', label: 'Parámetros', icon: SlidersHorizontal, roles: ['MEDICO', 'ADMIN'] },
-  { id: 'panel', label: 'Mi panel', icon: User, roles: CLINICAL },
   { id: 'panel', label: 'Administración', icon: Settings, roles: ['ADMIN'] },
 ];
 

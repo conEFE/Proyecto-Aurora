@@ -17,4 +17,5 @@ def require_roles(*roles: UserRole):
             )
         return user
 
+    checker.allowed_roles = sorted(allowed)  # usado por scripts/gen_docs.py
     return checker

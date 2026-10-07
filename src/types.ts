@@ -247,6 +247,65 @@ export interface CaseImage {
   inference?: InferenceResult | null;
 }
 
+export type Recommendation =
+  | 'CONTROL_RUTINA'
+  | 'CONTROL_6_MESES'
+  | 'ESTUDIO_COMPLEMENTARIO'
+  | 'BIOPSIA'
+  | 'DERIVACION';
+
+export const RECOMMENDATION_LABELS: Record<Recommendation, string> = {
+  CONTROL_RUTINA: 'Control de rutina',
+  CONTROL_6_MESES: 'Control en 6 meses',
+  ESTUDIO_COMPLEMENTARIO: 'Estudio complementario',
+  BIOPSIA: 'Biopsia',
+  DERIVACION: 'Derivación a especialista',
+};
+
+export interface ReviewInput {
+  birads_final: number;
+  findings: string;
+  recommendation: Recommendation;
+}
+
+export interface ClinicalReview extends ReviewInput {
+  id: number;
+  case_id: number;
+  medico_id: number;
+  created_at: string | null;
+}
+
+export type DicomMetadata = Record<string, string | number | boolean | string[] | null>;
+
+export interface ReportRecord {
+  id: number;
+  case_id: number;
+  generated_by: number;
+  generated_at: string | null;
+  dicom_metadata: DicomMetadata;
+  content_hash: string;
+}
+
+export interface DashboardMetrics {
+  date_from: string | null;
+  date_to: string | null;
+  total_cases: number;
+  cases_by_status: Record<CaseStatus, number>;
+  cases_by_level: Record<TriageLevel, number>;
+  avg_creation_to_triage_seconds: number | null;
+  kpi_creation_to_triage_target_seconds: number;
+  avg_triage_to_review_hours_by_level: Record<TriageLevel, number | null>;
+  alta_pending_over_hours: number;
+  alta_pending_threshold_hours: number;
+  api_p95_ms: number | null;
+  api_requests: number;
+  kpi_api_p95_target_ms: number;
+  override_ratio: number | null;
+  triage_total: number;
+  triage_overrides: number;
+  cases_per_week: Array<{ week_start: string; cases: number }>;
+}
+
 export interface AdminStats {
   total_users: number;
   active_users: number;

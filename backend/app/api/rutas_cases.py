@@ -48,6 +48,7 @@ def get_case(
     actor: User = Depends(clinical_staff),
     db: Session = Depends(get_db),
 ):
+    """Detalle del caso (registra VIEW)."""
     case = case_service.get_case(db, case_id, actor, client_ip(request))
     return case_service.to_out(db, case)
 

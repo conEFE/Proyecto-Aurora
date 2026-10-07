@@ -1,306 +1,224 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { apiClient } from '../services/api';
+import type { ClinicalCase, ClinicalReview, DicomMetadata, ReportRecord, TriageResult } from '../types';
+import { RECOMMENDATION_LABELS } from '../types';
 
-interface CaseData {
-  id: number;
-  code: string;
-  created_at: string;
-  medico_id: number;
-  patient_id?: number;
-  patient?: {
-    id: number;
-    rut: string;
-    first_name?: string;
-    last_name?: string;
-    birth_date?: string;
-    sex?: string;
-  };
+type RGB = [number, number, number];
+const PRIMARY: RGB = [124, 58, 237];
+const AMBER: RGB = [217, 119, 6];
+const LEVEL_COLOR: Record<string, RGB> = { ALTA: [220, 38, 38], MEDIA: [217, 119, 6], BAJA: [22, 163, 74] };
+
+const FACTOR_LABELS: Record<string, string> = {
+  ai: 'IA (máx. confianza con hallazgo)',
+  age: 'Edad',
+  family_history: 'Antecedente familiar 1er grado',
+  previous_cancer: 'Cáncer de mama previo',
+  wait_time: 'Tiempo de espera',
+};
+
+export async function sha256Hex(data: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
-interface ImageData {
-  id: number;
-  filename: string;
-  uploaded_at: string;
+function ageFrom(birthDate: string): number {
+  const b = new Date(birthDate);
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  if (now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) age--;
+  return age;
 }
 
-interface InferenceResult {
-  image_id: number;
-  detected: boolean;
-  confidence: number;
-  detections: Array<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    confidence: number;
-    class_name: string;
-  }>;
-  processing_time_ms: number;
-  model_version: string;
-  message: string;
+function lastY(doc: jsPDF): number {
+  return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
 }
 
-export async function generateCaseReport(
-  caseData: CaseData,
-  images: ImageData[],
-  result: InferenceResult | null
-) {
+interface ReportInput {
+  caseData: ClinicalCase;
+  triage: TriageResult | null;
+  review: ClinicalReview;
+  metadata: DicomMetadata;
+  medicoName: string;
+}
+
+/** Construye el PDF. Identifica el caso solo por su código anónimo (sin nombre ni RUT). */
+export function buildCaseReport({ caseData, triage, review, metadata, medicoName }: ReportInput): jsPDF {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
-  let yPosition = margin;
+  const margin = 18;
+  const generatedAt = new Date();
+  const simulated = metadata.AIIsSimulated === true;
 
-  // Colores
-  const primaryColor: [number, number, number] = [231, 30, 99]; // Pink
-  const successColor: [number, number, number] = [34, 197, 94]; // Green
-  const warningColor: [number, number, number] = [249, 115, 22]; // Orange
+  // Metadatos tipo DICOM (SC-02) incrustados en las propiedades del documento
+  doc.setProperties({
+    title: `Reporte ${caseData.code}`,
+    subject: 'Proyecto Aurora - apoyo a la priorización',
+    author: medicoName,
+    keywords: JSON.stringify(metadata),
+    creator: 'Proyecto Aurora',
+  });
 
-  // Header
-  doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, pageWidth, 40, 'F');
-  
+  doc.setFillColor(...PRIMARY);
+  doc.rect(0, 0, pageWidth, 32, 'F');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('Reporte de Análisis Médico', pageWidth / 2, 25, { align: 'center' });
-  
-  doc.setFontSize(10);
+  doc.setFontSize(16);
+  doc.text('Reporte de caso — Proyecto Aurora', margin, 15);
   doc.setFont('helvetica', 'normal');
-  doc.text('Sistema de Detección de Cáncer de Mama - Modelo YOLO', pageWidth / 2, 35, { align: 'center' });
-  
-  yPosition = 50;
+  doc.setFontSize(9);
+  doc.text('Plataforma de apoyo a la detección temprana y priorización. No reemplaza el criterio médico.', margin, 23);
   doc.setTextColor(0, 0, 0);
 
-  // Información del Caso
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Información del Caso', margin, yPosition);
-  yPosition += 10;
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  
-  const caseInfo = [
-    ['ID del Caso', `#${caseData.id}`],
-    ['Código', caseData.code],
-    ['Fecha de Creación', new Date(caseData.created_at).toLocaleDateString('es-CL')],
-  ];
-
-  autoTable(doc, {
-    startY: yPosition,
-    head: [['Campo', 'Valor']],
-    body: caseInfo,
-    theme: 'striped',
-    headStyles: { fillColor: primaryColor, textColor: [255, 255, 255] },
-    margin: { left: margin, right: margin },
-    styles: { fontSize: 9 },
-  });
-
-  yPosition = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
-
-  // Información del Paciente (si existe)
-  if (caseData.patient) {
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Información del Paciente', margin, yPosition);
-    yPosition += 10;
-
-    const patientInfo = [
-      ['RUT', caseData.patient.rut],
-      ['Nombre', `${caseData.patient.first_name || 'N/A'} ${caseData.patient.last_name || ''}`.trim() || 'N/A'],
-      ['Fecha de Nacimiento', caseData.patient.birth_date ? new Date(caseData.patient.birth_date).toLocaleDateString('es-CL') : 'N/A'],
-      ['Sexo', caseData.patient.sex === 'M' ? 'Masculino' : caseData.patient.sex === 'F' ? 'Femenino' : 'N/A'],
-    ];
-
-    autoTable(doc, {
-      startY: yPosition,
-      head: [['Campo', 'Valor']],
-      body: patientInfo,
-      theme: 'striped',
-      headStyles: { fillColor: primaryColor, textColor: [255, 255, 255] },
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 9 },
-    });
-
-    yPosition = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
-  }
-
-  // Resultados del Análisis
-  if (result) {
-    // Nueva página si es necesario
-    if (yPosition > pageHeight - 80) {
-      doc.addPage();
-      yPosition = margin;
-    }
-
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Resultados del Análisis', margin, yPosition);
-    yPosition += 10;
-
-    const statusColor = result.detected ? warningColor : successColor;
-    const statusText = result.detected ? 'POSITIVO - Lesión Detectada' : 'NEGATIVO - Sin Lesiones';
-
-    doc.setFillColor(...statusColor);
-    doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 15, 3, 3, 'F');
-    
+  let y = 40;
+  if (simulated) {
+    doc.setFillColor(...AMBER);
+    doc.roundedRect(margin, y, pageWidth - 2 * margin, 12, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(statusText, pageWidth / 2, yPosition + 10, { align: 'center' });
-    
-    yPosition += 20;
-    doc.setTextColor(0, 0, 0);
-
-    const resultInfo = [
-      ['Nivel de Confianza', `${result.confidence.toFixed(2)}%`],
-      ['Modelo Utilizado', result.model_version],
-      ['Tiempo de Procesamiento', `${(result.processing_time_ms / 1000).toFixed(2)} segundos`],
-      ['Mensaje', result.message],
-    ];
-
-    autoTable(doc, {
-      startY: yPosition,
-      head: [['Campo', 'Valor']],
-      body: resultInfo,
-      theme: 'striped',
-      headStyles: { fillColor: primaryColor, textColor: [255, 255, 255] },
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 9 },
+    doc.setFontSize(9);
+    doc.text('IA SIMULADA: los resultados de análisis de imagen son ficticios y no tienen valor clínico.', pageWidth / 2, y + 7.5, {
+      align: 'center',
     });
+    doc.setTextColor(0, 0, 0);
+    y += 18;
+  }
 
-    yPosition = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
+  const section = (title: string) => {
+    if (y > pageHeight - 50) {
+      doc.addPage();
+      y = margin;
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text(title, margin, y);
+    y += 4;
+  };
+  const table = (head: string[], body: Array<Array<string>>) => {
+    autoTable(doc, {
+      startY: y,
+      head: [head],
+      body,
+      theme: 'striped',
+      headStyles: { fillColor: PRIMARY, textColor: [255, 255, 255] },
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 8.5 },
+    });
+    y = lastY(doc) + 10;
+  };
 
-    // Detecciones (si existen)
-    if (result.detections && result.detections.length > 0) {
-      if (yPosition > pageHeight - 100) {
-        doc.addPage();
-        yPosition = margin;
-      }
+  section('Caso');
+  table(
+    ['Campo', 'Valor'],
+    [
+      ['Código anónimo', caseData.code],
+      ['Edad de la paciente', caseData.patient ? `${ageFrom(caseData.patient.birth_date)} años` : '—'],
+      ['Fecha de creación', new Date(caseData.created_at).toLocaleString('es-CL')],
+      ['Fecha de cierre', caseData.closed_at ? new Date(caseData.closed_at).toLocaleString('es-CL') : '—'],
+      ['Síntomas', [
+        caseData.palpable_mass && 'masa palpable',
+        caseData.nipple_discharge && 'secreción por el pezón',
+        caseData.skin_or_nipple_changes && 'cambios en piel/pezón',
+      ].filter(Boolean).join(', ') || 'ninguno'],
+      ['BI-RADS informado', caseData.birads_reported === null ? 'sin informe' : String(caseData.birads_reported)],
+    ]
+  );
 
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Detecciones Encontradas', margin, yPosition);
-      yPosition += 10;
-
-      const detectionsData = result.detections.map((det, idx) => [
-        `Detección ${idx + 1}`,
-        `${(det.confidence * 100).toFixed(1)}%`,
-        `${(det.width * 100).toFixed(1)}% x ${(det.height * 100).toFixed(1)}%`,
-        det.class_name,
-      ]);
-
-      autoTable(doc, {
-        startY: yPosition,
-        head: [['Detección', 'Confianza', 'Tamaño', 'Tipo']],
-        body: detectionsData,
-        theme: 'striped',
-        headStyles: { fillColor: primaryColor, textColor: [255, 255, 255] },
-        margin: { left: margin, right: margin },
-        styles: { fontSize: 8 },
+  if (triage) {
+    section('Triage');
+    const color = LEVEL_COLOR[triage.final_level];
+    doc.setFillColor(...color);
+    doc.roundedRect(margin, y, 60, 9, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.text(`Nivel ${triage.final_level}`, margin + 30, y + 6, { align: 'center' });
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    doc.text(
+      `Puntaje ${triage.score.toFixed(2)} / 100 · configuración v${triage.config_version}` +
+        (triage.escalation_rule ? ` · regla ${triage.escalation_rule}` : ''),
+      margin + 65,
+      y + 6
+    );
+    y += 14;
+    if (triage.override_by !== null) {
+      doc.setFontSize(8.5);
+      doc.text(`Nivel ajustado por médico (calculado: ${triage.computed_level}). Motivo: ${triage.override_reason ?? ''}`, margin, y, {
+        maxWidth: pageWidth - 2 * margin,
       });
-
-      yPosition = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
+      y += 8;
+    }
+    if (triage.breakdown) {
+      const b = triage.breakdown as unknown as Record<string, { value: number | boolean; weight: number; points: number }>;
+      table(
+        ['Factor', 'Valor', 'Peso', 'Aporte'],
+        Object.keys(FACTOR_LABELS).map((k) => [
+          FACTOR_LABELS[k] + (k === 'ai' && simulated ? ' [IA SIMULADA]' : ''),
+          typeof b[k].value === 'boolean' ? (b[k].value ? 'Sí' : 'No') : String(b[k].value),
+          String(b[k].weight),
+          b[k].points.toFixed(2),
+        ])
+      );
     }
   }
 
-  // Imágenes (si existen)
-  if (images && images.length > 0) {
-    for (let i = 0; i < images.length; i++) {
-      const image = images[i];
-      
-      // Nueva página para cada imagen
-      if (i > 0 || yPosition > pageHeight - 120) {
-        doc.addPage();
-        yPosition = margin;
-      }
+  section('Revisión médica');
+  table(
+    ['Campo', 'Valor'],
+    [
+      ['BI-RADS final', String(review.birads_final)],
+      ['Hallazgos', review.findings],
+      ['Recomendación', RECOMMENDATION_LABELS[review.recommendation]],
+      ['Médico', medicoName],
+      ['Fecha', review.created_at ? new Date(review.created_at).toLocaleString('es-CL') : '—'],
+    ]
+  );
 
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Imagen ${i + 1}: ${image.filename}`, margin, yPosition);
-      yPosition += 10;
+  section('Metadatos tipo DICOM (SC-02)');
+  table(
+    ['Atributo', 'Valor'],
+    Object.entries(metadata).map(([k, v]) => [k, Array.isArray(v) ? v.join(', ') : v === null ? '—' : String(v)])
+  );
 
-      try {
-        // Obtener URL de la imagen
-        const blob = await apiClient.fetchImageBlob(caseData.id, image.id);
-        if (!blob) throw new Error('Imagen no disponible');
-        const imageUrl = URL.createObjectURL(blob);
-        
-        // Cargar imagen
-        const img = await loadImageFromUrl(imageUrl);
-        
-        // Calcular dimensiones para que quepa en la página
-        const maxWidth = pageWidth - 2 * margin;
-        const maxHeight = pageHeight - yPosition - 30;
-        let imgWidth = img.width;
-        let imgHeight = img.height;
-        
-        const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
-        imgWidth = imgWidth * ratio;
-        imgHeight = imgHeight * ratio;
-        
-        const xPosition = (pageWidth - imgWidth) / 2;
-        
-        doc.addImage(img, 'JPEG', xPosition, yPosition, imgWidth, imgHeight);
-        yPosition += imgHeight + 10;
-        
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(128, 128, 128);
-        doc.text(
-          `Subida el ${new Date(image.uploaded_at).toLocaleDateString('es-CL')} a las ${new Date(image.uploaded_at).toLocaleTimeString('es-CL')}`,
-          pageWidth / 2,
-          yPosition,
-          { align: 'center' }
-        );
-        doc.setTextColor(0, 0, 0);
-        yPosition += 10;
-      } catch {
-        doc.setFontSize(10);
-        doc.setTextColor(255, 0, 0);
-        doc.text('Error al cargar la imagen', margin, yPosition);
-        doc.setTextColor(0, 0, 0);
-        yPosition += 10;
-      }
-    }
-  }
-
-  // Footer en cada página
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(128, 128, 128);
+    doc.setFontSize(7.5);
+    doc.setTextColor(120, 120, 120);
     doc.text(
-      `Página ${i} de ${totalPages}`,
+      `${caseData.code} · Generado el ${generatedAt.toLocaleString('es-CL')} por ${medicoName} · Página ${i} de ${pages}`,
       pageWidth / 2,
-      pageHeight - 10,
-      { align: 'center' }
-    );
-    doc.text(
-      `Generado el ${new Date().toLocaleDateString('es-CL')} a las ${new Date().toLocaleTimeString('es-CL')}`,
-      pageWidth / 2,
-      pageHeight - 5,
+      pageHeight - 8,
       { align: 'center' }
     );
   }
-
-  // Generar nombre del archivo
-  const fileName = `Reporte_Caso_${caseData.id}_${new Date().toISOString().split('T')[0]}.pdf`;
-  
-  // Guardar PDF
-  doc.save(fileName);
+  return doc;
 }
 
-// Función auxiliar para cargar imagen desde URL
-function loadImageFromUrl(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = url;
-  });
+/** Genera el PDF, calcula su SHA-256, lo registra en el backend y descarga exactamente esos bytes. */
+export async function generateAndRegisterReport(
+  caseData: ClinicalCase,
+  review: ClinicalReview,
+  medicoName: string
+): Promise<{ report?: ReportRecord; error?: string }> {
+  const meta = await apiClient.getReportMetadata(caseData.id);
+  if (!meta.data) return { error: meta.error || 'No se pudieron obtener los metadatos del reporte' };
+  const triage = await apiClient.getTriage(caseData.id);
+
+  const doc = buildCaseReport({ caseData, triage: triage.data ?? null, review, metadata: meta.data, medicoName });
+  const bytes = doc.output('arraybuffer');
+  const hash = await sha256Hex(bytes);
+  const registered = await apiClient.registerReport(caseData.id, hash);
+  if (!registered.data) return { error: registered.error || 'No se pudo registrar el reporte' };
+
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Reporte_${caseData.code}_${new Date().toISOString().slice(0, 10)}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+  return { report: registered.data };
 }

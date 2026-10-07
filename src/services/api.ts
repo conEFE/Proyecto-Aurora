@@ -1,5 +1,10 @@
 import type {
   AdminStats,
+  ClinicalReview,
+  DashboardMetrics,
+  DicomMetadata,
+  ReportRecord,
+  ReviewInput,
   AppNotification,
   QueueItem,
   TriageConfig,
@@ -285,26 +290,41 @@ class ApiClient {
     return this.request<AppNotification>(`/notifications/${id}/read`, { method: 'PATCH' });
   }
 
-  async getStatistics() {
-    return this.request<{
-      total_cases: number;
-      positive_cases: number;
-      negative_cases: number;
-      average_confidence: number;
-      average_processing_time_ms: number;
-      total_detections: number;
-    }>('/reports/statistics');
+  // --- Revisión médica y reportes -----------------------------------------
+  async takeCase(caseId: number) {
+    return this.request<ClinicalCase>(`/cases/${caseId}/take`, { method: 'POST' });
   }
 
-  async getMonthlyData(year?: number) {
+  async createReview(caseId: number, data: ReviewInput) {
+    return this.request<ClinicalReview>(`/cases/${caseId}/review`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async getReview(caseId: number) {
+    return this.request<ClinicalReview>(`/cases/${caseId}/review`);
+  }
+
+  async getReportMetadata(caseId: number) {
+    return this.request<DicomMetadata>(`/cases/${caseId}/reports/metadata`);
+  }
+
+  async registerReport(caseId: number, contentHash: string) {
+    return this.request<ReportRecord>(`/cases/${caseId}/reports`, {
+      method: 'POST',
+      body: JSON.stringify({ content_hash: contentHash }),
+    });
+  }
+
+  async listReports(caseId: number) {
+    return this.request<ReportRecord[]>(`/cases/${caseId}/reports`);
+  }
+
+  // --- Dashboard -------------------------------------------------------------
+  async getDashboard(filters: { from?: string; to?: string; alta_pending_hours?: number } = {}) {
     const params = new URLSearchParams();
-    if (year) params.append('year', year.toString());
-    return this.request<Array<{
-      month: string;
-      cases: number;
-      positive: number;
-      negative: number;
-    }>>(`/reports/monthly?${params.toString()}`);
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== '') params.append(k, String(v));
+    });
+    return this.request<DashboardMetrics>(`/dashboard/metrics?${params.toString()}`);
   }
 
   // --- Administración (solo ADMIN) ---------------------------------------
@@ -333,35 +353,6 @@ class ApiClient {
       if (v !== undefined && v !== '') params.append(k, String(v));
     });
     return this.request<Page<AuditEntry>>(`/admin/audit?${params.toString()}`);
-  }
-
-  // Para el panel de usuario
-  async getUserInfo() {
-    return this.request<{
-      id: number;
-      rut: string;
-      email: string;
-      role: string;
-    }>('/user/info');
-  }
-
-  async getUserPatients() {
-    return this.request<Array<{
-      id: number;
-      rut: string;
-      first_name?: string;
-      last_name?: string;
-    }>>('/user/patients');
-  }
-
-  async getSupportTickets() {
-    return this.request<Array<{
-      id: number;
-      title: string;
-      description: string;
-      status: string;
-      created_at: string;
-    }>>('/user/tickets');
   }
 }
 
