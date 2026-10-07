@@ -1,6 +1,10 @@
 import type {
   AdminStats,
   AuditEntry,
+  CaseImage,
+  ExamType,
+  InferenceResult,
+  Laterality,
   CaseStatus,
   CaseSymptoms,
   ClinicalCase,
@@ -16,7 +20,7 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   data?: T;
   error?: string;
   status: number;
@@ -165,79 +169,67 @@ class ApiClient {
     return this.request<ClinicalCase>(`/cases/${caseId}`, { method: 'PATCH', body: JSON.stringify(data) });
   }
 
-  async uploadImage(caseId: number, file: File, tipoImagen?: string) {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (tipoImagen) {
-      formData.append('tipo_imagen', tipoImagen);
-    }
+  // --- Imágenes ------------------------------------------------------------
+  /** Sube una imagen con progreso real (XMLHttpRequest expone upload.onprogress; fetch no). */
+  uploadImage(
+    caseId: number,
+    file: Blob,
+    filename: string,
+    meta: { exam_type: ExamType; laterality?: Laterality | null },
+    onProgress?: (percent: number) => void
+  ): Promise<ApiResponse<CaseImage>> {
+    const form = new FormData();
+    form.append('file', file, filename);
+    form.append('exam_type', meta.exam_type);
+    if (meta.laterality) form.append('laterality', meta.laterality);
 
-    try {
-      const response = await fetch(`${this.baseURL}/cases/${caseId}/images`, {
-        method: 'POST',
-        headers: this.authHeaders(),
-        body: formData,
-      });
-      const data: unknown = await response.json().catch(() => null);
-      if (!response.ok) {
-        if (response.status === 401) this.handleUnauthorized();
-        return { error: ApiClient.errorMessage(data, response.status), status: response.status };
-      }
-      return { data: data as { id: number }, status: response.status };
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Error de red',
-        status: 0,
+    return new Promise((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${this.baseURL}/cases/${caseId}/images`);
+      const headers = this.authHeaders();
+      Object.entries(headers).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
       };
+      xhr.onload = () => {
+        let data: unknown = null;
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch {
+          data = null;
+        }
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({ data: data as CaseImage, status: xhr.status });
+        } else {
+          if (xhr.status === 401) this.handleUnauthorized();
+          resolve({ error: ApiClient.errorMessage(data, xhr.status), status: xhr.status });
+        }
+      };
+      xhr.onerror = () => resolve({ error: 'Error de red al subir la imagen', status: 0 });
+      xhr.send(form);
+    });
+  }
+
+  async listImages(caseId: number) {
+    return this.request<CaseImage[]>(`/cases/${caseId}/images`);
+  }
+
+  async getInference(caseId: number, imageId: number) {
+    return this.request<InferenceResult>(`/cases/${caseId}/images/${imageId}/inference`);
+  }
+
+  /** Descarga la imagen con el header Authorization y devuelve un object URL (no se expone el token en la URL). */
+  async fetchImageBlob(caseId: number, imageId: number): Promise<Blob | null> {
+    try {
+      const response = await fetch(`${this.baseURL}/cases/${caseId}/images/${imageId}/file`, {
+        headers: this.authHeaders(),
+      });
+      if (response.status === 401) this.handleUnauthorized();
+      if (!response.ok) return null;
+      return await response.blob();
+    } catch {
+      return null;
     }
-  }
-
-  async getImageResults(imageId: number) {
-    return this.request<{
-      image_id: number;
-      detected: boolean;
-      confidence: number;
-      detections: Array<{
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        confidence: number;
-        class_name: string;
-      }>;
-      processing_time_ms: number;
-      model_version: string;
-      message: string;
-    }>(`/images/${imageId}/results`, {
-      method: 'POST',
-    });
-  }
-
-  async generateReport(caseId: number) {
-    return this.request(`/cases/${caseId}/reports`, {
-      method: 'POST',
-    });
-  }
-
-  async getCaseImages(caseId: number) {
-    return this.request<Array<{
-      id: number;
-      filename: string;
-      filepath: string;
-      mime_type: string;
-      width?: number;
-      height?: number;
-      size_kb?: number;
-      uploaded_at: string;
-      case_id: number;
-    }>>(`/cases/${caseId}/images`);
-  }
-
-  getImageUrl(caseId: number, imageId: number): string {
-    const token = this.getToken();
-    const url = `${this.baseURL}/cases/${caseId}/images/${imageId}/file`;
-    // Si hay token, agregarlo como query param para autenticación
-    return token ? `${url}?token=${token}` : url;
   }
 
   async getStatistics() {

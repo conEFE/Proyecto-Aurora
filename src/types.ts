@@ -127,6 +127,54 @@ export interface ClinicalCase extends CaseSymptoms {
 
 export type TriageLevel = 'ALTA' | 'MEDIA' | 'BAJA';
 
+export type ExamType = 'MAMOGRAFIA' | 'ECOGRAFIA' | 'OTRO';
+
+export const EXAM_TYPE_LABELS: Record<ExamType, string> = {
+  MAMOGRAFIA: 'Mamografía',
+  ECOGRAFIA: 'Ecografía',
+  OTRO: 'Otro',
+};
+
+export type Laterality = 'L' | 'R';
+
+export interface Detection {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  confidence: number;
+  class_name: string;
+}
+
+export interface InferenceResult {
+  image_id: number;
+  detected: boolean;
+  confidence: number;
+  detections?: Detection[] | null;
+  processing_time_ms: number;
+  model_version: string;
+  is_simulated: boolean;
+  message: string;
+  created_at?: string | null;
+}
+
+export interface CaseImage {
+  id: number;
+  case_id: number;
+  filename: string;
+  mime_type: string;
+  width?: number | null;
+  height?: number | null;
+  size_kb?: number | null;
+  exam_type: ExamType;
+  laterality?: Laterality | null;
+  uploaded_by?: number | null;
+  sha256?: string | null;
+  uploaded_at: string;
+  inference_status: 'PENDIENTE' | 'LISTO';
+  inference?: InferenceResult | null;
+}
+
 export interface AdminStats {
   total_users: number;
   active_users: number;

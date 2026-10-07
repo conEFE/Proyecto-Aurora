@@ -11,7 +11,6 @@ from app.api import (
     rutas_images,
     rutas_patients,
     rutas_reports,
-    rutas_results,
     rutas_user,
 )
 from app.config import settings
@@ -25,7 +24,7 @@ app = FastAPI(title="Proyecto Aurora API", version="1.1.0")
 app.add_middleware(ProcessTimeMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -46,7 +45,6 @@ def health():
 app.include_router(rutas_auth.router, prefix="/auth", tags=["auth"])
 app.include_router(rutas_cases.router, prefix="/cases", tags=["cases"])
 app.include_router(rutas_images.router, prefix="/cases", tags=["images"])
-app.include_router(rutas_results.router, prefix="/images", tags=["results"])
 app.include_router(rutas_reports.router, prefix="/reports", tags=["reports"])
 app.include_router(rutas_patients.router, prefix="/patients", tags=["patients"])
 app.include_router(rutas_admin.router, prefix="/admin", tags=["admin"])

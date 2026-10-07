@@ -56,7 +56,7 @@ function App() {
       <Header currentSection={currentSection} onSectionChange={setCurrentSection} me={me} />
       <main className="flex-grow">
         {currentSection === 'home' && <Home onGetStarted={() => setCurrentSection('cases')} />}
-        {currentSection === 'upload' && <ImageUpload />}
+        {currentSection === 'upload' && <ImageUpload me={me} />}
         {currentSection === 'cases' && <CaseManagement me={me} />}
         {currentSection === 'reports' && <Reports />}
         {currentSection === 'panel' && (me.role === 'ADMIN' ? <AdminPanel /> : <UserPanel />)}

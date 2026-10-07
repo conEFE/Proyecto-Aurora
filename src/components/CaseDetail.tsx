@@ -3,6 +3,7 @@ import { Loader2, Save, User } from 'lucide-react';
 import { apiClient } from '../services/api';
 import type { CaseSymptoms, ClinicalCase, Me } from '../types';
 import { StatusBadge } from './Badges';
+import CaseImages from './CaseImages';
 import SymptomsForm from './SymptomsForm';
 import { cardClass, errorBox, formatDate, formatDateTime, primaryButton } from './ui';
 
@@ -30,7 +31,7 @@ function symptomsOf(c: ClinicalCase): CaseSymptoms {
   };
 }
 
-export default function CaseDetail({ caseId, onChanged }: CaseDetailProps) {
+export default function CaseDetail({ caseId, me, onChanged }: CaseDetailProps) {
   const [data, setData] = useState<ClinicalCase | null>(null);
   const [symptoms, setSymptoms] = useState<CaseSymptoms | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -116,7 +117,11 @@ export default function CaseDetail({ caseId, onChanged }: CaseDetailProps) {
           </button>
         )}
 
-        <p className="text-[10px] text-muted-foreground">Imágenes cargadas: {data.image_count}</p>
+      </div>
+
+      <div className={`${cardClass} p-4`}>
+        <h4 className="text-xs font-semibold text-foreground mb-2">Imágenes ({data.image_count})</h4>
+        <CaseImages caseId={data.id} me={me} />
       </div>
     </div>
   );

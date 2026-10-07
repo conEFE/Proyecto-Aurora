@@ -224,7 +224,9 @@ export async function generateCaseReport(
 
       try {
         // Obtener URL de la imagen
-        const imageUrl = apiClient.getImageUrl(caseData.id, image.id);
+        const blob = await apiClient.fetchImageBlob(caseData.id, image.id);
+        if (!blob) throw new Error('Imagen no disponible');
+        const imageUrl = URL.createObjectURL(blob);
         
         // Cargar imagen
         const img = await loadImageFromUrl(imageUrl);

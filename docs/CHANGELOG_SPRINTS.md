@@ -130,3 +130,50 @@ También se quitaron del repo las imágenes de prueba de `backend/data/images/` 
 - Caso sin consentimiento → 409; paciente inexistente → 404; BI-RADS fuera de rango → 422; caso cerrado no
   editable → 409; ADMIN sin acceso a casos; auditoría de casos.
 - Migración con datos de la v1.0 (caso sin paciente, código libre, paciente sin nombre) probada.
+
+---
+
+## Sprint 4 — Exámenes e imágenes
+
+### Backend
+- Migración `d4b8f6e3a204` (reversible): `images.exam_type` (enum MAMOGRAFIA/ECOGRAFIA/OTRO, por defecto
+  MAMOGRAFIA), `laterality` (CHECK `L`/`R`), `uploaded_by`, `sha256`; `inference_results.is_simulated` NOT NULL
+  (los resultados existentes quedan en `true`, eran aleatorios) y `model_version` NOT NULL.
+- `StorageBackend` (`save`, `load`, `delete`) con la implementación `LocalEncryptedStorage` (Fernet). Se conserva
+  la derivación de clave de la v1.0 para poder leer archivos ya cifrados. **Cambio:** si falta `ENCRYPTION_KEY`
+  la carga falla con un error claro; antes se generaba una clave aleatoria en cada arranque y las imágenes
+  quedaban ilegibles al reiniciar. El nombre del archivo en disco es aleatorio (el nombre original puede traer
+  datos del paciente) y se protege contra path traversal.
+- SHA-256 del archivo original. Límite `MAX_UPLOAD_MB` (60 por defecto) → 413. Solo PNG y JPEG → 415.
+  Mínimo 100×100 px → 422. Caso cerrado → 409.
+- `InferenceProvider.analyze(bytes) -> InferenceOutput` con:
+  - `SimulatedProvider`: sin `time.sleep`, determinístico por SHA-256, `model_version="simulado-v1"`,
+    `is_simulated=True` y mensaje con prefijo `[IA SIMULADA]`.
+  - `HttpYoloProvider`: stub que hace POST a `INFERENCE_URL/predict` si `INFERENCE_PROVIDER=http`.
+- La inferencia se ejecuta automáticamente al subir (BackgroundTasks, con su propia sesión de BD) y deja el hook
+  `on_inference_completed` para el triage (S5). Subir una imagen a un caso PRIORIZADO lo devuelve a ABIERTO.
+- `GET /cases/{id}/images/{image_id}/file` y `/inference`: solo MEDICO, registran VIEW. `GET /cases/{id}/images`
+  devuelve metadatos al personal clínico; el resultado de IA solo se incluye para MEDICO.
+- Se eliminó `rutas_results.py` (`POST /images/{id}/results`, que generaba resultados con `time.sleep` aleatorio):
+  la inferencia ahora es automática.
+- `ALLOWED_ORIGINS` pasa a leerse como texto separado por comas (el tipo `str | list[str]` fallaba al venir de
+  una variable de entorno).
+
+### Frontend
+- ImageUpload: selector de caso, tipo de examen y lateralidad; barra de progreso real (XMLHttpRequest);
+  resultados con badge **«IA SIMULADA»** y aviso de que no tienen valor clínico.
+- Las imágenes se piden con el header `Authorization` y se muestran como object URL. Antes se armaba
+  `?token=...` en la URL (exponía el token y el backend no lo aceptaba, así que las imágenes no cargaban).
+- El detalle de caso muestra imágenes, cajas de detección y resultado para MEDICO; ADMINISTRATIVO solo ve
+  metadatos.
+- Compresión opcional en el cliente detrás de `VITE_CLIENT_COMPRESSION` (desactivada por defecto: re-codificar a
+  JPEG pierde información).
+- Home y Login sin afirmaciones no respaldadas ("92% de precisión", "1.200+ casos", "HIPAA", "modelo entrenado
+  con miles de imágenes"): la IA es simulada y así se indica.
+
+### Pruebas (DoD)
+- Subida PNG/JPEG con metadatos y SHA-256; límite de tamaño (413), formatos no soportados (415), imagen
+  diminuta y lateralidad inválida (422), caso cerrado (409), caso inexistente (404).
+- Archivo cifrado en disco: distinto del original, no descifrable con otra clave, recuperable con la correcta.
+- ADMINISTRATIVO sube pero recibe 403 al ver el archivo o la inferencia; ADMIN sin acceso.
+- Inferencia automática marcada `is_simulated=true`; proveedor simulado determinístico y sin esperas.
