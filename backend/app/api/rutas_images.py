@@ -1,143 +1,72 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
-from sqlalchemy.orm import Session
-from app.deps import get_db
-from app.auth.bearer import get_current_user
-from app.db.models.user import User
-from app.db.models.case import Case
-from app.db.models.image import Image
-from app.storage.fs import save_image_file
-from app.utils.quality import validate_image_quality
-from pydantic import BaseModel
-from datetime import datetime
-from typing import Optional, List
-import os
+from typing import Literal
 
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Request, UploadFile
 from fastapi.responses import Response
-from app.storage.fs import load_image_file
+from sqlalchemy.orm import Session
+
+from app.auth.rbac import require_roles
+from app.db.models.image import ExamType
+from app.db.models.user import User, UserRole
+from app.deps import get_db
+from app.schemas.images import ImageOut, InferenceOut
+from app.services import image_service
+from app.services.audit_service import client_ip
 
 router = APIRouter()
+clinical_staff = require_roles(UserRole.ADMINISTRATIVO, UserRole.MEDICO)
+medico_only = require_roles(UserRole.MEDICO)
 
-class ImageResponse(BaseModel):
-    id: int
-    filename: str
-    filepath: str
-    mime_type: str
-    width: Optional[int] = None
-    height: Optional[int] = None
-    size_kb: Optional[int] = None
-    uploaded_at: datetime
-    case_id: int
 
-    class Config:
-        from_attributes = True
-
-@router.post("/{case_id}/images", response_model=ImageResponse)
+@router.post("/{case_id}/images", response_model=ImageOut, status_code=201)
 async def upload_image(
     case_id: int,
+    request: Request,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    tipo_imagen: Optional[str] = None,
+    exam_type: ExamType = Form(ExamType.MAMOGRAFIA),
+    laterality: Literal["L", "R"] | None = Form(None),
+    actor: User = Depends(clinical_staff),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
 ):
-    """Sube una imagen médica para un caso"""
-    # Verificar que el caso exista
-    caso = db.query(Case).filter(Case.id == case_id).first()
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
-    
-    # Verificar permisos
-    if caso.medico_id != current_user.id and current_user.role.value != "ADMIN":
-        raise HTTPException(status_code=403, detail="No tienes acceso a este caso")
-    
-    # Leer contenido del archivo
-    file_content = await file.read()
-    
-    # Validar calidad
-    quality_ok, metadata = validate_image_quality(file_content)
-    
-    if not quality_ok:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Image quality validation failed: {metadata.get('error', 'Invalid image')}"
-        )
-    
-    # Guardar archivo en filesystem
-    try:
-        relative_path = save_image_file(str(case_id), file.filename or "image", file_content)
-        full_path = os.path.join(os.getcwd(), "data", "images", relative_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save image: {str(e)}")
-    
-    # Guardar en BD
-    nueva_imagen = Image(
-        case_id=case_id,
-        filename=file.filename or "image",
-        filepath=relative_path,
-        mime_type=metadata.get("mime", "unknown"),
-        width=metadata.get("width"),
-        height=metadata.get("height"),
-        size_kb=metadata.get("size_bytes", 0) // 1024
+    """Sube una imagen (PNG o JPEG, máx. MAX_UPLOAD_MB). La inferencia corre en segundo plano."""
+    content = await file.read()
+    image = image_service.upload_image(
+        db, case_id, file.filename or "imagen", content, exam_type, laterality, actor, client_ip(request)
     )
-    
-    db.add(nueva_imagen)
-    db.commit()
-    db.refresh(nueva_imagen)
-    
-    return nueva_imagen
+    background_tasks.add_task(image_service.run_inference_task, image.id)
+    return image_service.to_out(image, actor)
 
-@router.get("/{case_id}/images", response_model=List[ImageResponse])
-def get_case_images(
+
+@router.get("/{case_id}/images", response_model=list[ImageOut])
+def list_images(
     case_id: int,
+    actor: User = Depends(clinical_staff),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
 ):
-    """Obtiene todas las imágenes de un caso"""
-    # Verificar que el caso exista
-    caso = db.query(Case).filter(Case.id == case_id).first()
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
-    
-    # Verificar permisos
-    if caso.medico_id != current_user.id and current_user.role.value != "ADMIN":
-        raise HTTPException(status_code=403, detail="No tienes acceso a este caso")
-    
-    # Obtener imágenes del caso
-    imagenes = db.query(Image).filter(Image.case_id == case_id).order_by(Image.uploaded_at.desc()).all()
-    
-    return imagenes
+    """Metadatos de las imágenes del caso. El resultado de IA solo se incluye para el rol MEDICO."""
+    return image_service.list_images(db, case_id, actor)
+
 
 @router.get("/{case_id}/images/{image_id}/file")
-async def get_image_file(
+def get_image_file(
     case_id: int,
     image_id: int,
+    request: Request,
+    actor: User = Depends(medico_only),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
 ):
-    """Sirve una imagen desencriptada"""
-    # Verificar que el caso exista
-    caso = db.query(Case).filter(Case.id == case_id).first()
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
-    
-    # Verificar permisos
-    if caso.medico_id != current_user.id and current_user.role.value != "ADMIN":
-        raise HTTPException(status_code=403, detail="No tienes acceso a este caso")
-    
-    # Obtener imagen de BD
-    imagen = db.query(Image).filter(Image.id == image_id, Image.case_id == case_id).first()
-    if not imagen:
-        raise HTTPException(status_code=404, detail="Imagen no encontrada")
-    
-    try:
-        # Cargar y desencriptar imagen
-        image_content = load_image_file(imagen.filepath)
-        
-        # Devolver imagen con el tipo MIME correcto
-        return Response(
-            content=image_content,
-            media_type=imagen.mime_type or "image/jpeg"
-        )
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Archivo de imagen no encontrado")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al cargar imagen: {str(e)}")
+    """Devuelve la imagen descifrada (solo MEDICO; queda registrado como VIEW)."""
+    content, mime = image_service.get_image_file(db, case_id, image_id, actor, client_ip(request))
+    return Response(content=content, media_type=mime, headers={"Cache-Control": "no-store"})
+
+
+@router.get("/{case_id}/images/{image_id}/inference", response_model=InferenceOut)
+def get_inference(
+    case_id: int,
+    image_id: int,
+    request: Request,
+    actor: User = Depends(medico_only),
+    db: Session = Depends(get_db),
+):
+    """Resultado de la inferencia de una imagen (solo MEDICO)."""
+    return image_service.get_inference(db, case_id, image_id, actor, client_ip(request))

@@ -1,41 +1,37 @@
-from PIL import Image
-import io
-from typing import Tuple, Dict, Any
+"""Validación básica de imágenes subidas (formato y dimensiones mínimas)."""
 
-def validate_image_quality(file_content: bytes) -> Tuple[bool, Dict[str, Any]]:
-    """Valida la calidad básica de una imagen.
-    
-    Args:
-        file_content: Contenido binario de la imagen
-        
-    Returns:
-        Tuple[bool, dict]: (quality_ok, metadata)
-            - quality_ok: True si pasa validaciones básicas
-            - metadata: dict con width, height, size_bytes, mime, error
-    """
+import io
+from dataclasses import dataclass
+
+from PIL import Image, UnidentifiedImageError
+
+ALLOWED_FORMATS = {"PNG": "image/png", "JPEG": "image/jpeg"}
+MIN_SIDE_PX = 100
+
+
+@dataclass
+class ImageInfo:
+    width: int
+    height: int
+    mime_type: str
+
+
+class ImageValidationError(ValueError):
+    def __init__(self, message: str, status_code: int = 422):
+        super().__init__(message)
+        self.status_code = status_code
+
+
+def inspect_image(content: bytes) -> ImageInfo:
     try:
-        img = Image.open(io.BytesIO(file_content))
-        width, height = img.size
-        size_bytes = len(file_content)
-        
-        # Validaciones básicas
-        quality_ok = (
-            size_bytes < 10 * 1024 * 1024 and  # < 10MB
-            width >= 100 and height >= 100      # dimensiones mínimas razonables
-        )
-        
-        return quality_ok, {
-            "width": width,
-            "height": height,
-            "size_bytes": size_bytes,
-            "mime": img.format or "unknown",
-            "error": None
-        }
-    except Exception as e:
-        return False, {
-            "width": None,
-            "height": None,
-            "size_bytes": len(file_content),
-            "mime": None,
-            "error": str(e)
-        }
+        with Image.open(io.BytesIO(content)) as img:
+            fmt = img.format
+            width, height = img.size
+            img.verify()
+    except (UnidentifiedImageError, OSError, SyntaxError) as exc:
+        raise ImageValidationError("El archivo no es una imagen válida", 415) from exc
+    if fmt not in ALLOWED_FORMATS:
+        raise ImageValidationError("Formato no soportado: solo se aceptan PNG y JPEG", 415)
+    if width < MIN_SIDE_PX or height < MIN_SIDE_PX:
+        raise ImageValidationError(f"La imagen debe medir al menos {MIN_SIDE_PX}×{MIN_SIDE_PX} píxeles")
+    return ImageInfo(width=width, height=height, mime_type=ALLOWED_FORMATS[fmt])

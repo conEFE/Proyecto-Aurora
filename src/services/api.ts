@@ -1,6 +1,36 @@
+import type {
+  AdminStats,
+  ClinicalReview,
+  DashboardMetrics,
+  DicomMetadata,
+  ReportRecord,
+  ReviewInput,
+  AppNotification,
+  QueueItem,
+  TriageConfig,
+  TriageParams,
+  TriageResult,
+  AuditEntry,
+  CaseImage,
+  ExamType,
+  InferenceResult,
+  Laterality,
+  CaseStatus,
+  CaseSymptoms,
+  ClinicalCase,
+  TriageLevel,
+  Me,
+  Page,
+  Patient,
+  PatientInput,
+  UserAccount,
+  UserCreateInput,
+  UserUpdateInput,
+} from '../types';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   data?: T;
   error?: string;
   status: number;
@@ -25,321 +55,304 @@ class ApiClient {
     }
   }
 
+  /** Ante un 401 con sesión activa: cerrar sesión y volver al login. */
+  private handleUnauthorized() {
+    if (this.getToken()) {
+      this.setToken(null);
+      window.location.reload();
+    }
+  }
+
+  private authHeaders(): Record<string, string> {
+    const token = this.getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  private static errorMessage(data: unknown, status: number): string {
+    if (data && typeof data === 'object' && 'detail' in data) {
+      const detail = (data as { detail: unknown }).detail;
+      if (typeof detail === 'string') return detail;
+      if (Array.isArray(detail) && detail.length > 0) {
+        const first = detail[0] as { msg?: string };
+        return first.msg ? `Datos inválidos: ${first.msg}` : 'Datos inválidos';
+      }
+    }
+    return `Error ${status}`;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string> | undefined),
+      ...this.authHeaders(),
     };
 
-    const token = this.getToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
+      const response = await fetch(url, { ...options, headers });
 
-      // Verificar si la respuesta es JSON antes de intentar parsearla
       const contentType = response.headers.get('content-type');
-      let data: any = {};
-
+      let data: unknown = null;
       if (contentType && contentType.includes('application/json')) {
         try {
           data = await response.json();
-        } catch (e) {
-          console.error('Error parsing JSON response:', e);
-          return {
-            error: 'Invalid JSON response from server',
-            status: response.status,
-          };
+        } catch {
+          return { error: 'Respuesta inválida del servidor', status: response.status };
         }
-      } else {
-        // Si no es JSON, probablemente es HTML (página de error)
-        const text = await response.text();
-        console.error('Server returned non-JSON response:', text.substring(0, 200));
+      } else if (response.status !== 204) {
         return {
-          error: `Server error (${response.status}): Expected JSON but received ${contentType || 'unknown'}`,
+          error: `Error del servidor (${response.status})`,
           status: response.status,
         };
       }
 
       if (!response.ok) {
-        if (response.status === 401) {
-          this.setToken(null);
-          window.location.reload();
-        }
-        return {
-          error: data.detail || data.message || `Error ${response.status}`,
-          status: response.status,
-        };
+        if (response.status === 401) this.handleUnauthorized();
+        return { error: ApiClient.errorMessage(data, response.status), status: response.status };
       }
 
-      return { data, status: response.status };
+      return { data: data as T, status: response.status };
     } catch (error) {
-      console.error('Network error:', error);
       return {
-        error: error instanceof Error ? error.message : 'Network error',
+        error: error instanceof Error ? error.message : 'Error de red',
         status: 0,
       };
     }
   }
 
   async login(rut: string, password: string) {
-    return this.request<{ token: string; role: string }>('/auth/login', {
+    return this.request<{
+      access_token: string;
+      token_type: string;
+      role: string;
+      full_name?: string | null;
+    }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ rut, password }),
     });
   }
 
   async getMe() {
-    return this.request<{ role: string; message: string; rut?: string; email?: string }>('/auth/me');
+    return this.request<Me>('/auth/me');
   }
-  
-  async signup(rut: string, email: string, password: string, role: string = "MEDICO") {
-    return this.request('/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({ rut, email, password, role }),
-    });
+
+  // --- Pacientes -----------------------------------------------------------
+  async createPatient(data: PatientInput) {
+    return this.request<Patient>('/patients', { method: 'POST', body: JSON.stringify(data) });
   }
-  async createPatient(data: {
-    rut: string;
-    first_name?: string;
-    last_name?: string;
-    birth_date?: string;
-    sex?: string;
-    medical_history?: string;
-  }) {
-    return this.request<{
-      id: number;
-      rut: string;
-      first_name?: string;
-      last_name?: string;
-      birth_date?: string;
-      sex?: string;
-      medical_history?: string;
-      created_at: string;
-    }>('/patients', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+
+  async updatePatient(id: number, data: Partial<PatientInput>) {
+    return this.request<Patient>(`/patients/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  async getPatient(id: number) {
+    return this.request<Patient>(`/patients/${id}`);
   }
 
   async searchPatients(search?: string) {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
-    return this.request<Array<{
-      id: number;
-      rut: string;
-      first_name?: string;
-      last_name?: string;
-      birth_date?: string;
-      sex?: string;
-      medical_history?: string;
-      created_at: string;
-    }>>(`/patients?${params.toString()}`);
+    return this.request<Patient[]>(`/patients?${params.toString()}`);
   }
 
-  async createCase(patientCode: string, patientId?: number, description?: string) {
-    return this.request<{ id: number; code: string; created_at: string; medico_id: number; patient_id?: number }>('/cases', {
-      method: 'POST',
-      body: JSON.stringify({
-        patient_code_anon: patientCode,
-        patient_id: patientId,
-        descripcion: description,
-      }),
-    });
+  // --- Casos ---------------------------------------------------------------
+  async createCase(data: CaseSymptoms & { patient_id: number }) {
+    return this.request<ClinicalCase>('/cases', { method: 'POST', body: JSON.stringify(data) });
   }
 
-  async getCases(page = 1, size = 10, fromDate?: string, toDate?: string) {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      size: size.toString(),
+  async getCases(filters: { status?: CaseStatus; level?: TriageLevel; patient_id?: number; page?: number; size?: number } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined) params.append(k, String(v));
     });
-    if (fromDate) params.append('from_date', fromDate);
-    if (toDate) params.append('to_date', toDate);
-
-    return this.request(`/cases?${params.toString()}`);
+    return this.request<Page<ClinicalCase>>(`/cases?${params.toString()}`);
   }
 
   async getCase(caseId: number) {
-    return this.request<{
-      id: number;
-      code: string;
-      created_at: string;
-      medico_id: number;
-      descripcion?: string;
-    }>(`/cases/${caseId}`);
+    return this.request<ClinicalCase>(`/cases/${caseId}`);
   }
 
-  async uploadImage(caseId: number, file: File, tipoImagen?: string) {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (tipoImagen) {
-      formData.append('tipo_imagen', tipoImagen);
-    }
+  async updateCase(caseId: number, data: Partial<CaseSymptoms>) {
+    return this.request<ClinicalCase>(`/cases/${caseId}`, { method: 'PATCH', body: JSON.stringify(data) });
+  }
 
-    const url = `${this.baseURL}/cases/${caseId}/images`;
-    const headers: HeadersInit = {};
-    
-    const token = this.getToken(); // Leer del localStorage en cada petición
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+  // --- Imágenes ------------------------------------------------------------
+  /** Sube una imagen con progreso real (XMLHttpRequest expone upload.onprogress; fetch no). */
+  uploadImage(
+    caseId: number,
+    file: Blob,
+    filename: string,
+    meta: { exam_type: ExamType; laterality?: Laterality | null },
+    onProgress?: (percent: number) => void
+  ): Promise<ApiResponse<CaseImage>> {
+    const form = new FormData();
+    form.append('file', file, filename);
+    form.append('exam_type', meta.exam_type);
+    if (meta.laterality) form.append('laterality', meta.laterality);
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        // Si es error 401, limpiar token
-        if (response.status === 401) {
-          this.setToken(null);
-          window.location.reload();
-        }
-        return {
-          error: data.detail || `Error ${response.status}`,
-          status: response.status,
-        };
-      }
-
-      return { data, status: response.status };
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Network error',
-        status: 0,
+    return new Promise((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${this.baseURL}/cases/${caseId}/images`);
+      const headers = this.authHeaders();
+      Object.entries(headers).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
       };
+      xhr.onload = () => {
+        let data: unknown = null;
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch {
+          data = null;
+        }
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({ data: data as CaseImage, status: xhr.status });
+        } else {
+          if (xhr.status === 401) this.handleUnauthorized();
+          resolve({ error: ApiClient.errorMessage(data, xhr.status), status: xhr.status });
+        }
+      };
+      xhr.onerror = () => resolve({ error: 'Error de red al subir la imagen', status: 0 });
+      xhr.send(form);
+    });
+  }
+
+  async listImages(caseId: number) {
+    return this.request<CaseImage[]>(`/cases/${caseId}/images`);
+  }
+
+  async getInference(caseId: number, imageId: number) {
+    return this.request<InferenceResult>(`/cases/${caseId}/images/${imageId}/inference`);
+  }
+
+  /** Descarga la imagen con el header Authorization y devuelve un object URL (no se expone el token en la URL). */
+  async fetchImageBlob(caseId: number, imageId: number): Promise<Blob | null> {
+    try {
+      const response = await fetch(`${this.baseURL}/cases/${caseId}/images/${imageId}/file`, {
+        headers: this.authHeaders(),
+      });
+      if (response.status === 401) this.handleUnauthorized();
+      if (!response.ok) return null;
+      return await response.blob();
+    } catch {
+      return null;
     }
   }
 
-  async getImageResults(imageId: number) {
-    return this.request<{
-      image_id: number;
-      detected: boolean;
-      confidence: number;
-      detections: Array<{
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        confidence: number;
-        class_name: string;
-      }>;
-      processing_time_ms: number;
-      model_version: string;
-      message: string;
-    }>(`/images/${imageId}/results`, {
+  // --- Triage ----------------------------------------------------------------
+  async getTriage(caseId: number) {
+    return this.request<TriageResult>(`/cases/${caseId}/triage`);
+  }
+
+  async getTriageHistory(caseId: number) {
+    return this.request<TriageResult[]>(`/cases/${caseId}/triage/history`);
+  }
+
+  async recalculateTriage(caseId: number) {
+    return this.request<TriageResult>(`/cases/${caseId}/triage`, { method: 'POST' });
+  }
+
+  async overrideTriage(caseId: number, level: TriageLevel, reason: string) {
+    return this.request<TriageResult>(`/cases/${caseId}/triage/override`, {
       method: 'POST',
+      body: JSON.stringify({ level, reason }),
     });
   }
 
-  async generateReport(caseId: number) {
-    return this.request(`/cases/${caseId}/reports`, {
+  async getQueue(includeInReview = true) {
+    return this.request<QueueItem[]>(`/triage/queue?include_in_review=${includeInReview}`);
+  }
+
+  async getTriageConfig() {
+    return this.request<TriageConfig>('/triage/config');
+  }
+
+  async getTriageConfigHistory() {
+    return this.request<TriageConfig[]>('/triage/config/history');
+  }
+
+  async createTriageConfig(params: TriageParams, change_reason: string) {
+    return this.request<{ config: TriageConfig; recalculated_cases: number }>('/triage/config', {
       method: 'POST',
+      body: JSON.stringify({ params, change_reason }),
     });
   }
 
-  async getCaseImages(caseId: number) {
-    return this.request<Array<{
-      id: number;
-      filename: string;
-      filepath: string;
-      mime_type: string;
-      width?: number;
-      height?: number;
-      size_kb?: number;
-      uploaded_at: string;
-      case_id: number;
-    }>>(`/cases/${caseId}/images`);
+  // --- Notificaciones ------------------------------------------------------
+  async getNotifications(unreadOnly = false) {
+    return this.request<AppNotification[]>(`/notifications?unread_only=${unreadOnly}`);
   }
 
-  getImageUrl(caseId: number, imageId: number): string {
-    const token = this.getToken();
-    const url = `${this.baseURL}/cases/${caseId}/images/${imageId}/file`;
-    // Si hay token, agregarlo como query param para autenticación
-    return token ? `${url}?token=${token}` : url;
+  async markNotificationRead(id: number) {
+    return this.request<AppNotification>(`/notifications/${id}/read`, { method: 'PATCH' });
   }
 
-  async getStatistics() {
-    return this.request<{
-      total_cases: number;
-      positive_cases: number;
-      negative_cases: number;
-      average_confidence: number;
-      average_processing_time_ms: number;
-      total_detections: number;
-    }>('/reports/statistics');
+  // --- Revisión médica y reportes -----------------------------------------
+  async takeCase(caseId: number) {
+    return this.request<ClinicalCase>(`/cases/${caseId}/take`, { method: 'POST' });
   }
 
-  async getMonthlyData(year?: number) {
+  async createReview(caseId: number, data: ReviewInput) {
+    return this.request<ClinicalReview>(`/cases/${caseId}/review`, { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async getReview(caseId: number) {
+    return this.request<ClinicalReview>(`/cases/${caseId}/review`);
+  }
+
+  async getReportMetadata(caseId: number) {
+    return this.request<DicomMetadata>(`/cases/${caseId}/reports/metadata`);
+  }
+
+  async registerReport(caseId: number, contentHash: string) {
+    return this.request<ReportRecord>(`/cases/${caseId}/reports`, {
+      method: 'POST',
+      body: JSON.stringify({ content_hash: contentHash }),
+    });
+  }
+
+  async listReports(caseId: number) {
+    return this.request<ReportRecord[]>(`/cases/${caseId}/reports`);
+  }
+
+  // --- Dashboard -------------------------------------------------------------
+  async getDashboard(filters: { from?: string; to?: string; alta_pending_hours?: number } = {}) {
     const params = new URLSearchParams();
-    if (year) params.append('year', year.toString());
-    return this.request<Array<{
-      month: string;
-      cases: number;
-      positive: number;
-      negative: number;
-    }>>(`/reports/monthly?${params.toString()}`);
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== '') params.append(k, String(v));
+    });
+    return this.request<DashboardMetrics>(`/dashboard/metrics?${params.toString()}`);
   }
 
-  // Para el panel de administración
+  // --- Administración (solo ADMIN) ---------------------------------------
   async getAdminStats() {
-    return this.request<{
-      total_users: number;
-      total_cases: number;
-      total_patients: number;
-      active_sessions: number;
-    }>('/admin/stats');
+    return this.request<AdminStats>('/admin/stats');
   }
 
-  async getRecentUsers() {
-    return this.request<Array<{
-      id: number;
-      rut: string;
-      email: string;
-      role: string;
-      created_at: string;
-    }>>('/admin/users/recent');
+  async listUsers() {
+    return this.request<UserAccount[]>('/admin/users');
   }
 
-  // Para el panel de usuario
-  async getUserInfo() {
-    return this.request<{
-      id: number;
-      rut: string;
-      email: string;
-      role: string;
-    }>('/user/info');
+  async createUser(data: UserCreateInput) {
+    return this.request<UserAccount>('/admin/users', { method: 'POST', body: JSON.stringify(data) });
   }
 
-  async getUserPatients() {
-    return this.request<Array<{
-      id: number;
-      rut: string;
-      first_name?: string;
-      last_name?: string;
-    }>>('/user/patients');
+  async updateUser(id: number, data: UserUpdateInput) {
+    return this.request<UserAccount>(`/admin/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
   }
 
-  async getSupportTickets() {
-    return this.request<Array<{
-      id: number;
-      title: string;
-      description: string;
-      status: string;
-      created_at: string;
-    }>>('/user/tickets');
+  async listAudit(filters: { action?: string; entity?: string; user_id?: number; from?: string; to?: string; page?: number; size?: number }) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== '') params.append(k, String(v));
+    });
+    return this.request<Page<AuditEntry>>(`/admin/audit?${params.toString()}`);
   }
 }
 
