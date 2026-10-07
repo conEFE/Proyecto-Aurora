@@ -15,7 +15,7 @@ def _truncate(password: str) -> bytes:
 
 
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(_truncate(password), bcrypt.gensalt()).decode("utf-8")
+    return bcrypt.hashpw(_truncate(password), bcrypt.gensalt(rounds=settings.BCRYPT_ROUNDS)).decode("utf-8")
 
 
 def verify_password(password: str, password_hash: str) -> bool:

@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     FILES_DIR: str = "./data/images"
     ENCRYPTION_KEY: str = ""
     MAX_UPLOAD_MB: int = 60
+    BCRYPT_ROUNDS: int = 12
 
     @field_validator("SECRET_KEY")
     @classmethod

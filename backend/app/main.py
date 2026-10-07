@@ -1,7 +1,8 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api import (
     rutas_admin,
@@ -15,6 +16,7 @@ from app.api import (
 )
 from app.config import settings
 from app.middleware import ProcessTimeMiddleware
+from app.services.errors import DomainError
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
@@ -29,6 +31,11 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["X-Process-Time-Ms"],
 )
+
+
+@app.exception_handler(DomainError)
+async def domain_error_handler(_: Request, exc: DomainError):
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
 
 @app.get("/health")

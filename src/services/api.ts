@@ -1,3 +1,15 @@
+import type {
+  AdminStats,
+  AuditEntry,
+  Me,
+  Page,
+  Patient,
+  PatientInput,
+  UserAccount,
+  UserCreateInput,
+  UserUpdateInput,
+} from '../types';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface ApiResponse<T> {
@@ -106,51 +118,26 @@ class ApiClient {
   }
 
   async getMe() {
-    return this.request<{ role: string; message: string; rut?: string; email?: string }>('/auth/me');
+    return this.request<Me>('/auth/me');
   }
-  
-  async signup(rut: string, email: string, password: string, role: string = "MEDICO") {
-    return this.request('/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({ rut, email, password, role }),
-    });
+
+  // --- Pacientes -----------------------------------------------------------
+  async createPatient(data: PatientInput) {
+    return this.request<Patient>('/patients', { method: 'POST', body: JSON.stringify(data) });
   }
-  async createPatient(data: {
-    rut: string;
-    first_name?: string;
-    last_name?: string;
-    birth_date?: string;
-    sex?: string;
-    medical_history?: string;
-  }) {
-    return this.request<{
-      id: number;
-      rut: string;
-      first_name?: string;
-      last_name?: string;
-      birth_date?: string;
-      sex?: string;
-      medical_history?: string;
-      created_at: string;
-    }>('/patients', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+
+  async updatePatient(id: number, data: Partial<PatientInput>) {
+    return this.request<Patient>(`/patients/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  async getPatient(id: number) {
+    return this.request<Patient>(`/patients/${id}`);
   }
 
   async searchPatients(search?: string) {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
-    return this.request<Array<{
-      id: number;
-      rut: string;
-      first_name?: string;
-      last_name?: string;
-      birth_date?: string;
-      sex?: string;
-      medical_history?: string;
-      created_at: string;
-    }>>(`/patients?${params.toString()}`);
+    return this.request<Patient[]>(`/patients?${params.toString()}`);
   }
 
   async createCase(patientCode: string, patientId?: number, description?: string) {
@@ -284,24 +271,32 @@ class ApiClient {
     }>>(`/reports/monthly?${params.toString()}`);
   }
 
-  // Para el panel de administración
+  // --- Administración (solo ADMIN) ---------------------------------------
   async getAdminStats() {
-    return this.request<{
-      total_users: number;
-      total_cases: number;
-      total_patients: number;
-      active_sessions: number;
-    }>('/admin/stats');
+    return this.request<AdminStats>('/admin/stats');
   }
 
-  async getRecentUsers() {
-    return this.request<Array<{
-      id: number;
-      rut: string;
-      email: string;
-      role: string;
-      created_at: string;
-    }>>('/admin/users/recent');
+  async listUsers() {
+    return this.request<UserAccount[]>('/admin/users');
+  }
+
+  async createUser(data: UserCreateInput) {
+    return this.request<UserAccount>('/admin/users', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async updateUser(id: number, data: UserUpdateInput) {
+    return this.request<UserAccount>(`/admin/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listAudit(filters: { action?: string; entity?: string; user_id?: number; from?: string; to?: string; page?: number; size?: number }) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== '') params.append(k, String(v));
+    });
+    return this.request<Page<AuditEntry>>(`/admin/audit?${params.toString()}`);
   }
 
   // Para el panel de usuario

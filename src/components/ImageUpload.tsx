@@ -449,29 +449,13 @@ export default function ImageUpload() {
       <PatientModal
         isOpen={showPatientModal}
         onClose={() => setShowPatientModal(false)}
-        onSelectPatient={(patientId) => {
-          setSelectedPatientId(patientId);
-          // Obtener datos del paciente para mostrarlos
-          apiClient.searchPatients().then((response) => {
-            if (response.data) {
-              const patient = response.data.find(p => p.id === patientId);
-              if (patient) {
-                setSelectedPatient({
-                  id: patient.id,
-                  rut: patient.rut,
-                  name: `${patient.first_name || ''} ${patient.last_name || ''}`.trim() || undefined,
-                });
-              }
-            }
-          });
-        }}
-        onCreatePatient={(patient) => {
+        onSelectPatient={(patient) => {
+          setSelectedPatientId(patient.id);
           setSelectedPatient({
             id: patient.id,
             rut: patient.rut,
-            name: `${patient.first_name || ''} ${patient.last_name || ''}`.trim() || undefined,
+            name: `${patient.first_name} ${patient.last_name}`.trim(),
           });
-          setSelectedPatientId(patient.id);
         }}
       />
     </div>

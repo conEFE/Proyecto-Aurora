@@ -35,6 +35,7 @@ os.environ["SECRET_KEY"] = "clave-solo-para-tests"
 os.environ["ENCRYPTION_KEY"] = Fernet.generate_key().decode()
 os.environ["FILES_DIR"] = str(_TMP / f"aurora_files_{uuid.uuid4().hex[:8]}")
 os.environ["INFERENCE_PROVIDER"] = "simulated"
+os.environ["BCRYPT_ROUNDS"] = "4"
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402

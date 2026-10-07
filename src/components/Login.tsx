@@ -4,13 +4,12 @@ import { apiClient } from '../services/api';
 
 interface LoginProps {
   onLogin: () => void;
-  onSignup?: () => void;
 }
 
-export default function Login({ onLogin, onSignup }: LoginProps) {
+export default function Login({ onLogin }: LoginProps) {
   const [rut, setRut] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +20,7 @@ export default function Login({ onLogin, onSignup }: LoginProps) {
       apiClient.setToken(response.data.access_token);
       onLogin();
     } else {
-      alert(response.error || 'Error al iniciar sesión');
+      setError(response.error || 'Error al iniciar sesión');
     }
   };
 
@@ -41,9 +40,14 @@ export default function Login({ onLogin, onSignup }: LoginProps) {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="p-2 bg-destructive/10 border border-destructive/20 text-destructive-foreground rounded text-xs">
+                  {error}
+                </div>
+              )}
               <div>
                 <label htmlFor="rut" className="block text-xs font-medium text-foreground mb-1">
-                  Usuario
+                  RUT
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
@@ -81,40 +85,15 @@ export default function Login({ onLogin, onSignup }: LoginProps) {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-3.5 w-3.5 text-primary focus:ring-primary border-input rounded"
-                  />
-                  <label htmlFor="remember-me" className="ml-1.5 block text-xs text-muted-foreground">
-                    Recordarme
-                  </label>
-                </div>
-                <button
-                  type="button"
-                  className="text-xs font-medium text-primary hover:text-primary/80"
-                >
-                  ¿Olvidó su contraseña?
-                </button>
-              </div>
-
               <button
                 type="submit"
                 className="w-full flex items-center justify-center py-2 px-4 border border-transparent rounded text-sm text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary font-semibold transition-colors"
               >
                 Iniciar Sesión Seguro
               </button>
-              <button
-                type="button"
-                onClick={() => onSignup?.()}
-                className="w-full mt-2 text-center text-xs text-primary hover:text-primary/80 font-medium"
-              >
-                ¿No tienes cuenta? Crear una
-              </button>
+              <p className="text-center text-[10px] text-muted-foreground">
+                Las cuentas las crea el administrador de la plataforma.
+              </p>
             </form>
 
             <div className="mt-4 pt-4 border-t border-border">
@@ -134,8 +113,8 @@ export default function Login({ onLogin, onSignup }: LoginProps) {
               Detección Temprana de Cáncer de Mama
             </h1>
             <p className="text-sm text-muted-foreground">
-              Sistema de inteligencia artificial basado en YOLO para análisis automatizado de
-              imágenes médicas con precisión superior al 90%.
+              Plataforma de apoyo a la detección temprana y priorización (triage) de casos
+              sospechosos. Apoya, no reemplaza, el criterio médico.
             </p>
           </div>
         </div>

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import Header from './components/Header';
+import { useEffect, useState } from 'react';
+import Header, { type Section } from './components/Header';
 import Home from './components/Home';
 import ImageUpload from './components/ImageUpload';
 import CaseManagement from './components/CaseManagement';
@@ -8,50 +8,33 @@ import UserPanel from './components/UserPanel';
 import AdminPanel from './components/AdminPanel';
 import Login from './components/Login';
 import Footer from './components/Footer';
-import Signup from './components/Signup';
 import { apiClient } from './services/api';
-
-type Section = 'home' | 'upload' | 'cases' | 'reports' | 'panel';
+import type { Me } from './types';
 
 function App() {
-  const [showSignup, setShowSignup] = useState(false);
   const [currentSection, setCurrentSection] = useState<Section>('home');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [me, setMe] = useState<Me | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string>('MEDICO');
 
-  // Restaurar autenticación desde localStorage al cargar
+  const loadMe = async () => {
+    const response = await apiClient.getMe();
+    if (response.data) {
+      setMe(response.data);
+      setCurrentSection(response.data.role === 'ADMIN' ? 'panel' : 'home');
+    } else {
+      apiClient.setToken(null);
+      setMe(null);
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      apiClient.getMe().then((response) => {
-        if (response.data) {
-          setIsAuthenticated(true);
-          setUserRole(response.data.role || 'MEDICO');
-          setCurrentSection('home');
-        } else {
-          apiClient.setToken(null);
-        }
-        setIsLoading(false);
-      }).catch(() => {
-        apiClient.setToken(null);
-        setIsLoading(false);
-      });
+    if (localStorage.getItem('auth_token')) {
+      loadMe();
     } else {
       setIsLoading(false);
     }
   }, []);
-
-  const handleLogin = () => {
-    // Obtener el rol después del login
-    apiClient.getMe().then((response) => {
-      if (response.data) {
-        setUserRole(response.data.role || 'MEDICO');
-      }
-    });
-    setIsAuthenticated(true);
-    setCurrentSection('home');
-  };
 
   if (isLoading) {
     return (
@@ -64,28 +47,19 @@ function App() {
     );
   }
 
-  if (!isAuthenticated) {
-    if (showSignup) {
-      return <Signup onSignup={handleLogin} onBack={() => setShowSignup(false)} />;
-    }
-    return <Login onLogin={handleLogin} onSignup={() => setShowSignup(true)} />;
+  if (!me) {
+    return <Login onLogin={loadMe} />;
   }
-  
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header 
-        currentSection={currentSection} 
-        onSectionChange={setCurrentSection}
-        userRole={userRole}
-      />
+      <Header currentSection={currentSection} onSectionChange={setCurrentSection} me={me} />
       <main className="flex-grow">
-        {currentSection === 'home' && <Home onGetStarted={() => setCurrentSection('upload')} />}
+        {currentSection === 'home' && <Home onGetStarted={() => setCurrentSection('cases')} />}
         {currentSection === 'upload' && <ImageUpload />}
         {currentSection === 'cases' && <CaseManagement />}
         {currentSection === 'reports' && <Reports />}
-        {currentSection === 'panel' && (
-          userRole === 'ADMIN' ? <AdminPanel /> : <UserPanel />
-        )}
+        {currentSection === 'panel' && (me.role === 'ADMIN' ? <AdminPanel /> : <UserPanel />)}
       </main>
       <Footer />
     </div>
