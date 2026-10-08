@@ -1,5 +1,7 @@
 import type {
   AdminStats,
+  AIValidation,
+  AIVerdict,
   ClinicalReview,
   DashboardMetrics,
   DicomMetadata,
@@ -291,6 +293,13 @@ class ApiClient {
   }
 
   // --- Revisión médica y reportes -----------------------------------------
+  async validateAI(caseId: number, imageId: number, verdict: AIVerdict, comment?: string) {
+    return this.request<AIValidation>(`/cases/${caseId}/images/${imageId}/validation`, {
+      method: 'PUT',
+      body: JSON.stringify({ verdict, comment: comment || null }),
+    });
+  }
+
   async takeCase(caseId: number) {
     return this.request<ClinicalCase>(`/cases/${caseId}/take`, { method: 'POST' });
   }

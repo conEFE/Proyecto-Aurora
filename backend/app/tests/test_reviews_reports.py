@@ -14,12 +14,27 @@ from app.tests.conftest import auth
 from app.tests.factories import birth_date_for_age, create_case, create_patient
 from app.tests.test_images import make_png, upload
 
-REVIEW = {"birads_final": 4, "findings": "Nódulo espiculado en CSE izquierdo", "recommendation": "BIOPSIA"}
+REVIEW = {
+    "birads_final": 4,
+    "findings": "Nódulo espiculado en CSE izquierdo",
+    "recommendation": "BIOPSIA",
+    "triage_assessment": "APROPIADO",
+}
 
 
-def _take_and_review(client, h, case_id):
+def _validate_all(client, h, case_id, verdict=None):
+    """Valida el resultado de IA de cada imagen analizada del caso."""
+    for img in client.get(f"/cases/{case_id}/images", headers=h).json():
+        if img["inference"]:
+            v = verdict or "CONCORDANTE"
+            r = client.put(f"/cases/{case_id}/images/{img['id']}/validation", json={"verdict": v}, headers=h)
+            assert r.status_code == 200, r.text
+
+
+def _take_and_review(client, h, case_id, review=None):
     assert client.post(f"/cases/{case_id}/take", headers=h).status_code == 200
-    r = client.post(f"/cases/{case_id}/review", json=REVIEW, headers=h)
+    _validate_all(client, h, case_id)
+    r = client.post(f"/cases/{case_id}/review", json=review or REVIEW, headers=h)
     assert r.status_code == 201, r.text
     return r.json()
 

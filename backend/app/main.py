@@ -20,7 +20,7 @@ from app.services.errors import DomainError
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
-app = FastAPI(title="Proyecto Aurora API", version="2.0.0")
+app = FastAPI(title="Proyecto Aurora API", version="2.1.0")
 
 app.add_middleware(ProcessTimeMiddleware)
 app.add_middleware(

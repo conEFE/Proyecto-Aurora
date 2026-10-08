@@ -39,6 +39,7 @@ export default function CaseDetail({ caseId, me, onChanged }: CaseDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [triageKey, setTriageKey] = useState(0);
+  const [validationKey, setValidationKey] = useState(0);
 
   const reload = () => {
     apiClient.getCase(caseId).then((r) => {
@@ -139,14 +140,19 @@ export default function CaseDetail({ caseId, me, onChanged }: CaseDetailProps) {
 
       {me.role === 'MEDICO' && (
         <>
-          <ReviewPanel key={`rv-${data.status}`} caseData={data} me={me} onChanged={reload} />
+          <ReviewPanel key={`rv-${data.status}`} caseData={data} me={me} validationKey={validationKey} onChanged={reload} />
           <TriageDetail key={triageKey} caseId={data.id} closed={closed} onChanged={reload} />
         </>
       )}
 
       <div className={`${cardClass} p-4`}>
         <h4 className="text-xs font-semibold text-foreground mb-2">Imágenes ({data.image_count})</h4>
-        <CaseImages caseId={data.id} me={me} />
+        <CaseImages
+          caseId={data.id}
+          me={me}
+          readOnly={closed}
+          onValidationChange={() => setValidationKey((k) => k + 1)}
+        />
       </div>
     </div>
   );

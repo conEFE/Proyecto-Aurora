@@ -49,6 +49,13 @@ def to_out(image: Image, viewer: User) -> ImageOut:
     out.inference_status = "LISTO" if image.inference_result is not None else "PENDIENTE"
     if viewer.role == UserRole.MEDICO and image.inference_result is not None:
         out.inference = InferenceOut.model_validate(image.inference_result)
+        from app.db.models.review import AIValidation
+        from app.schemas.reviews import AIValidationOut
+
+        db = Session.object_session(image)
+        validation = db.query(AIValidation).filter(AIValidation.image_id == image.id).first() if db else None
+        if validation is not None:
+            out.validation = AIValidationOut.model_validate(validation).model_dump(mode="json")
     return out
 
 

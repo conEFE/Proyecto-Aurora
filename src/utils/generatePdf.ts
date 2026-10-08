@@ -1,8 +1,8 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { apiClient } from '../services/api';
-import type { ClinicalCase, ClinicalReview, DicomMetadata, ReportRecord, TriageResult } from '../types';
-import { RECOMMENDATION_LABELS } from '../types';
+import type { CaseImage, ClinicalCase, ClinicalReview, DicomMetadata, ReportRecord, TriageResult } from '../types';
+import { AI_VERDICT_LABELS, EXAM_TYPE_LABELS, RECOMMENDATION_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
 
 type RGB = [number, number, number];
 const PRIMARY: RGB = [124, 58, 237];
@@ -42,10 +42,11 @@ interface ReportInput {
   review: ClinicalReview;
   metadata: DicomMetadata;
   medicoName: string;
+  images?: CaseImage[];
 }
 
 /** Construye el PDF. Identifica el caso solo por su código anónimo (sin nombre ni RUT). */
-export function buildCaseReport({ caseData, triage, review, metadata, medicoName }: ReportInput): jsPDF {
+export function buildCaseReport({ caseData, triage, review, metadata, medicoName, images = [] }: ReportInput): jsPDF {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -177,6 +178,31 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
     ]
   );
 
+  section('Validación médica de la IA y del triage');
+  const validated = images.filter((img) => img.inference);
+  table(
+    ['Elemento', 'Resultado IA', 'Validación del médico'],
+    [
+      ...validated.map((img) => [
+        `${EXAM_TYPE_LABELS[img.exam_type]}${img.laterality ? ` (${img.laterality === 'L' ? 'izq.' : 'der.'})` : ''}`,
+        `${img.inference!.detected ? 'Hallazgo' : 'Sin hallazgos'} ${img.inference!.confidence.toFixed(1)}%` +
+          (img.inference!.is_simulated ? ' [IA SIMULADA]' : ''),
+        img.validation
+          ? AI_VERDICT_LABELS[img.validation.verdict] + (img.validation.comment ? ` — ${img.validation.comment}` : '')
+          : 'Sin validar',
+      ]),
+      [
+        'Triage',
+        review.triage_level_at_review
+          ? `Nivel ${review.triage_level_at_review} (configuración v${review.triage_config_version_at_review})`
+          : '—',
+        review.triage_assessment
+          ? TRIAGE_ASSESSMENT_LABELS[review.triage_assessment] + (review.triage_comment ? ` — ${review.triage_comment}` : '')
+          : 'No registrada',
+      ],
+    ]
+  );
+
   section('Metadatos tipo DICOM (SC-02)');
   table(
     ['Atributo', 'Valor'],
@@ -206,9 +232,16 @@ export async function generateAndRegisterReport(
 ): Promise<{ report?: ReportRecord; error?: string }> {
   const meta = await apiClient.getReportMetadata(caseData.id);
   if (!meta.data) return { error: meta.error || 'No se pudieron obtener los metadatos del reporte' };
-  const triage = await apiClient.getTriage(caseData.id);
+  const [triage, images] = await Promise.all([apiClient.getTriage(caseData.id), apiClient.listImages(caseData.id)]);
 
-  const doc = buildCaseReport({ caseData, triage: triage.data ?? null, review, metadata: meta.data, medicoName });
+  const doc = buildCaseReport({
+    caseData,
+    triage: triage.data ?? null,
+    review,
+    metadata: meta.data,
+    medicoName,
+    images: images.data ?? [],
+  });
   const bytes = doc.output('arraybuffer');
   const hash = await sha256Hex(bytes);
   const registered = await apiClient.registerReport(caseData.id, hash);

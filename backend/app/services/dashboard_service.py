@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db.models.case import Case, CaseStatus
-from app.db.models.review import ClinicalReview, RequestMetric
+from app.db.models.image import Image
+from app.db.models.review import AI_VERDICTS, TRIAGE_ASSESSMENTS, AIValidation, ClinicalReview, RequestMetric
 from app.db.models.triage import TriageLevel, TriageResult
 from app.schemas.reviews import DashboardMetrics, WeekPoint
 
@@ -115,6 +116,26 @@ def metrics(
         )
         weeks = [WeekPoint(week_start=w.date().isoformat(), cases=n) for w, n in rows]
 
+    # Validación médica de la IA (por imagen) y del triage (por revisión)
+    verdicts = {v: 0 for v in AI_VERDICTS}
+    simulated_validations = 0
+    if case_ids:
+        rows = (
+            db.query(AIValidation.verdict, AIValidation.ai_was_simulated)
+            .join(Image, Image.id == AIValidation.image_id)
+            .filter(Image.case_id.in_(case_ids))
+            .all()
+        )
+        for verdict, simulated in rows:
+            verdicts[verdict] += 1
+            simulated_validations += 1 if simulated else 0
+    evaluable = sum(n for v, n in verdicts.items() if v != "NO_EVALUABLE")
+    assessments = {a: 0 for a in TRIAGE_ASSESSMENTS}
+    for rv in reviews.values():
+        if rv.triage_assessment in assessments:
+            assessments[rv.triage_assessment] += 1
+    assessed = sum(assessments.values())
+
     return DashboardMetrics(
         date_from=date_from,
         date_to=date_to,
@@ -131,4 +152,11 @@ def metrics(
         triage_total=triage_total,
         triage_overrides=overrides,
         cases_per_week=weeks,
+        ai_validations_total=sum(verdicts.values()),
+        ai_validations_by_verdict=verdicts,
+        ai_agreement_rate=round(verdicts["CONCORDANTE"] / evaluable, 4) if evaluable else None,
+        ai_validations_simulated=simulated_validations,
+        triage_assessments_total=assessed,
+        triage_assessments_by_value=assessments,
+        triage_agreement_rate=round(assessments["APROPIADO"] / assessed, 4) if assessed else None,
     )

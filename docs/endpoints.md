@@ -20,11 +20,12 @@ está en `/openapi.json` y la documentación interactiva en `/docs` del backend.
 | POST | `/cases/{case_id}/images` | ADMINISTRATIVO, MEDICO | Sube una imagen (PNG o JPEG, máx. MAX_UPLOAD_MB). La inferencia corre en segundo plano. |
 | GET | `/cases/{case_id}/images/{image_id}/file` | MEDICO | Devuelve la imagen descifrada (solo MEDICO; queda registrado como VIEW). |
 | GET | `/cases/{case_id}/images/{image_id}/inference` | MEDICO | Resultado de la inferencia de una imagen (solo MEDICO). |
+| PUT | `/cases/{case_id}/images/{image_id}/validation` | MEDICO | El médico aprueba o rechaza el resultado de IA de la imagen (concordante, falso positivo/negativo, no evaluable). |
 | GET | `/cases/{case_id}/reports` | MEDICO | Reportes PDF registrados del caso. |
 | POST | `/cases/{case_id}/reports` | MEDICO | Registra un PDF generado (SHA-256) y devuelve sus metadatos DICOM. Queda auditado como EXPORT. |
 | GET | `/cases/{case_id}/reports/metadata` | MEDICO | Metadatos tipo DICOM (SC-02) que el frontend incrusta en el PDF antes de calcular su SHA-256. |
 | GET | `/cases/{case_id}/review` | MEDICO | Revisión médica del caso. |
-| POST | `/cases/{case_id}/review` | MEDICO | Registra la revisión médica y cierra el caso (EN_REVISION → CERRADO). |
+| POST | `/cases/{case_id}/review` | MEDICO | Registra la revisión (incluida la evaluación del triage) y cierra el caso (EN_REVISION → CERRADO). |
 | POST | `/cases/{case_id}/take` | MEDICO | El médico toma el caso: PRIORIZADO → EN_REVISION. |
 | GET | `/cases/{case_id}/triage` | MEDICO | Triage vigente con el desglose por factor (solo MEDICO). |
 | POST | `/cases/{case_id}/triage` | MEDICO | Recalcula el triage del caso con la configuración activa. |

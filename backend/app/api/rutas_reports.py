@@ -9,7 +9,7 @@ from app.auth.rbac import require_roles
 from app.db.models.user import User, UserRole
 from app.deps import get_db
 from app.schemas.cases import CaseOut
-from app.schemas.reviews import ReportIn, ReportOut, ReviewIn, ReviewOut
+from app.schemas.reviews import AIValidationIn, AIValidationOut, ReportIn, ReportOut, ReviewIn, ReviewOut
 from app.services import case_service, review_service
 from app.services.audit_service import client_ip
 
@@ -26,6 +26,19 @@ def take_case(
     return case_service.to_out(db, case)
 
 
+@router.put("/{case_id}/images/{image_id}/validation", response_model=AIValidationOut)
+def validate_ai_result(
+    case_id: int,
+    image_id: int,
+    data: AIValidationIn,
+    request: Request,
+    actor: User = Depends(medico_only),
+    db: Session = Depends(get_db),
+):
+    """El médico aprueba o rechaza el resultado de IA de la imagen (concordante, falso positivo/negativo, no evaluable)."""
+    return review_service.validate_ai(db, case_id, image_id, data, actor, client_ip(request))
+
+
 @router.post("/{case_id}/review", response_model=ReviewOut, status_code=201)
 def create_review(
     case_id: int,
@@ -34,7 +47,10 @@ def create_review(
     actor: User = Depends(medico_only),
     db: Session = Depends(get_db),
 ):
-    """Registra la revisión médica y cierra el caso (EN_REVISION → CERRADO)."""
+    """Registra la revisión (incluida la evaluación del triage) y cierra el caso (EN_REVISION → CERRADO).
+
+    Exige que el médico haya validado el resultado de IA de todas las imágenes analizadas.
+    """
     return review_service.create_review(db, case_id, data, actor, client_ip(request))
 
 
