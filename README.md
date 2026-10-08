@@ -16,6 +16,8 @@ Proyecto de título — INACAP. **La plataforma apoya, no reemplaza, el criterio
   y parámetros versionados que edita el equipo médico.
 - Cola priorizada, notificaciones de casos ALTA, revisión médica, reporte PDF con metadatos tipo DICOM y
   dashboard de KPIs.
+- **Validación médica:** el médico aprueba o rechaza el resultado de IA de cada imagen (concordante, falso
+  positivo/negativo) y evalúa el nivel de triage al cerrar el caso. La concordancia se mide en el dashboard.
 - JWT firmado, autorización por rol leída desde la BD y **bitácora de auditoría** append-only (Ley 19.628).
 
 ## Roles
@@ -31,6 +33,7 @@ Proyecto de título — INACAP. **La plataforma apoya, no reemplaza, el criterio
 | Ver el detalle del triage y los resultados de IA | – | ✔ | – |
 | Ver la cola priorizada (solo código de caso + nivel) | ✔ | ✔ | – |
 | Override de triage | – | ✔ | – |
+| Validar el resultado de IA y evaluar el triage | – | ✔ | – |
 | Registrar la revisión médica y cerrar el caso | – | ✔ | – |
 | Generar reporte PDF | – | ✔ | – |
 | Editar parámetros de triage | – | ✔ | – (solo consulta) |
@@ -109,7 +112,7 @@ cd ..
 npm run lint && npm run typecheck
 ```
 
-Resultados del cierre del Sprint 6: 178 tests aprobados y 96% de cobertura (`docs/resultados_tests.md`).
+Resultados de la versión 2.1.0: 193 tests aprobados y 96% de cobertura (`docs/resultados_tests.md`).
 
 ## Documentación
 

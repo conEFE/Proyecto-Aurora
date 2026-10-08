@@ -292,6 +292,42 @@ También se quitaron del repo las imágenes de prueba de `backend/data/images/` 
 
 ---
 
+## 2.1.0 — Validación médica de la IA y del triage (complemento del Sprint 6)
+
+Faltaba un canal para que el médico **apruebe o rechace** el resultado de la IA y el nivel de triage, y que ese
+resultado quede registrado. Antes solo existía el override (que registra el desacuerdo, pero no el acuerdo).
+
+### Backend
+- Migración `a7e1c9b6d507` (reversible): tabla `ai_validations` (una por imagen) y en `clinical_reviews` los campos
+  `triage_assessment`, `triage_comment`, `triage_level_at_review` y `triage_config_version_at_review`. Las revisiones
+  existentes quedan con la evaluación en NULL: no se inventa una evaluación que no se hizo.
+- `PUT /cases/{id}/images/{image_id}/validation` (solo MEDICO): `CONCORDANTE`, `FALSO_POSITIVO` (solo si la IA
+  informó hallazgo), `FALSO_NEGATIVO` (solo si no lo informó) o `NO_EVALUABLE`, con comentario opcional. Se puede
+  corregir hasta el cierre. Guarda una copia de lo evaluado (hallazgo, versión del modelo y si era simulado) y se
+  audita como CREATE/UPDATE de la imagen con el veredicto anterior.
+- La revisión exige `triage_assessment` (`APROPIADO`, `SOBREESTIMADO`, `SUBESTIMADO`) y guarda el nivel y la versión
+  de configuración evaluados. **No se puede cerrar el caso** si alguna imagen con resultado de IA no fue validada (409).
+- Dashboard: concordancia IA–médico (concordantes sobre evaluables), conteo por veredicto, cuántas validaciones son
+  sobre IA simulada, y tasa de aprobación del triage con conteo por evaluación.
+- Metadatos del reporte: `TriageAssessment` y `AIValidation` (resumen de veredictos).
+
+### Frontend
+- En cada imagen (MEDICO): «¿Está de acuerdo con el resultado de la IA?» con los veredictos que aplican al
+  resultado, comentario y opción de cambiarlo hasta el cierre.
+- En la revisión: bloque «Evaluación del triage» con el nivel vigente. Si el médico ya había ajustado el nivel, se
+  sugiere sobreestimado o subestimado según el sentido del ajuste. Aviso y botón deshabilitado mientras falten
+  validaciones.
+- Dashboard: tarjetas «Concordancia IA – médico» (con advertencia cuando es sobre IA simulada) y «Aprobación del
+  triage».
+- PDF: sección «Validación médica de la IA y del triage».
+
+### Pruebas
+- 15 tests nuevos (`test_validation.py`): validación y corrección auditadas, coherencia veredicto–resultado (422),
+  permisos, cierre bloqueado sin validación, evaluación del triage obligatoria con copia del nivel, metadatos del
+  reporte y métricas de concordancia con datos controlados. Total: 193 tests aprobados, cobertura 96%.
+
+---
+
 ## Pendiente para S7–S8 (no implementado, según la regla 2)
 Docker y docker-compose, GitHub Actions, `S3EncryptedStorage`, rate limiting y bloqueo de login, revisión OWASP,
 despliegue en AWS, `HttpYoloProvider` real, pruebas de carga con Locust y soporte DICOM en la carga.

@@ -37,5 +37,6 @@ class ImageOut(BaseModel):
     uploaded_at: datetime
     # Estado de la inferencia (sin el resultado: solo lo ve el rol MEDICO)
     inference_status: str = "PENDIENTE"
-    # Solo se completa para el rol MEDICO
+    # Solo se completan para el rol MEDICO
     inference: InferenceOut | None = None
+    validation: dict[str, Any] | None = None

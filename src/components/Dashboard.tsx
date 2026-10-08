@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, BarChart3, CheckCircle2, Clock, Gauge, Loader2, Timer } from 'lucide-react';
 import { apiClient } from '../services/api';
-import type { CaseStatus, DashboardMetrics, TriageLevel } from '../types';
-import { CASE_STATUS_LABELS } from '../types';
+import type { AIVerdict, CaseStatus, DashboardMetrics, TriageAssessment, TriageLevel } from '../types';
+import { AI_VERDICT_LABELS, CASE_STATUS_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
 import { cardClass, errorBox, inputClass, labelClass } from './ui';
 
 const LEVELS: TriageLevel[] = ['ALTA', 'MEDIA', 'BAJA'];
@@ -243,6 +243,52 @@ export default function Dashboard() {
               <p className="text-[10px] text-muted-foreground">
                 {data.triage_overrides} de {data.triage_total} cálculos de triage fueron ajustados por un médico.
                 Una proporción alta sugiere revisar los parámetros.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <div className={`${cardClass} p-4`}>
+              <h3 className="text-sm font-semibold text-foreground mb-1">Concordancia IA – médico</h3>
+              <p className="text-2xl font-bold text-foreground">
+                {data.ai_agreement_rate === null ? '—' : `${(data.ai_agreement_rate * 100).toFixed(1)}%`}
+              </p>
+              <p className="text-[10px] text-muted-foreground mb-2">
+                Resultados de IA validados como concordantes sobre los evaluables ({data.ai_validations_total} validaciones).
+              </p>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                {(Object.keys(AI_VERDICT_LABELS) as AIVerdict[]).map((v) => (
+                  <div key={v} className="p-2 bg-secondary/40 rounded">
+                    <p className="text-sm font-bold text-foreground">{data.ai_validations_by_verdict[v] ?? 0}</p>
+                    <p className="text-[10px] text-muted-foreground">{AI_VERDICT_LABELS[v]}</p>
+                  </div>
+                ))}
+              </div>
+              {data.ai_validations_simulated > 0 && (
+                <p className="mt-2 text-[10px] text-amber-300">
+                  {data.ai_validations_simulated} de {data.ai_validations_total} validaciones son sobre IA SIMULADA: esta
+                  concordancia no mide un modelo real.
+                </p>
+              )}
+            </div>
+            <div className={`${cardClass} p-4`}>
+              <h3 className="text-sm font-semibold text-foreground mb-1">Aprobación del triage</h3>
+              <p className="text-2xl font-bold text-foreground">
+                {data.triage_agreement_rate === null ? '—' : `${(data.triage_agreement_rate * 100).toFixed(1)}%`}
+              </p>
+              <p className="text-[10px] text-muted-foreground mb-2">
+                Revisiones en que el médico evaluó el nivel de triage como apropiado ({data.triage_assessments_total} evaluaciones).
+              </p>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {(Object.keys(TRIAGE_ASSESSMENT_LABELS) as TriageAssessment[]).map((a) => (
+                  <div key={a} className="p-2 bg-secondary/40 rounded">
+                    <p className="text-sm font-bold text-foreground">{data.triage_assessments_by_value[a] ?? 0}</p>
+                    <p className="text-[10px] text-muted-foreground">{TRIAGE_ASSESSMENT_LABELS[a].split(' (')[0]}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Muchos subestimados sugieren bajar umbrales o subir pesos; muchos sobreestimados, lo contrario.
               </p>
             </div>
           </div>

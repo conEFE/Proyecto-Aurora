@@ -143,7 +143,7 @@ Cálculos de triage por caso; uno vigente y el resto como historial.
 | is_current | BOOLEAN | NOT NULL, DEFAULT true |  |
 | computed_at | DATETIME | NOT NULL, DEFAULT now() |  |
 
-CHECK: `score >= 0 AND score <= 100`; `override_by IS NULL OR (override_reason IS NOT NULL AND length(trim(override_reason)) > 0)`
+CHECK: `override_by IS NULL OR (override_reason IS NOT NULL AND length(trim(override_reason)) > 0)`; `score >= 0 AND score <= 100`
 
 Índices únicos: `uq_triage_results_current (case_id) WHERE is_current`
 
@@ -172,9 +172,13 @@ Revisión médica que cierra el caso.
 | birads_final | SMALLINT | NOT NULL |  |
 | findings | TEXT | NOT NULL |  |
 | recommendation | VARCHAR(30) | NOT NULL |  |
+| triage_assessment | VARCHAR(15) | NULL |  |
+| triage_comment | TEXT | NULL |  |
+| triage_level_at_review | VARCHAR(5) | NULL |  |
+| triage_config_version_at_review | INTEGER | NULL |  |
 | created_at | DATETIME | NULL, DEFAULT now() |  |
 
-CHECK: `birads_final BETWEEN 0 AND 6`; `recommendation IN ('CONTROL_RUTINA','CONTROL_6_MESES','ESTUDIO_COMPLEMENTARIO','BIOPSIA','DERIVACION')`
+CHECK: `triage_assessment IN ('APROPIADO','SOBREESTIMADO','SUBESTIMADO')`; `birads_final BETWEEN 0 AND 6`; `recommendation IN ('CONTROL_RUTINA','CONTROL_6_MESES','ESTUDIO_COMPLEMENTARIO','BIOPSIA','DERIVACION')`
 
 ### reports
 
@@ -216,6 +220,26 @@ Duración de cada request de la API (p95 del dashboard).
 | status_code | INTEGER | NOT NULL |  |
 | duration_ms | FLOAT | NOT NULL |  |
 | created_at | DATETIME | NULL, DEFAULT now() |  |
+
+### ai_validations
+
+
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| id | INTEGER | PK, NOT NULL |  |
+| image_id | INTEGER | FK → images.id, UNIQUE, NOT NULL |  |
+| inference_result_id | INTEGER | FK → inference_results.id, NOT NULL |  |
+| medico_id | INTEGER | FK → users.id, NOT NULL |  |
+| verdict | VARCHAR(20) | NOT NULL |  |
+| comment | TEXT | NULL |  |
+| ai_detected | BOOLEAN | NOT NULL |  |
+| ai_model_version | VARCHAR | NOT NULL |  |
+| ai_was_simulated | BOOLEAN | NOT NULL |  |
+| created_at | DATETIME | NULL, DEFAULT now() |  |
+| updated_at | DATETIME | NULL, DEFAULT now() |  |
+
+CHECK: `verdict IN ('CONCORDANTE','FALSO_POSITIVO','FALSO_NEGATIVO','NO_EVALUABLE')`
 
 ## Diagrama entidad-relación
 
@@ -328,6 +352,10 @@ erDiagram
         smallinteger birads_final
         text findings
         string recommendation
+        string triage_assessment
+        text triage_comment
+        string triage_level_at_review
+        integer triage_config_version_at_review
         datetime created_at
     }
     reports {
@@ -356,6 +384,19 @@ erDiagram
         float duration_ms
         datetime created_at
     }
+    ai_validations {
+        integer id PK
+        integer image_id FK
+        integer inference_result_id FK
+        integer medico_id FK
+        string verdict
+        text comment
+        boolean ai_detected
+        string ai_model_version
+        boolean ai_was_simulated
+        datetime created_at
+        datetime updated_at
+    }
     users ||--o{ patients : "consent_registered_by"
     users ||--o{ patients : "created_by"
     patients ||--o{ cases : "patient_id"
@@ -375,4 +416,7 @@ erDiagram
     cases ||--o{ reports : "case_id"
     users ||--o{ reports : "generated_by"
     users ||--o{ audit_log : "user_id"
+    images ||--o| ai_validations : "image_id"
+    inference_results ||--o{ ai_validations : "inference_result_id"
+    users ||--o{ ai_validations : "medico_id"
 ```

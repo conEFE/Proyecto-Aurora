@@ -245,7 +245,39 @@ export interface CaseImage {
   uploaded_at: string;
   inference_status: 'PENDIENTE' | 'LISTO';
   inference?: InferenceResult | null;
+  validation?: AIValidation | null;
 }
+
+export type AIVerdict = 'CONCORDANTE' | 'FALSO_POSITIVO' | 'FALSO_NEGATIVO' | 'NO_EVALUABLE';
+
+export const AI_VERDICT_LABELS: Record<AIVerdict, string> = {
+  CONCORDANTE: 'Concordante',
+  FALSO_POSITIVO: 'Falso positivo',
+  FALSO_NEGATIVO: 'Falso negativo',
+  NO_EVALUABLE: 'No evaluable',
+};
+
+export interface AIValidation {
+  id: number;
+  image_id: number;
+  inference_result_id: number;
+  medico_id: number;
+  verdict: AIVerdict;
+  comment: string | null;
+  ai_detected: boolean;
+  ai_model_version: string;
+  ai_was_simulated: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export type TriageAssessment = 'APROPIADO' | 'SOBREESTIMADO' | 'SUBESTIMADO';
+
+export const TRIAGE_ASSESSMENT_LABELS: Record<TriageAssessment, string> = {
+  APROPIADO: 'Apropiado',
+  SOBREESTIMADO: 'Sobreestimado (más prioridad de la necesaria)',
+  SUBESTIMADO: 'Subestimado (menos prioridad de la necesaria)',
+};
 
 export type Recommendation =
   | 'CONTROL_RUTINA'
@@ -266,12 +298,16 @@ export interface ReviewInput {
   birads_final: number;
   findings: string;
   recommendation: Recommendation;
+  triage_assessment: TriageAssessment;
+  triage_comment?: string | null;
 }
 
 export interface ClinicalReview extends ReviewInput {
   id: number;
   case_id: number;
   medico_id: number;
+  triage_level_at_review: TriageLevel | null;
+  triage_config_version_at_review: number | null;
   created_at: string | null;
 }
 
@@ -304,6 +340,13 @@ export interface DashboardMetrics {
   triage_total: number;
   triage_overrides: number;
   cases_per_week: Array<{ week_start: string; cases: number }>;
+  ai_validations_total: number;
+  ai_validations_by_verdict: Record<AIVerdict, number>;
+  ai_agreement_rate: number | null;
+  ai_validations_simulated: number;
+  triage_assessments_total: number;
+  triage_assessments_by_value: Record<TriageAssessment, number>;
+  triage_agreement_rate: number | null;
 }
 
 export interface AdminStats {

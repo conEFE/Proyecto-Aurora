@@ -1,6 +1,6 @@
-# Resultados de pruebas — Proyecto Aurora (cierre Sprint 6)
+# Resultados de pruebas — Proyecto Aurora 2.1.0
 
-Ejecución: 07-10-2026, Windows 10, Python 3.11.9, PostgreSQL 16.2 embebido (`pgserver`), BD aislada por corrida.
+Ejecución: 08-10-2026, Windows 10, Python 3.11.9, PostgreSQL 16.2 embebido (`pgserver`), BD aislada por corrida.
 El esquema se crea con `alembic upgrade head` (no `create_all`).
 
 ```bash
@@ -12,12 +12,12 @@ pytest --cov=app
 
 | Indicador | Resultado | Meta |
 |---|---|---|
-| Tests ejecutados | **178** | — |
-| Aprobados | **178 (100%)** | 100% |
+| Tests ejecutados | **193** | — |
+| Aprobados | **193 (100%)** | 100% |
 | Fallidos | 0 | 0 |
-| Cobertura total de `app/` | **96%** (1.866 sentencias, 76 sin cubrir) | — |
+| Cobertura total de `app/` | **96%** (1.989 sentencias, 78 sin cubrir) | — |
 | Cobertura de `app/services/` | **≈94%** (856 sentencias, 52 sin cubrir) | ≥ 70% |
-| Duración | ≈ 43 s | — |
+| Duración | ≈ 65 s | — |
 | `ruff check` | sin hallazgos | 0 |
 | `npm run lint` / `npm run typecheck` | 0 errores / 0 errores | 0 |
 
@@ -32,6 +32,7 @@ pytest --cov=app
 | `test_images.py` | 17 | S4: carga PNG/JPEG, límite de tamaño (413), formatos (415), cifrado en disco, ADMINISTRATIVO sube pero no ve (403), inferencia simulada marcada |
 | `test_triage_engine.py` | 46 | S5 unitarios de `compute_triage`: cada regla, cada banda de edad, límites 59,99/60/29,99/30, factores y validación de parámetros |
 | `test_triage_api.py` | 23 | S5: triage al crear, recálculo e historial, override con motivo, orden de la cola, vista mínima, versiones de configuración, notificaciones |
+| `test_validation.py` | 15 | 2.1.0: validación médica de la IA por imagen, evaluación del triage, cierre bloqueado sin validación, métricas de concordancia |
 | `test_reviews_reports.py` | 22 | S6: toma y revisión, cierre solo con revisión, reporte registrado y auditado (EXPORT), métricas con datos controlados, endpoints viejos eliminados y **E2E completo** |
 
 ## Cobertura por módulo
@@ -57,7 +58,7 @@ app\schemas\*                         344      4    99%
 app\services\audit_service.py          21      3    86%
 app\services\auth_service.py           22      0   100%
 app\services\case_service.py           88      3    97%
-app\services\dashboard_service.py      68      2    97%
+app\services\dashboard_service.py      82      2    98%
 app\services\image_service.py         109     10    91%
 app\services\patient_service.py        57     13    77%
 app\services\review_service.py         72      3    96%
@@ -68,7 +69,7 @@ app\storage\local.py                   42      4    90%
 app\utils\quality.py                   27      0   100%
 app\utils\rut.py                       29      0   100%
 -------------------------------------------------------
-TOTAL                                1866     76    96%
+TOTAL                                1989     78    96%
 ```
 
 Lo no cubierto es principalmente `HttpYoloProvider` (stub del Sprint 8, sin servicio YOLO disponible) y ramas de

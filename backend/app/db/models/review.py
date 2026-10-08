@@ -1,5 +1,6 @@
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     Column,
     DateTime,
@@ -32,6 +33,10 @@ class ClinicalReview(Base):
             "recommendation IN ('CONTROL_RUTINA','CONTROL_6_MESES','ESTUDIO_COMPLEMENTARIO','BIOPSIA','DERIVACION')",
             name="ck_clinical_reviews_recommendation",
         ),
+        CheckConstraint(
+            "triage_assessment IN ('APROPIADO','SOBREESTIMADO','SUBESTIMADO')",
+            name="ck_clinical_reviews_triage_assessment",
+        ),
     )
 
     id = Column(Integer, primary_key=True)
@@ -40,6 +45,11 @@ class ClinicalReview(Base):
     birads_final = Column(SmallInteger, nullable=False)
     findings = Column(Text, nullable=False)
     recommendation = Column(String(30), nullable=False)
+    # Evaluación del triage por el médico (obligatoria en la API desde 2.1.0)
+    triage_assessment = Column(String(15), nullable=True)
+    triage_comment = Column(Text, nullable=True)
+    triage_level_at_review = Column(String(5), nullable=True)
+    triage_config_version_at_review = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -65,3 +75,32 @@ class RequestMetric(Base):
     status_code = Column(Integer, nullable=False)
     duration_ms = Column(Float, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+AI_VERDICTS = ("CONCORDANTE", "FALSO_POSITIVO", "FALSO_NEGATIVO", "NO_EVALUABLE")
+TRIAGE_ASSESSMENTS = ("APROPIADO", "SOBREESTIMADO", "SUBESTIMADO")
+
+
+class AIValidation(Base):
+    """Validación médica del resultado de IA de una imagen (concordancia IA–médico)."""
+
+    __tablename__ = "ai_validations"
+    __table_args__ = (
+        CheckConstraint(
+            "verdict IN ('CONCORDANTE','FALSO_POSITIVO','FALSO_NEGATIVO','NO_EVALUABLE')",
+            name="ck_ai_validations_verdict",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True)
+    image_id = Column(Integer, ForeignKey("images.id"), nullable=False, unique=True)
+    inference_result_id = Column(Integer, ForeignKey("inference_results.id"), nullable=False)
+    medico_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    verdict = Column(String(20), nullable=False)
+    comment = Column(Text, nullable=True)
+    # Copia de lo evaluado, para que las métricas no cambien si cambia el modelo
+    ai_detected = Column(Boolean, nullable=False)
+    ai_model_version = Column(String, nullable=False)
+    ai_was_simulated = Column(Boolean, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
