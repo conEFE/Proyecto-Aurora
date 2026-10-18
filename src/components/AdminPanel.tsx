@@ -17,7 +17,19 @@ import {
 } from './ui';
 
 const ROLES: Role[] = ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'];
-const ACTIONS = ['LOGIN_OK', 'LOGIN_FAIL', 'VIEW', 'CREATE', 'UPDATE', 'DOWNLOAD', 'OVERRIDE', 'CONFIG_CHANGE', 'EXPORT'];
+const ACTIONS = [
+  'LOGIN_OK',
+  'LOGIN_FAIL',
+  'VIEW',
+  'CREATE',
+  'UPDATE',
+  'DOWNLOAD',
+  'OVERRIDE',
+  'CONFIG_CHANGE',
+  'SIGN',
+  'SIGN_FAIL',
+  'EXPORT',
+];
 
 const EMPTY_USER: UserCreateInput = { rut: '', email: '', full_name: '', password: '', role: 'MEDICO' };
 

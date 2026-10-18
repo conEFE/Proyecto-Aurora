@@ -5,7 +5,9 @@ import type {
   ClinicalReview,
   DashboardMetrics,
   DicomMetadata,
+  ModelPerformanceReport,
   ReportRecord,
+  ReportSignature,
   ReviewInput,
   AppNotification,
   QueueItem,
@@ -327,6 +329,17 @@ class ApiClient {
     return this.request<ReportRecord[]>(`/cases/${caseId}/reports`);
   }
 
+  async signReport(caseId: number, password: string) {
+    return this.request<ReportSignature>(`/cases/${caseId}/reports/signature`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  }
+
+  async getReportSignature(caseId: number) {
+    return this.request<ReportSignature>(`/cases/${caseId}/reports/signature`);
+  }
+
   // --- Dashboard -------------------------------------------------------------
   async getDashboard(filters: { from?: string; to?: string; alta_pending_hours?: number } = {}) {
     const params = new URLSearchParams();
@@ -334,6 +347,14 @@ class ApiClient {
       if (v !== undefined && v !== '') params.append(k, String(v));
     });
     return this.request<DashboardMetrics>(`/dashboard/metrics?${params.toString()}`);
+  }
+
+  async getModelPerformance(filters: { from?: string; to?: string } = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== '') params.append(k, String(v));
+    });
+    return this.request<ModelPerformanceReport>(`/dashboard/model-performance?${params.toString()}`);
   }
 
   // --- Administración (solo ADMIN) ---------------------------------------

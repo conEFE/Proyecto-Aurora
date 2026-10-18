@@ -22,8 +22,10 @@ está en `/openapi.json` y la documentación interactiva en `/docs` del backend.
 | GET | `/cases/{case_id}/images/{image_id}/inference` | MEDICO | Resultado de la inferencia de una imagen (solo MEDICO). |
 | PUT | `/cases/{case_id}/images/{image_id}/validation` | MEDICO | El médico aprueba o rechaza el resultado de IA de la imagen (concordante, falso positivo/negativo, no evaluable). |
 | GET | `/cases/{case_id}/reports` | MEDICO | Reportes PDF registrados del caso. |
-| POST | `/cases/{case_id}/reports` | MEDICO | Registra un PDF generado (SHA-256) y devuelve sus metadatos DICOM. Queda auditado como EXPORT. |
+| POST | `/cases/{case_id}/reports` | MEDICO | Registra un PDF generado (SHA-256) y devuelve sus metadatos DICOM. Exige la firma del médico. Auditado (EXPORT). |
 | GET | `/cases/{case_id}/reports/metadata` | MEDICO | Metadatos tipo DICOM (SC-02) que el frontend incrusta en el PDF antes de calcular su SHA-256. |
+| GET | `/cases/{case_id}/reports/signature` | MEDICO | Firma del reporte y su verificación (HMAC válido y contenido sin cambios desde la firma). |
+| POST | `/cases/{case_id}/reports/signature` | MEDICO | El médico que revisó el caso firma su conformidad con el reporte, confirmando su contraseña. Queda auditado (SIGN). |
 | GET | `/cases/{case_id}/review` | MEDICO | Revisión médica del caso. |
 | POST | `/cases/{case_id}/review` | MEDICO | Registra la revisión (incluida la evaluación del triage) y cierra el caso (EN_REVISION → CERRADO). |
 | POST | `/cases/{case_id}/take` | MEDICO | El médico toma el caso: PRIORIZADO → EN_REVISION. |
@@ -32,6 +34,7 @@ está en `/openapi.json` y la documentación interactiva en `/docs` del backend.
 | GET | `/cases/{case_id}/triage/history` | MEDICO | Todos los cálculos del caso, del más reciente al más antiguo. |
 | POST | `/cases/{case_id}/triage/override` | MEDICO | El médico fija el nivel final. El motivo es obligatorio y queda en la auditoría (OVERRIDE). |
 | GET | `/dashboard/metrics` | ADMIN, ADMINISTRATIVO, MEDICO | Métricas agregadas: volumen por estado y nivel, KPIs de tiempo, ALTA pendientes, p95 y overrides. |
+| GET | `/dashboard/model-performance` | ADMIN, MEDICO | Desempeño del modelo por versión (matriz de confusión, exactitud, sensibilidad, especificidad, IC 95 %). |
 | GET | `/health` | Público | Estado de la API. |
 | GET | `/notifications` | Cualquier usuario autenticado | Notificaciones del usuario autenticado (no leídas primero). |
 | PATCH | `/notifications/{notification_id}/read` | Cualquier usuario autenticado | Marca como leída una notificación propia. |

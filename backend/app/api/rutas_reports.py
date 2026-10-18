@@ -9,7 +9,16 @@ from app.auth.rbac import require_roles
 from app.db.models.user import User, UserRole
 from app.deps import get_db
 from app.schemas.cases import CaseOut
-from app.schemas.reviews import AIValidationIn, AIValidationOut, ReportIn, ReportOut, ReviewIn, ReviewOut
+from app.schemas.reviews import (
+    AIValidationIn,
+    AIValidationOut,
+    ReportIn,
+    ReportOut,
+    ReviewIn,
+    ReviewOut,
+    SignatureIn,
+    SignatureOut,
+)
 from app.services import case_service, review_service
 from app.services.audit_service import client_ip
 
@@ -68,6 +77,24 @@ def get_report_metadata(case_id: int, actor: User = Depends(medico_only), db: Se
     return review_service.report_metadata(db, case_id, actor)
 
 
+@router.post("/{case_id}/reports/signature", response_model=SignatureOut, status_code=201)
+def sign_report(
+    case_id: int,
+    data: SignatureIn,
+    request: Request,
+    actor: User = Depends(medico_only),
+    db: Session = Depends(get_db),
+):
+    """El médico que revisó el caso firma su conformidad con el reporte, confirmando su contraseña. Queda auditado (SIGN)."""
+    return review_service.sign_report(db, case_id, data.password, actor, client_ip(request))
+
+
+@router.get("/{case_id}/reports/signature", response_model=SignatureOut)
+def get_signature(case_id: int, _: User = Depends(medico_only), db: Session = Depends(get_db)):
+    """Firma del reporte y su verificación (HMAC válido y contenido sin cambios desde la firma)."""
+    return review_service.get_signature(db, case_id)
+
+
 @router.post("/{case_id}/reports", response_model=ReportOut, status_code=201)
 def register_report(
     case_id: int,
@@ -76,7 +103,7 @@ def register_report(
     actor: User = Depends(medico_only),
     db: Session = Depends(get_db),
 ):
-    """Registra un PDF generado (SHA-256) y devuelve sus metadatos DICOM. Queda auditado como EXPORT."""
+    """Registra un PDF generado (SHA-256) y devuelve sus metadatos DICOM. Exige la firma del médico. Auditado (EXPORT)."""
     return review_service.register_report(db, case_id, data.content_hash, actor, client_ip(request))
 
 

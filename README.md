@@ -112,7 +112,7 @@ cd ..
 npm run lint && npm run typecheck
 ```
 
-Resultados de la versión 2.1.0: 193 tests aprobados y 96% de cobertura (`docs/resultados_tests.md`).
+Resultados de la versión 2.2.0: 206 tests aprobados y 96% de cobertura (`docs/resultados_tests.md`).
 
 ## Documentación
 

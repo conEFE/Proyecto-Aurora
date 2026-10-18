@@ -10,7 +10,7 @@ from app.db.models.triage import TriageResult
 from app.services import case_service
 from app.services.dashboard_service import metrics, percentile
 from app.services.errors import ConflictError
-from app.tests.conftest import auth
+from app.tests.conftest import PASSWORD, auth
 from app.tests.factories import birth_date_for_age, create_case, create_patient
 from app.tests.test_images import make_png, upload
 
@@ -37,6 +37,10 @@ def _take_and_review(client, h, case_id, review=None):
     r = client.post(f"/cases/{case_id}/review", json=review or REVIEW, headers=h)
     assert r.status_code == 201, r.text
     return r.json()
+
+
+def _sign(client, h, case_id, password=PASSWORD):
+    return client.post(f"/cases/{case_id}/reports/signature", json={"password": password}, headers=h)
 
 
 # --- Toma y revisión -----------------------------------------------------------
@@ -147,9 +151,11 @@ def test_report_registered_with_dicom_metadata_and_audited(client, tokens, db):
     assert case["patient"]["first_name"] not in str(meta)
 
     pdf_hash = hashlib.sha256(b"%PDF-1.7 contenido de prueba").hexdigest()
+    assert _sign(client, h, case["id"]).status_code == 201
     r = client.post(f"/cases/{case['id']}/reports", json={"content_hash": pdf_hash}, headers=h)
     assert r.status_code == 201
     assert r.json()["content_hash"] == pdf_hash
+    assert r.json()["signature_id"] is not None
     assert r.json()["dicom_metadata"]["PatientID"] == case["code"]
     assert db.query(Report).count() == 1
     export = db.query(AuditLog).filter(AuditLog.action == "EXPORT").one()
@@ -297,8 +303,10 @@ def test_e2e_full_flow(client, tokens, users, db):
         client.patch(f"/cases/{case['id']}", json={"palpable_mass": False}, headers=h_med).status_code == 409
     )
 
-    # 6. Genera el reporte y lo registra
+    # 6. Firma su conformidad, genera el reporte y lo registra
+    assert _sign(client, h_med, case["id"]).status_code == 201
     meta = client.get(f"/cases/{case['id']}/reports/metadata", headers=h_med).json()
+    assert meta["MedicalSignature"]["SignedBy"] == users["MEDICO"].full_name
     pdf_hash = hashlib.sha256(repr(meta).encode()).hexdigest()
     rep = client.post(f"/cases/{case['id']}/reports", json={"content_hash": pdf_hash}, headers=h_med)
     assert rep.status_code == 201
@@ -310,4 +318,4 @@ def test_e2e_full_flow(client, tokens, users, db):
         a["action"]
         for a in client.get("/admin/audit?size=200", headers=auth(tokens["ADMIN"])).json()["items"]
     }
-    assert {"LOGIN_OK", "CREATE", "VIEW", "UPDATE", "EXPORT"} <= actions
+    assert {"LOGIN_OK", "CREATE", "VIEW", "UPDATE", "SIGN", "EXPORT"} <= actions

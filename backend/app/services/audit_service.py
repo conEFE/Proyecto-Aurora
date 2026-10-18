@@ -18,6 +18,8 @@ ACTIONS = {
     "OVERRIDE",
     "CONFIG_CHANGE",
     "EXPORT",
+    "SIGN",
+    "SIGN_FAIL",
 }
 
 

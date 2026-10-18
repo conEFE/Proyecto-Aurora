@@ -78,6 +78,61 @@ class ReportOut(BaseModel):
     generated_at: datetime | None
     dicom_metadata: dict[str, Any]
     content_hash: str
+    signature_id: int | None = None
+
+
+class SignatureIn(BaseModel):
+    # El médico vuelve a ingresar su contraseña: la firma es un acto propio y deliberado
+    password: str = Field(min_length=1, max_length=128)
+
+
+class SignatureOut(BaseModel):
+    id: int
+    case_id: int
+    medico_id: int
+    medico_name: str
+    signed_at: datetime
+    content_hash: str
+    verification_code: str
+    # La firma corresponde al servidor y el contenido del reporte no cambió desde que se firmó
+    valid: bool
+
+
+class ModelVersionPerformance(BaseModel):
+    """Desempeño de una versión del modelo, con la validación del médico como estándar de referencia."""
+
+    model_config = ConfigDict(protected_namespaces=())
+
+    model_version: str
+    is_simulated: bool
+    validations: int
+    evaluable: int
+    not_evaluable: int
+    true_positives: int
+    true_negatives: int
+    false_positives: int
+    false_negatives: int
+    accuracy: float | None
+    accuracy_ci95: tuple[float, float] | None
+    sensitivity: float | None
+    sensitivity_ci95: tuple[float, float] | None
+    specificity: float | None
+    specificity_ci95: tuple[float, float] | None
+    ppv: float | None
+    npv: float | None
+    # None cuando no aplica: resultados simulados o muestra menor al mínimo
+    meets_k5: bool | None
+
+
+class ModelPerformanceReport(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+    date_from: datetime | None
+    date_to: datetime | None
+    k5_target: float
+    min_sample: int
+    reference_standard: str
+    versions: list[ModelVersionPerformance]
 
 
 class LevelCount(BaseModel):
