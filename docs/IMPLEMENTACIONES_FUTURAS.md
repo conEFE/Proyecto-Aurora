@@ -123,6 +123,23 @@ umbral 0,35). Detalle en el informe, sección 3.8. YOLO (localización de la les
   de la CNN en la regla de prioridad.
 - [ ] Publicar la integración del modelo real como versión 3.0.0 (cambia el contrato de inferencia).
 
+## Gestión del proyecto en GitHub (respaldo de lo que declara el informe)
+
+El informe describe prácticas que deben existir en el repositorio para que la evidencia sea verificable
+(rúbrica 2.1.5 y 2.1.6).
+
+- [ ] **Tablero Scrumban** en GitHub Projects con las columnas y límites WIP de la Tabla 8 del informe (Backlog, Listo
+  ≤ 6, En progreso ≤ 2 por persona, En revisión ≤ 3, QA ≤ 3, Hecho) y la vista de flujo acumulado (Insights).
+- [ ] Campos del tablero para medir lead time, cycle time y throughput desde el Sprint 7.
+- [ ] **Plantillas de issue** para solicitud de cambio (SC-nn: descripción, justificación, impacto en horas, costo,
+  riesgo y sprint) e incidente (INC-nn: prioridad P1–P4, detección, acción, verificación).
+- [ ] Etiquetas `cambio`, `incidente`, `P1`–`P4`, `épica:E5`…`E10` y registrar SC-02, SC-03 y SC-04 como issues.
+- [ ] Protección de la rama `main` (PR + 1 revisión + CI en verde) tal como lo describe la sección 6.3.
+
+## Seguridad del reporte firmado
+- [ ] Evaluar firma electrónica avanzada (Ley 19.799) con un prestador acreditado para la fase productiva; hoy la
+  conformidad es una firma electrónica simple (contraseña + HMAC + auditoría).
+
 ## Mejoras menores detectadas
 - [ ] Recálculo periódico del triage (tarea programada) para que el factor «tiempo de espera» suba sin datos nuevos.
 - [ ] Actualizar `docs/resultados_tests.md` a la versión 2.2.0 (206 tests).
