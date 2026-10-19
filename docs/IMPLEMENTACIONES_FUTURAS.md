@@ -13,7 +13,7 @@ Actualizado: 18-10-2026.
 | E6 | Cuentas, seguridad y registro de errores | Pendiente |
 | E7 | Versionado, CI/CD y despliegue (local → staging → piloto) | Pendiente (solo tags y `.env.example`) |
 | E9 | Pruebas no funcionales (carga, estrés y seguridad) | Pendiente (unitarias, integración y E2E listas) |
-| E10 | Clasificador CNN preentrenado para el triage | Postergado por decisión del equipo |
+| E10 | Clasificador CNN (ResNet18) y YOLO para el triage | Modelo CNN entrenado fuera del repo (AUC 0,843); integración pendiente; YOLO en desarrollo |
 | — | Mejoras menores detectadas | Pendiente |
 
 ## E6 · Cuentas, seguridad y registro de errores
@@ -87,14 +87,41 @@ Responde a «entorno local → deploy» y a los comentarios C13 y C14 (acceso a 
 - [ ] OWASP ZAP sobre staging sin hallazgos de riesgo alto (PS-04).
 - [ ] Publicar los resultados en `docs/resultados_tests.md`, incluidas las pruebas fallidas y su corrección.
 
-## E10 · Clasificador CNN preentrenado (postergado)
-- [ ] Elegir arquitectura con licencia permisiva (ResNet, EfficientNet o DenseNet de torchvision o timm) y dataset
-  público de mamografía (CBIS-DDSM, VinDr-Mammo o INbreast).
-- [ ] Servicio de inferencia en contenedor propio que implemente el contrato de `/predict`, devolviendo
-  probabilidad de sospecha y versión del modelo.
-- [ ] Evaluación offline en un set independiente antes del piloto; en operación, el desempeño se mide con
-  `/dashboard/model-performance` (KPI K5 ≥ 90 % con al menos 30 imágenes evaluables).
-- [ ] Publicar como versión 3.0.0.
+## E10 · Clasificador CNN (ResNet18) y YOLO
+
+Estado al 18-10-2026: la CNN está entrenada y medida fuera del repositorio (ResNet18 preentrenada, 1 canal,
+salida sigmoide; 6.601 mamografías de CBIS-DDSM y CMMD; AUC 0,843, sensibilidad 0,843 y especificidad 0,664 con
+umbral 0,35). Detalle en el informe, sección 3.8. YOLO (localización de la lesión) sigue en desarrollo.
+
+### Modelo
+- [x] Arquitectura con licencia permisiva: ResNet18 de torchvision (BSD) con transferencia desde ImageNet.
+- [ ] Versionar en el repo los scripts de entrenamiento (`preparar_completas.py`, script de CMMD, `config_torch.py`,
+  `datos_torch.py`, `entrenar_transfer2.py`, `umbrales.py`) en una carpeta `ml/`, sin los datos ni los pesos.
+- [ ] Guardar los pesos (`transfer_combinado.pt`) fuera de Git (almacenamiento de artefactos o Git LFS) y registrar
+  su hash y versión.
+- [ ] Corregir el filtro de CBIS-DDSM que dejó fuera 230 mamografías completas.
+- [ ] Reentrenar con división **por paciente** (`division.csv`, la misma que usará YOLO) y medir con un conjunto
+  externo no usado en el entrenamiento.
+
+### Integración con la plataforma
+- [ ] Servicio de inferencia en contenedor propio (puerto 8080) que implemente `POST /predict`: recibe la imagen,
+  aplica el mismo preprocesamiento (escala de grises, CLAHE 2,0 / 8×8, 512×512) y devuelve `probability`,
+  `detected` (según el umbral), `model_version` e `is_simulated=false`.
+- [ ] Adaptar `HttpYoloProvider` (renombrar a `HttpInferenceProvider`) para leer la probabilidad y guardarla en
+  `inference_results.confidence`.
+- [ ] Umbral de operación (0,35) como parámetro clínico versionado en `triage_configs`, editable por el médico (CU13).
+- [ ] Usar la probabilidad como factor IA del triage en lugar de la confianza simulada.
+
+### KPI K5 alineado con el informe
+- [ ] Cambiar `meets_k5` en `/dashboard/model-performance`: hoy evalúa exactitud ≥ 90 %, y el informe fija
+  **AUC ≥ 0,80 y sensibilidad ≥ 0,80**. Para calcular el AUC en operación se necesita la probabilidad de cada
+  resultado (ya queda en `inference_results.confidence`) junto con el veredicto del médico.
+- [ ] Actualizar los tests de `test_signature_model_performance.py` a los nuevos criterios.
+
+### YOLO (segunda etapa)
+- [ ] Integrar la detección de la lesión (cajas en `inference_results.detections`) y combinarla con la probabilidad
+  de la CNN en la regla de prioridad.
+- [ ] Publicar la integración del modelo real como versión 3.0.0 (cambia el contrato de inferencia).
 
 ## Mejoras menores detectadas
 - [ ] Recálculo periódico del triage (tarea programada) para que el factor «tiempo de espera» suba sin datos nuevos.
