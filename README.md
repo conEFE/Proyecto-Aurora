@@ -125,6 +125,20 @@ Resultados de la versión 2.2.0: 206 tests aprobados y 96% de cobertura (`docs/r
 | `docs/resultados_tests.md` | Salida de pytest y cobertura |
 | `docs/stack.md` | Versiones exactas y propósito de cada dependencia |
 
+## Crear ZIP del proyecto para distribución
+
+Desde la raíz del proyecto:
+
+```powershell
+.\crear-zip.ps1                  # genera Proyecto-Aurora-Limpio.zip
+```
+
+El ZIP incluye el código fuente, la configuración (`package.json`, `requirements.txt`, etc.), los scripts, la
+documentación y los `.env.example`. Excluye `node_modules/`, `venv/`, `__pycache__/`, `dist/`, `dist-ssr/`,
+`.vscode/`, `.idea/`, los archivos `.env`, `.pyc` y `.log`.
+
+Para instalar desde el ZIP, extráigalo y siga la sección [Instalación](#instalación).
+
 ## Seguridad
 
 - Las credenciales que estuvieron versionadas en la v1.0 (`backend/.env`, `backend/create_user.sql`) siguen en el
