@@ -31,9 +31,11 @@ TABLE_DESCRIPTIONS = {
     "triage_results": "Cálculos de triage por caso; uno vigente y el resto como historial.",
     "notifications": "Avisos a médicos cuando un caso queda en ALTA.",
     "clinical_reviews": "Revisión médica que cierra el caso.",
-    "reports": "Registro de cada PDF generado (SHA-256 y metadatos tipo DICOM).",
+    "report_signatures": "Firma (conformidad) del médico revisor sobre el contenido del reporte; una por caso.",
+    "reports": "Registro de cada PDF generado (SHA-256 y metadatos tipo DICOM), emitido solo con firma.",
     "audit_log": "Bitácora append-only de accesos y cambios (trigger bloquea UPDATE/DELETE).",
     "request_metrics": "Duración de cada request de la API (p95 del dashboard).",
+    "ai_validations": "Validación médica del resultado de IA de cada imagen (base de las métricas del modelo).",
 }
 
 COLUMN_DESCRIPTIONS = {
@@ -50,7 +52,12 @@ COLUMN_DESCRIPTIONS = {
     "inference_results.is_simulated": "true si lo generó el proveedor simulado",
     "triage_results.breakdown": "Aporte de cada factor y regla disparada",
     "triage_results.final_level": "Nivel vigente: el calculado o el fijado por override",
+    "report_signatures.content_hash": "SHA-256 del contenido firmado (metadatos del reporte en JSON canónico)",
+    "report_signatures.signature": "HMAC-SHA256 del servidor sobre caso, médico, fecha y content_hash",
     "reports.content_hash": "SHA-256 del PDF generado en el frontend",
+    "reports.signature_id": "Firma vigente al emitir el PDF (NULL en reportes anteriores a 2.2.0)",
+    "ai_validations.verdict": "CONCORDANTE, FALSO_POSITIVO, FALSO_NEGATIVO o NO_EVALUABLE",
+    "ai_validations.ai_model_version": "Copia de la versión evaluada (las métricas por versión no cambian con el modelo)",
     "reports.dicom_metadata": "PatientID (= código del caso), StudyDate, Modality=MG, hallazgos (SC-02)",
     "audit_log.detail": "Contexto de la acción, sin datos sensibles en claro",
 }

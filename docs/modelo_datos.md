@@ -20,7 +20,7 @@ Usuarios de la plataforma y su rol.
 | created_at | DATETIME | NULL, DEFAULT now() |  |
 | last_login_at | DATETIME | NULL |  |
 
-Índices únicos: `ix_users_email (email)`; `ix_users_rut (rut)`
+Índices únicos: `ix_users_rut (rut)`; `ix_users_email (email)`
 
 ### patients
 
@@ -143,7 +143,7 @@ Cálculos de triage por caso; uno vigente y el resto como historial.
 | is_current | BOOLEAN | NOT NULL, DEFAULT true |  |
 | computed_at | DATETIME | NOT NULL, DEFAULT now() |  |
 
-CHECK: `override_by IS NULL OR (override_reason IS NOT NULL AND length(trim(override_reason)) > 0)`; `score >= 0 AND score <= 100`
+CHECK: `score >= 0 AND score <= 100`; `override_by IS NULL OR (override_reason IS NOT NULL AND length(trim(override_reason)) > 0)`
 
 Índices únicos: `uq_triage_results_current (case_id) WHERE is_current`
 
@@ -178,11 +178,24 @@ Revisión médica que cierra el caso.
 | triage_config_version_at_review | INTEGER | NULL |  |
 | created_at | DATETIME | NULL, DEFAULT now() |  |
 
-CHECK: `triage_assessment IN ('APROPIADO','SOBREESTIMADO','SUBESTIMADO')`; `birads_final BETWEEN 0 AND 6`; `recommendation IN ('CONTROL_RUTINA','CONTROL_6_MESES','ESTUDIO_COMPLEMENTARIO','BIOPSIA','DERIVACION')`
+CHECK: `birads_final BETWEEN 0 AND 6`; `triage_assessment IN ('APROPIADO','SOBREESTIMADO','SUBESTIMADO')`; `recommendation IN ('CONTROL_RUTINA','CONTROL_6_MESES','ESTUDIO_COMPLEMENTARIO','BIOPSIA','DERIVACION')`
+
+### report_signatures
+
+Firma (conformidad) del médico revisor sobre el contenido del reporte; una por caso.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| id | INTEGER | PK, NOT NULL |  |
+| case_id | INTEGER | FK → cases.id, UNIQUE, NOT NULL |  |
+| medico_id | INTEGER | FK → users.id, NOT NULL |  |
+| signed_at | DATETIME | NOT NULL |  |
+| content_hash | VARCHAR(64) | NOT NULL | SHA-256 del contenido firmado (metadatos del reporte en JSON canónico) |
+| signature | VARCHAR(64) | NOT NULL | HMAC-SHA256 del servidor sobre caso, médico, fecha y content_hash |
 
 ### reports
 
-Registro de cada PDF generado (SHA-256 y metadatos tipo DICOM).
+Registro de cada PDF generado (SHA-256 y metadatos tipo DICOM), emitido solo con firma.
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -192,6 +205,7 @@ Registro de cada PDF generado (SHA-256 y metadatos tipo DICOM).
 | generated_at | DATETIME | NULL, DEFAULT now() |  |
 | dicom_metadata | JSONB | NOT NULL | PatientID (= código del caso), StudyDate, Modality=MG, hallazgos (SC-02) |
 | content_hash | VARCHAR(64) | NOT NULL | SHA-256 del PDF generado en el frontend |
+| signature_id | INTEGER | FK → report_signatures.id, NULL | Firma vigente al emitir el PDF (NULL en reportes anteriores a 2.2.0) |
 
 ### audit_log
 
@@ -223,7 +237,7 @@ Duración de cada request de la API (p95 del dashboard).
 
 ### ai_validations
 
-
+Validación médica del resultado de IA de cada imagen (base de las métricas del modelo).
 
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -231,10 +245,10 @@ Duración de cada request de la API (p95 del dashboard).
 | image_id | INTEGER | FK → images.id, UNIQUE, NOT NULL |  |
 | inference_result_id | INTEGER | FK → inference_results.id, NOT NULL |  |
 | medico_id | INTEGER | FK → users.id, NOT NULL |  |
-| verdict | VARCHAR(20) | NOT NULL |  |
+| verdict | VARCHAR(20) | NOT NULL | CONCORDANTE, FALSO_POSITIVO, FALSO_NEGATIVO o NO_EVALUABLE |
 | comment | TEXT | NULL |  |
 | ai_detected | BOOLEAN | NOT NULL |  |
-| ai_model_version | VARCHAR | NOT NULL |  |
+| ai_model_version | VARCHAR | NOT NULL | Copia de la versión evaluada (las métricas por versión no cambian con el modelo) |
 | ai_was_simulated | BOOLEAN | NOT NULL |  |
 | created_at | DATETIME | NULL, DEFAULT now() |  |
 | updated_at | DATETIME | NULL, DEFAULT now() |  |
@@ -358,6 +372,14 @@ erDiagram
         integer triage_config_version_at_review
         datetime created_at
     }
+    report_signatures {
+        integer id PK
+        integer case_id FK
+        integer medico_id FK
+        datetime signed_at
+        string content_hash
+        string signature
+    }
     reports {
         integer id PK
         integer case_id FK
@@ -365,6 +387,7 @@ erDiagram
         datetime generated_at
         jsonb dicom_metadata
         string content_hash
+        integer signature_id FK
     }
     audit_log {
         biginteger id PK
@@ -413,8 +436,11 @@ erDiagram
     cases ||--o{ notifications : "case_id"
     cases ||--o| clinical_reviews : "case_id"
     users ||--o{ clinical_reviews : "medico_id"
+    cases ||--o| report_signatures : "case_id"
+    users ||--o{ report_signatures : "medico_id"
     cases ||--o{ reports : "case_id"
     users ||--o{ reports : "generated_by"
+    report_signatures ||--o{ reports : "signature_id"
     users ||--o{ audit_log : "user_id"
     images ||--o| ai_validations : "image_id"
     inference_results ||--o{ ai_validations : "inference_result_id"

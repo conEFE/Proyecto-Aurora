@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, BarChart3, CheckCircle2, Clock, Gauge, Loader2, Timer } from 'lucide-react';
 import { apiClient } from '../services/api';
-import type { AIVerdict, CaseStatus, DashboardMetrics, TriageAssessment, TriageLevel } from '../types';
+import type {
+  AIVerdict,
+  CaseStatus,
+  DashboardMetrics,
+  ModelPerformanceReport,
+  TriageAssessment,
+  TriageLevel,
+} from '../types';
 import { AI_VERDICT_LABELS, CASE_STATUS_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
 import { cardClass, errorBox, inputClass, labelClass } from './ui';
 
@@ -122,24 +129,106 @@ function WeeklyLine({ points }: { points: Array<{ week_start: string; cases: num
   );
 }
 
+function pct(v: number | null): string {
+  return v === null ? '—' : `${(v * 100).toFixed(1)}%`;
+}
+
+function pctCi(v: number | null, ci: [number, number] | null): string {
+  if (v === null) return '—';
+  return ci ? `${pct(v)} (${(ci[0] * 100).toFixed(0)}–${(ci[1] * 100).toFixed(0)})` : pct(v);
+}
+
+/** Desempeño del modelo por versión, con la validación del médico como referencia (KPI K5). */
+function ModelPerformanceTable({ report }: { report: ModelPerformanceReport }) {
+  return (
+    <div className={`${cardClass} p-4`}>
+      <h3 className="text-sm font-semibold text-foreground mb-1">Desempeño del modelo por versión</h3>
+      <p className="text-[10px] text-muted-foreground mb-3">
+        Referencia: {report.reference_standard.toLowerCase()}. Entre paréntesis, intervalo de confianza de 95 %. El KPI
+        K5 (exactitud ≥ {(report.k5_target * 100).toFixed(0)} %) se evalúa solo con resultados reales y al menos{' '}
+        {report.min_sample} imágenes evaluables.
+      </p>
+      {report.versions.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Aún no hay validaciones médicas de resultados de IA.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-left text-[10px] uppercase text-muted-foreground">
+                <th className="py-1 pr-3">Versión</th>
+                <th className="py-1 pr-3 text-right">Evaluables</th>
+                <th className="py-1 pr-3 text-right">VP / VN / FP / FN</th>
+                <th className="py-1 pr-3 text-right">Exactitud</th>
+                <th className="py-1 pr-3 text-right">Sensibilidad</th>
+                <th className="py-1 pr-3 text-right">Especificidad</th>
+                <th className="py-1 pr-3 text-right">VPP / VPN</th>
+                <th className="py-1">K5</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border tabular-nums">
+              {report.versions.map((v) => (
+                <tr key={`${v.model_version}-${v.is_simulated}`}>
+                  <td className="py-1.5 pr-3 font-mono text-foreground">
+                    {v.model_version}
+                    {v.is_simulated && (
+                      <span className="ml-1.5 px-1 rounded bg-amber-500/15 text-amber-300 font-sans text-[9px] font-semibold">
+                        IA SIMULADA
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-1.5 pr-3 text-right text-foreground">
+                    {v.evaluable}
+                    {v.not_evaluable > 0 && <span className="text-muted-foreground"> (+{v.not_evaluable} no eval.)</span>}
+                  </td>
+                  <td className="py-1.5 pr-3 text-right text-foreground">
+                    {v.true_positives} / {v.true_negatives} / {v.false_positives} / {v.false_negatives}
+                  </td>
+                  <td className="py-1.5 pr-3 text-right text-foreground">{pctCi(v.accuracy, v.accuracy_ci95)}</td>
+                  <td className="py-1.5 pr-3 text-right text-foreground">{pctCi(v.sensitivity, v.sensitivity_ci95)}</td>
+                  <td className="py-1.5 pr-3 text-right text-foreground">{pctCi(v.specificity, v.specificity_ci95)}</td>
+                  <td className="py-1.5 pr-3 text-right text-foreground">
+                    {pct(v.ppv)} / {pct(v.npv)}
+                  </td>
+                  <td className="py-1.5">
+                    {v.meets_k5 === null ? (
+                      <span className="text-[10px] text-muted-foreground">{v.is_simulated ? 'No aplica' : 'Muestra insuficiente'}</span>
+                    ) : v.meets_k5 ? (
+                      <span className="text-[10px] font-semibold text-green-400">Cumple</span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-orange-400">Fuera de meta</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [hours, setHours] = useState(24);
   const [data, setData] = useState<DashboardMetrics | null>(null);
+  const [model, setModel] = useState<ModelPerformanceReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showTable, setShowTable] = useState(false);
 
   const load = useCallback(async () => {
-    const r = await apiClient.getDashboard({
-      from: from ? `${from}T00:00:00` : undefined,
-      to: to ? `${to}T23:59:59` : undefined,
-      alta_pending_hours: hours,
-    });
+    const range = { from: from ? `${from}T00:00:00` : undefined, to: to ? `${to}T23:59:59` : undefined };
+    const [r, m] = await Promise.all([
+      apiClient.getDashboard({ ...range, alta_pending_hours: hours }),
+      apiClient.getModelPerformance(range),
+    ]);
     if (r.data) {
       setData(r.data);
       setError(null);
     } else setError(r.error || 'Error al cargar métricas');
+    // Solo MEDICO y ADMIN ven el desempeño del modelo; para el resto la sección no se muestra
+    setModel(m.data ?? null);
   }, [from, to, hours]);
 
   useEffect(() => {
@@ -292,6 +381,8 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
+
+          {model && <ModelPerformanceTable report={model} />}
 
           <button className="text-xs text-primary" onClick={() => setShowTable((v) => !v)}>
             {showTable ? 'Ocultar' : 'Ver'} datos en tabla

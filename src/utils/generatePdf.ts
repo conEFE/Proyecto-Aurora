@@ -1,7 +1,15 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { apiClient } from '../services/api';
-import type { CaseImage, ClinicalCase, ClinicalReview, DicomMetadata, ReportRecord, TriageResult } from '../types';
+import type {
+  CaseImage,
+  ClinicalCase,
+  ClinicalReview,
+  DicomMetadata,
+  MedicalSignatureBlock,
+  ReportRecord,
+  TriageResult,
+} from '../types';
 import { AI_VERDICT_LABELS, EXAM_TYPE_LABELS, RECOMMENDATION_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
 
 type RGB = [number, number, number];
@@ -203,10 +211,27 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
     ]
   );
 
+  const signature = metadata.MedicalSignature as MedicalSignatureBlock | undefined;
+  if (signature) {
+    section('Firma del médico');
+    table(
+      ['Campo', 'Valor'],
+      [
+        ['Declaración', 'El médico declara su conformidad con el contenido de este reporte, incluida la validación del resultado de IA.'],
+        ['Firmado por', signature.SignedBy],
+        ['Fecha de firma', new Date(signature.SignedAt).toLocaleString('es-CL')],
+        ['Código de verificación', signature.VerificationCode],
+        ['SHA-256 del contenido firmado', signature.ContentSHA256],
+      ]
+    );
+  }
+
   section('Metadatos tipo DICOM (SC-02)');
   table(
     ['Atributo', 'Valor'],
-    Object.entries(metadata).map(([k, v]) => [k, Array.isArray(v) ? v.join(', ') : v === null ? '—' : String(v)])
+    Object.entries(metadata)
+      .filter(([k]) => k !== 'MedicalSignature')
+      .map(([k, v]) => [k, Array.isArray(v) ? v.join(', ') : v === null ? '—' : String(v)])
   );
 
   const pages = doc.getNumberOfPages();

@@ -1,5 +1,6 @@
 """Métricas agregadas del dashboard (sin datos identificables)."""
 
+import math
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func
@@ -10,7 +11,19 @@ from app.db.models.case import Case, CaseStatus
 from app.db.models.image import Image
 from app.db.models.review import AI_VERDICTS, TRIAGE_ASSESSMENTS, AIValidation, ClinicalReview, RequestMetric
 from app.db.models.triage import TriageLevel, TriageResult
-from app.schemas.reviews import DashboardMetrics, WeekPoint
+from app.schemas.reviews import (
+    DashboardMetrics,
+    ModelPerformanceReport,
+    ModelVersionPerformance,
+    WeekPoint,
+)
+
+# KPI K5: exactitud del modelo ≥ 90 %, evaluada solo con resultados reales y una muestra mínima
+K5_TARGET = 0.90
+K5_MIN_SAMPLE = 30
+REFERENCE_STANDARD = (
+    "Validación del médico revisor sobre cada imagen (no reemplaza la confirmación histológica)"
+)
 
 
 def _aware(dt: datetime) -> datetime:
@@ -24,6 +37,97 @@ def percentile(values: list[float], pct: float) -> float | None:
     ordered = sorted(values)
     rank = max(1, int(-(-pct * len(ordered) // 100)))  # ceil(pct/100 * n)
     return round(ordered[rank - 1], 1)
+
+
+def wilson_interval(successes: int, n: int, z: float = 1.96) -> tuple[float, float] | None:
+    """Intervalo de confianza de Wilson (95 %) para una proporción; se comporta bien con muestras chicas."""
+    if n == 0:
+        return None
+    p = successes / n
+    denom = 1 + z * z / n
+    centre = (p + z * z / (2 * n)) / denom
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
+    return round(max(0.0, centre - half), 4), round(min(1.0, centre + half), 4)
+
+
+def _ratio(num: int, den: int) -> float | None:
+    return round(num / den, 4) if den else None
+
+
+def model_performance(
+    db: Session, date_from: datetime | None = None, date_to: datetime | None = None
+) -> ModelPerformanceReport:
+    """Matriz de confusión y métricas por versión del modelo, usando la validación médica como referencia.
+
+    VP = concordante con hallazgo informado; VN = concordante sin hallazgo; FP y FN según el veredicto.
+    Se usa la copia guardada en cada validación (versión, hallazgo, simulado), así un cambio de modelo
+    no altera las métricas de las versiones anteriores.
+    """
+    q = (
+        db.query(
+            AIValidation.ai_model_version,
+            AIValidation.ai_was_simulated,
+            AIValidation.ai_detected,
+            AIValidation.verdict,
+        )
+        .join(Image, Image.id == AIValidation.image_id)
+        .join(Case, Case.id == Image.case_id)
+    )
+    if date_from:
+        q = q.filter(Case.created_at >= date_from)
+    if date_to:
+        q = q.filter(Case.created_at <= date_to)
+
+    groups: dict[tuple[str, bool], dict[str, int]] = {}
+    for version, simulated, detected, verdict in q.all():
+        g = groups.setdefault((version, simulated), {"tp": 0, "tn": 0, "fp": 0, "fn": 0, "ne": 0})
+        if verdict == "CONCORDANTE":
+            g["tp" if detected else "tn"] += 1
+        elif verdict == "FALSO_POSITIVO":
+            g["fp"] += 1
+        elif verdict == "FALSO_NEGATIVO":
+            g["fn"] += 1
+        else:
+            g["ne"] += 1
+
+    versions = []
+    for (version, simulated), g in sorted(groups.items(), key=lambda kv: (kv[0][1], kv[0][0])):
+        tp, tn, fp, fn = g["tp"], g["tn"], g["fp"], g["fn"]
+        evaluable = tp + tn + fp + fn
+        accuracy = _ratio(tp + tn, evaluable)
+        meets = None
+        if not simulated and evaluable >= K5_MIN_SAMPLE and accuracy is not None:
+            meets = accuracy >= K5_TARGET
+        versions.append(
+            ModelVersionPerformance(
+                model_version=version,
+                is_simulated=simulated,
+                validations=evaluable + g["ne"],
+                evaluable=evaluable,
+                not_evaluable=g["ne"],
+                true_positives=tp,
+                true_negatives=tn,
+                false_positives=fp,
+                false_negatives=fn,
+                accuracy=accuracy,
+                accuracy_ci95=wilson_interval(tp + tn, evaluable),
+                sensitivity=_ratio(tp, tp + fn),
+                sensitivity_ci95=wilson_interval(tp, tp + fn),
+                specificity=_ratio(tn, tn + fp),
+                specificity_ci95=wilson_interval(tn, tn + fp),
+                ppv=_ratio(tp, tp + fp),
+                npv=_ratio(tn, tn + fn),
+                meets_k5=meets,
+            )
+        )
+    return ModelPerformanceReport(
+        date_from=date_from,
+        date_to=date_to,
+        k5_target=K5_TARGET,
+        min_sample=K5_MIN_SAMPLE,
+        reference_standard=REFERENCE_STANDARD,
+        versions=versions,
+    )
 
 
 def metrics(

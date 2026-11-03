@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ClipboardCheck, FileDown, Loader2 } from 'lucide-react';
+import { ClipboardCheck, FileDown, Loader2, PenLine, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { apiClient } from '../services/api';
 import type {
   ClinicalCase,
@@ -7,6 +7,7 @@ import type {
   Me,
   Recommendation,
   ReportRecord,
+  ReportSignature,
   ReviewInput,
   TriageAssessment,
   TriageResult,
@@ -29,6 +30,8 @@ const ASSESSMENTS: TriageAssessment[] = ['APROPIADO', 'SOBREESTIMADO', 'SUBESTIM
 export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged }: ReviewPanelProps) {
   const [review, setReview] = useState<ClinicalReview | null>(null);
   const [reports, setReports] = useState<ReportRecord[]>([]);
+  const [signature, setSignature] = useState<ReportSignature | null>(null);
+  const [password, setPassword] = useState('');
   const [triage, setTriage] = useState<TriageResult | null>(null);
   const [pendingValidations, setPendingValidations] = useState(0);
   const [form, setForm] = useState<ReviewInput>({
@@ -46,6 +49,8 @@ export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged
     if (caseData.status !== 'CERRADO') return;
     apiClient.getReview(caseData.id).then((r) => r.data && setReview(r.data));
     apiClient.listReports(caseData.id).then((r) => r.data && setReports(r.data));
+    // 404 = aún no firmado
+    apiClient.getReportSignature(caseData.id).then((r) => setSignature(r.data ?? null));
   }, [caseData.id, caseData.status]);
 
   useEffect(() => {
@@ -97,6 +102,16 @@ export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged
       if (!r.data) return r.error || 'No se pudo registrar la revisión';
       setReview(r.data);
       onChanged();
+      return null;
+    });
+
+  const sign = () =>
+    run(async () => {
+      const r = await apiClient.signReport(caseData.id, password);
+      setPassword('');
+      if (!r.data) return r.error || 'No se pudo firmar el reporte';
+      setSignature(r.data);
+      setInfo(`Reporte firmado. Código de verificación ${r.data.verification_code}.`);
       return null;
     });
 
@@ -212,10 +227,55 @@ export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged
             {review.triage_comment && <span className="text-muted-foreground"> · {review.triage_comment}</span>}
           </p>
           <p className="text-[10px] text-muted-foreground">Registrada el {formatDateTime(review.created_at)}</p>
-          <button className={primaryButton} onClick={generate} disabled={busy}>
+
+          <fieldset className="p-2 border border-border rounded space-y-1.5">
+            <legend className="px-1 text-[10px] font-semibold text-muted-foreground uppercase">Firma del médico</legend>
+            {signature ? (
+              <p className={`text-[11px] flex items-start gap-1.5 ${signature.valid ? 'text-green-300' : 'text-red-400'}`}>
+                {signature.valid ? <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> : <ShieldAlert className="w-3.5 h-3.5 shrink-0" />}
+                <span>
+                  Firmado por {signature.medico_name} el {formatDateTime(signature.signed_at)} · código{' '}
+                  <span className="font-mono">{signature.verification_code}</span>
+                  {signature.valid ? ' · verificada' : ' · el contenido cambió después de la firma'}
+                </span>
+              </p>
+            ) : review.medico_id === me.id ? (
+              <form
+                className="space-y-1.5"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  sign();
+                }}
+              >
+                <p className="text-[10px] text-muted-foreground">
+                  Declaro mi conformidad con el contenido de este reporte, incluida la validación del resultado de IA de
+                  cada imagen. Confirme con su contraseña.
+                </p>
+                <input
+                  id="rv-sign-password"
+                  type="password"
+                  autoComplete="current-password"
+                  className={inputClass}
+                  placeholder="Contraseña"
+                  aria-label="Contraseña para firmar"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button type="submit" className={primaryButton} disabled={busy || !password}>
+                  {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenLine className="w-3.5 h-3.5" />}
+                  Firmar reporte
+                </button>
+              </form>
+            ) : (
+              <p className="text-[10px] text-orange-400">Pendiente de firma por el médico que registró la revisión.</p>
+            )}
+          </fieldset>
+
+          <button className={primaryButton} onClick={generate} disabled={busy || !signature}>
             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
             Generar reporte PDF
           </button>
+          {!signature && <p className="text-[10px] text-muted-foreground">El PDF se emite una vez firmado el reporte.</p>}
           {reports.length > 0 && (
             <div className="pt-1">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase">Reportes generados</p>

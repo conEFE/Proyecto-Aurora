@@ -311,7 +311,15 @@ export interface ClinicalReview extends ReviewInput {
   created_at: string | null;
 }
 
-export type DicomMetadata = Record<string, string | number | boolean | string[] | null>;
+/** Bloque de firma que el backend agrega a los metadatos una vez que el médico firma el reporte. */
+export interface MedicalSignatureBlock {
+  SignedBy: string;
+  SignedAt: string;
+  VerificationCode: string;
+  ContentSHA256: string;
+}
+
+export type DicomMetadata = Record<string, string | number | boolean | string[] | null | MedicalSignatureBlock>;
 
 export interface ReportRecord {
   id: number;
@@ -320,6 +328,49 @@ export interface ReportRecord {
   generated_at: string | null;
   dicom_metadata: DicomMetadata;
   content_hash: string;
+  signature_id: number | null;
+}
+
+export interface ReportSignature {
+  id: number;
+  case_id: number;
+  medico_id: number;
+  medico_name: string;
+  signed_at: string;
+  content_hash: string;
+  verification_code: string;
+  /** HMAC válido y contenido del reporte sin cambios desde la firma */
+  valid: boolean;
+}
+
+export interface ModelVersionPerformance {
+  model_version: string;
+  is_simulated: boolean;
+  validations: number;
+  evaluable: number;
+  not_evaluable: number;
+  true_positives: number;
+  true_negatives: number;
+  false_positives: number;
+  false_negatives: number;
+  accuracy: number | null;
+  accuracy_ci95: [number, number] | null;
+  sensitivity: number | null;
+  sensitivity_ci95: [number, number] | null;
+  specificity: number | null;
+  specificity_ci95: [number, number] | null;
+  ppv: number | null;
+  npv: number | null;
+  meets_k5: boolean | null;
+}
+
+export interface ModelPerformanceReport {
+  date_from: string | null;
+  date_to: string | null;
+  k5_target: number;
+  min_sample: number;
+  reference_standard: string;
+  versions: ModelVersionPerformance[];
 }
 
 export interface DashboardMetrics {

@@ -53,6 +53,24 @@ class ClinicalReview(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class ReportSignature(Base):
+    """Firma (conformidad) del médico sobre el contenido del reporte clínico. Una por caso e inmutable.
+
+    `content_hash` es el SHA-256 del contenido firmado (metadatos del reporte en JSON canónico) y `signature`
+    un HMAC-SHA256 del servidor sobre caso, médico, fecha y ese hash: permite verificar después que ni la firma
+    ni el contenido cambiaron.
+    """
+
+    __tablename__ = "report_signatures"
+
+    id = Column(Integer, primary_key=True)
+    case_id = Column(Integer, ForeignKey("cases.id"), nullable=False, unique=True)
+    medico_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    signed_at = Column(DateTime(timezone=True), nullable=False)
+    content_hash = Column(String(64), nullable=False)
+    signature = Column(String(64), nullable=False)
+
+
 class Report(Base):
     __tablename__ = "reports"
 
@@ -62,6 +80,8 @@ class Report(Base):
     generated_at = Column(DateTime(timezone=True), server_default=func.now())
     dicom_metadata = Column(JSONB, nullable=False)
     content_hash = Column(String(64), nullable=False)
+    # Firma vigente al emitir el PDF (NULL en reportes anteriores a 2.2.0)
+    signature_id = Column(Integer, ForeignKey("report_signatures.id"), nullable=True)
 
 
 class RequestMetric(Base):

@@ -328,6 +328,44 @@ resultado quede registrado. Antes solo existía el override (que registra el des
 
 ---
 
+## 2.2.0 — Desempeño del modelo por versión y firma médica del reporte (E5)
+
+La validación médica de cada imagen (2.1.0) ya registraba el acuerdo o desacuerdo con la IA, pero no se usaba para
+medir el modelo en funcionamiento, y el reporte se emitía sin un acto de conformidad del médico.
+
+### Desempeño del modelo (KPI K5)
+- `GET /dashboard/model-performance` (ADMIN, MEDICO; filtro `from`/`to` por fecha del caso): matriz de confusión
+  por versión del modelo a partir de `ai_validations` (VP = concordante con hallazgo, VN = concordante sin hallazgo,
+  FP y FN según el veredicto), exactitud, sensibilidad, especificidad, VPP, VPN e intervalos de confianza de Wilson
+  al 95 %. Usa la copia guardada en cada validación (versión, hallazgo, simulado), así un cambio de modelo no altera
+  las métricas de las versiones anteriores.
+- `meets_k5` (exactitud ≥ 90 %) solo se evalúa con resultados reales y al menos 30 imágenes evaluables; con IA
+  simulada o muestra menor queda en `null`. La referencia es la validación del médico, no la confirmación
+  histológica, y así se declara en la respuesta.
+- Dashboard: tabla «Desempeño del modelo por versión» con badge IA SIMULADA (solo MEDICO y ADMIN).
+
+### Firma (conformidad) del médico sobre el reporte
+- Migración `b8f2d0c7e608` (reversible): tabla `report_signatures` (una por caso) y `reports.signature_id`. Los
+  reportes anteriores quedan con la firma en NULL: no se inventa una firma que no se hizo.
+- `POST /cases/{id}/reports/signature`: solo el médico que registró la revisión, con el caso cerrado y confirmando su
+  contraseña. Guarda el SHA-256 del contenido del reporte (metadatos en JSON canónico) y un HMAC-SHA256 del servidor
+  sobre caso, médico, fecha y ese hash. Audita `SIGN`; un intento con contraseña incorrecta audita `SIGN_FAIL`.
+- `GET /cases/{id}/reports/signature`: devuelve la firma con `valid`, que es falso si el HMAC no coincide o si el
+  contenido del reporte cambió después de firmar.
+- `POST /cases/{id}/reports` exige la firma (409 sin ella) y guarda `signature_id`. Los metadatos del reporte llevan
+  el bloque `MedicalSignature` (firmante, fecha, código de verificación y hash del contenido).
+- Frontend: paso «Firma del médico» en la revisión (declaración de conformidad y contraseña); el PDF se habilita
+  después de firmar e incluye la sección «Firma del médico». La bitácora de ADMIN filtra por `SIGN` y `SIGN_FAIL`.
+
+### Pruebas
+- 13 tests nuevos (`test_signature_model_performance.py`): firma con caso abierto (409), contraseña incorrecta (422 y
+  `SIGN_FAIL`), solo el médico revisor (403), firma única (409), verificación, bloque en metadatos, reporte sin
+  firma (409), contenido alterado invalida la firma, métricas por versión con datos controlados, K5 solo con
+  resultados reales, permisos e intervalo de Wilson. Se ajustaron los tests de reporte y el E2E para firmar antes de
+  emitir. Total: 206 tests aprobados, cobertura 96 %.
+
+---
+
 ## Pendiente para S7–S8 (no implementado, según la regla 2)
 Docker y docker-compose, GitHub Actions, `S3EncryptedStorage`, rate limiting y bloqueo de login, revisión OWASP,
 despliegue en AWS, `HttpYoloProvider` real, pruebas de carga con Locust y soporte DICOM en la carga.
