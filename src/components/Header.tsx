@@ -1,28 +1,49 @@
-import { Activity, Upload, FolderOpen, FileText, LogOut, User, Settings } from 'lucide-react';
+import {
+  Activity,
+  Upload,
+  FolderOpen,
+  BarChart3,
+  ListOrdered,
+  LogOut,
+  Settings,
+  SlidersHorizontal,
+  type LucideIcon,
+} from 'lucide-react';
 import { apiClient } from '../services/api';
+import type { Me, Role } from '../types';
+import { ROLE_LABELS } from '../types';
+import NotificationBell from './NotificationBell';
 
-type Section = 'home' | 'upload' | 'cases' | 'reports' | 'panel';
+export type Section = 'home' | 'queue' | 'upload' | 'cases' | 'dashboard' | 'config' | 'panel';
 
 interface HeaderProps {
   currentSection: Section;
   onSectionChange: (section: Section) => void;
-  userRole: string;
+  onOpenCase: (caseId: number) => void;
+  me: Me;
 }
 
-export default function Header({ currentSection, onSectionChange, userRole }: HeaderProps) {
-  const isAdmin = userRole === 'ADMIN';
-  
-  const navItems = [
-    { id: 'home' as Section, label: 'Inicio', icon: Activity },
-    { id: 'upload' as Section, label: 'Análisis', icon: Upload },
-    { id: 'cases' as Section, label: 'Casos', icon: FolderOpen },
-    { id: 'reports' as Section, label: 'Reportes', icon: FileText },
-    { 
-      id: 'panel' as Section, 
-      label: isAdmin ? 'Admin' : 'Mi Panel', 
-      icon: isAdmin ? Settings : User 
-    },
-  ];
+interface NavItem {
+  id: Section;
+  label: string;
+  icon: LucideIcon;
+  roles: Role[];
+}
+
+const CLINICAL: Role[] = ['MEDICO', 'ADMINISTRATIVO'];
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'home', label: 'Inicio', icon: Activity, roles: CLINICAL },
+  { id: 'queue', label: 'Cola de triage', icon: ListOrdered, roles: CLINICAL },
+  { id: 'cases', label: 'Casos', icon: FolderOpen, roles: CLINICAL },
+  { id: 'upload', label: 'Imágenes', icon: Upload, roles: CLINICAL },
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3, roles: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'] },
+  { id: 'config', label: 'Parámetros', icon: SlidersHorizontal, roles: ['MEDICO', 'ADMIN'] },
+  { id: 'panel', label: 'Administración', icon: Settings, roles: ['ADMIN'] },
+];
+
+export default function Header({ currentSection, onSectionChange, onOpenCase, me }: HeaderProps) {
+  const navItems = NAV_ITEMS.filter((item) => item.roles.includes(me.role));
 
   return (
     <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
@@ -33,13 +54,15 @@ export default function Header({ currentSection, onSectionChange, userRole }: He
               <Activity className="w-4 h-4 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-foreground leading-tight">
-                {isAdmin ? 'Panel de Administración' : 'Panel de Usuario'}
-              </h1>
-              <p className="text-[10px] text-muted-foreground">Sistema IA YOLO</p>
+              <h1 className="text-sm font-semibold text-foreground leading-tight">Proyecto Aurora</h1>
+              <p className="text-[10px] text-muted-foreground">
+                {me.full_name} · {ROLE_LABELS[me.role]}
+              </p>
             </div>
           </div>
 
+          <div className="flex items-center gap-1">
+          {me.role === 'MEDICO' && <NotificationBell onOpenCase={onOpenCase} />}
           <button
             onClick={() => {
               apiClient.setToken(null);
@@ -50,18 +73,18 @@ export default function Header({ currentSection, onSectionChange, userRole }: He
             <LogOut className="w-3 h-3" />
             <span className="hidden sm:inline">Salir</span>
           </button>
+          </div>
         </div>
 
-        <nav className="flex space-x-1 pb-1">
+        <nav className="flex space-x-1 pb-1 overflow-x-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentSection === item.id;
-
             return (
               <button
-                key={item.id}
+                key={`${item.id}-${item.label}`}
                 onClick={() => onSectionChange(item.id)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors whitespace-nowrap ${
                   isActive
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent'

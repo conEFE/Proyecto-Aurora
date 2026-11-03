@@ -1,64 +1,35 @@
-from fastapi import Header, HTTPException, Depends
-from typing import Optional
+"""Obtiene el usuario autenticado a partir del JWT, siempre consultando la BD."""
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
-from app.deps import get_db
+
+from app.auth.security import InvalidTokenError, decode_access_token
 from app.db.models.user import User
+from app.deps import get_db
 
-def get_token_from_header(authorization: Optional[str] = Header(None)) -> str:
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing authorization header")
-    
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Invalid authorization format")
-    
-    token = authorization.replace("Bearer ", "").strip()
-    return token
+_bearer = HTTPBearer(auto_error=False)
 
-def get_user_from_token(token: str, db: Session) -> User:
-    # Token formato: "RUT-ROLE" (el RUT puede tener guiones, ej: "19291836-7-MEDICO")
-    try:
-        # Dividir desde la derecha para separar el rol del RUT
-        # El RUT puede tener guiones (ej: "19291836-7"), así que tomamos todo excepto la última parte
-        parts = token.rsplit("-", 1)
-        if len(parts) != 2:
-            raise HTTPException(status_code=403, detail="Invalid token format")
-        
-        rut = parts[0]  # Todo antes del último guión (ej: "19291836-7")
-        role = parts[1]  # La última parte (ej: "MEDICO")
-        
-        user = db.query(User).filter(User.rut == rut).first()
-        if not user:
-            raise HTTPException(status_code=403, detail="Invalid token")
-        return user
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Invalid token format")
+_UNAUTHORIZED = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Sesión inválida o expirada",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
-def get_current_user_role(
-    token: str = Depends(get_token_from_header),
-    db: Session = Depends(get_db)
-) -> str:
-    user = get_user_from_token(token, db)
-    return user.role.value
-
-def get_role_from_token(token: str) -> str:
-    # Token formato: "RUT-ROLE" (el RUT puede tener guiones)
-    try:
-        # Dividir desde la derecha para obtener el rol
-        _, role = token.rsplit("-", 1)
-        return role
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Invalid token format")
-
-def get_current_user_role(
-    token: str = Depends(get_token_from_header),
-    db: Session = Depends(get_db)
-) -> str:
-    user = get_user_from_token(token, db)
-    return user.role.value
 
 def get_current_user(
-    token: str = Depends(get_token_from_header),
-    db: Session = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    db: Session = Depends(get_db),
 ) -> User:
-    """Obtiene el usuario actual desde el token"""
-    return get_user_from_token(token, db)
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise _UNAUTHORIZED
+    try:
+        payload = decode_access_token(credentials.credentials)
+        user_id = int(payload["sub"])
+    except (InvalidTokenError, ValueError, TypeError):
+        raise _UNAUTHORIZED
+
+    user = db.get(User, user_id)
+    if user is None or not getattr(user, "is_active", True):
+        raise _UNAUTHORIZED
+    return user
