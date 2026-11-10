@@ -3,7 +3,13 @@ import type {
   AIValidation,
   AIVerdict,
   ClinicalReview,
+  ConsentEvent,
+  ConsentText,
   DashboardMetrics,
+  DataRequestStatus,
+  DataRequestSummary,
+  DataRequestType,
+  DataSubjectRequest,
   ErrorLogEntry,
   ErrorTypeCount,
   TokenResponse,
@@ -164,10 +170,76 @@ class ApiClient {
     return this.request<Patient>(`/patients/${id}`);
   }
 
-  async searchPatients(search?: string) {
+  async searchPatients(search?: string, includeBlocked = false) {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
+    if (includeBlocked) params.append('include_blocked', 'true');
     return this.request<Patient[]>(`/patients?${params.toString()}`);
+  }
+
+  // --- Privacidad (Ley 21.719) --------------------------------------------
+  async getConsentText() {
+    return this.request<ConsentText>('/privacy/consent-text');
+  }
+
+  async getConsentTextVersion(version: string) {
+    return this.request<ConsentText>(`/privacy/consent-texts/${encodeURIComponent(version)}`);
+  }
+
+  async grantConsent(patientId: number, consentTextVersion: string) {
+    return this.request<Patient>(`/patients/${patientId}/consent`, {
+      method: 'POST',
+      body: JSON.stringify({ consent_text_version: consentTextVersion }),
+    });
+  }
+
+  async withdrawConsent(patientId: number, reason: string) {
+    return this.request<Patient>(`/patients/${patientId}/consent/withdraw`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: reason || null }),
+    });
+  }
+
+  async consentEvents(patientId: number) {
+    return this.request<ConsentEvent[]>(`/patients/${patientId}/consent/events`);
+  }
+
+  async blockPatient(patientId: number, reason: string) {
+    return this.request<Patient>(`/patients/${patientId}/block`, { method: 'POST', body: JSON.stringify({ reason }) });
+  }
+
+  async unblockPatient(patientId: number) {
+    return this.request<Patient>(`/patients/${patientId}/unblock`, { method: 'POST' });
+  }
+
+  async exportPatient(patientId: number) {
+    return this.request<Record<string, unknown>>(`/patients/${patientId}/export`);
+  }
+
+  async createDataRequest(patientId: number, data: { request_type: DataRequestType; detail?: string; received_at?: string }) {
+    return this.request<DataSubjectRequest>(`/patients/${patientId}/requests`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async listDataRequests(filters: { status?: DataRequestStatus; overdue?: boolean; patient_id?: number }) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== false) params.append(k, String(v));
+    });
+    return this.request<DataSubjectRequest[]>(`/privacy/requests?${params.toString()}`);
+  }
+
+  async updateDataRequest(id: number, data: { status: DataRequestStatus; resolution?: string }) {
+    return this.request<DataSubjectRequest>(`/privacy/requests/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async dataRequestsSummary() {
+    return this.request<DataRequestSummary>('/privacy/requests/summary');
   }
 
   // --- Casos ---------------------------------------------------------------

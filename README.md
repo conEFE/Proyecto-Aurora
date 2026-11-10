@@ -8,7 +8,8 @@ Proyecto de título — INACAP. **La plataforma apoya, no reemplaza, el criterio
 
 ## Qué hace
 
-- Registro de pacientes con **consentimiento informado** y RUT validado.
+- Registro de pacientes con **consentimiento informado versionado** (se guarda qué texto aceptó cada paciente) y
+  RUT validado.
 - Casos con código anónimo `AUR-AAAA-NNNNNN`, síntomas, BI-RADS y estados
   `ABIERTO → PRIORIZADO → EN_REVISION → CERRADO`.
 - Carga de mamografías/ecografías **cifradas en disco** (Fernet) con SHA-256 e inferencia automática.
@@ -19,6 +20,9 @@ Proyecto de título — INACAP. **La plataforma apoya, no reemplaza, el criterio
 - **Validación médica:** el médico aprueba o rechaza el resultado de IA de cada imagen (concordante, falso
   positivo/negativo) y evalúa el nivel de triage al cerrar el caso. La concordancia se mide en el dashboard.
 - JWT firmado, autorización por rol leída desde la BD y **bitácora de auditoría** append-only (Ley 19.628).
+- **Derechos de los titulares (Ley 21.719):** retiro del consentimiento, bloqueo de datos (la ficha se conserva por
+  la Ley 20.584), copia de los datos en JSON (acceso y portabilidad) y registro de solicitudes con plazo de 30 días.
+  Ver `docs/cumplimiento_legal.md`.
 
 ## Roles
 
@@ -38,6 +42,9 @@ Proyecto de título — INACAP. **La plataforma apoya, no reemplaza, el criterio
 | Generar reporte PDF | – | ✔ | – |
 | Editar parámetros de triage | – | ✔ | – (solo consulta) |
 | Ver el dashboard de métricas (agregadas) | ✔ | ✔ | ✔ |
+| Retirar o registrar consentimiento, bloquear datos, gestionar solicitudes de titulares | ✔ | ✔ | – |
+| Exportar todos los datos de un paciente (JSON) | – | ✔ | – |
+| Ver el resumen de solicitudes de titulares (sin datos de pacientes) | ✔ | ✔ | ✔ |
 
 ## Requisitos
 
@@ -136,7 +143,7 @@ set TEST_DB_DSN=postgresql+psycopg2://usuario:clave@localhost:5432/aurora_test  
 pytest --cov=app
 ```
 
-Resultados de la versión 2.3.0: 240 tests aprobados y 97% de cobertura (`docs/resultados_tests.md`).
+Resultados de la versión 2.4.0: 258 tests aprobados y 97% de cobertura (`docs/resultados_tests.md`).
 
 ## Documentación
 
@@ -149,6 +156,7 @@ Resultados de la versión 2.3.0: 240 tests aprobados y 97% de cobertura (`docs/r
 | `docs/resultados_tests.md` | Salida de pytest y cobertura |
 | `docs/stack.md` | Versiones exactas y propósito de cada dependencia |
 | `docs/seguridad_owasp.md` | Revisión OWASP Top 10 (2021) y controles de seguridad |
+| `docs/cumplimiento_legal.md` | Cumplimiento Ley 19.628 / 21.719 / 20.584: matriz, evaluación de impacto, brechas y conservación |
 
 ## Crear ZIP del proyecto para distribución
 

@@ -11,6 +11,7 @@ from app.api import (
     rutas_dashboard,
     rutas_images,
     rutas_patients,
+    rutas_privacy,
     rutas_reports,
     rutas_triage,
 )
@@ -23,7 +24,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 _docs = settings.ENABLE_API_DOCS
 app = FastAPI(
     title="Proyecto Aurora API",
-    version="2.3.0",
+    version="2.4.0",
     docs_url="/docs" if _docs else None,
     redoc_url="/redoc" if _docs else None,
     openapi_url="/openapi.json" if _docs else None,
@@ -61,4 +62,5 @@ app.include_router(rutas_triage.notifications_router, prefix="/notifications", t
 app.include_router(rutas_reports.router, prefix="/cases", tags=["reports"])
 app.include_router(rutas_dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(rutas_patients.router, prefix="/patients", tags=["patients"])
+app.include_router(rutas_privacy.router, prefix="/privacy", tags=["privacy"])
 app.include_router(rutas_admin.router, prefix="/admin", tags=["admin"])

@@ -2,6 +2,7 @@
 
 from datetime import date
 
+from app.services.consent_text import CONSENT_TEXT_VERSION
 from app.utils.rut import compute_dv
 
 _counter = {"n": 20000000}
@@ -23,6 +24,7 @@ def patient_payload(**overrides) -> dict:
         "family_history_first_degree": False,
         "previous_breast_cancer": False,
         "consent_given": True,
+        "consent_text_version": CONSENT_TEXT_VERSION,
     }
     data.update(overrides)
     return data

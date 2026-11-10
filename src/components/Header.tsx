@@ -9,6 +9,7 @@ import {
   ListOrdered,
   LogOut,
   Settings,
+  ShieldCheck,
   SlidersHorizontal,
   type LucideIcon,
 } from 'lucide-react';
@@ -18,7 +19,7 @@ import { ROLE_LABELS } from '../types';
 import NotificationBell from './NotificationBell';
 import ChangePassword from './ChangePassword';
 
-export type Section = 'home' | 'queue' | 'upload' | 'cases' | 'dashboard' | 'config' | 'panel';
+export type Section = 'home' | 'queue' | 'upload' | 'cases' | 'dashboard' | 'config' | 'privacy' | 'panel';
 
 interface HeaderProps {
   currentSection: Section;
@@ -43,6 +44,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'upload', label: 'Imágenes', icon: Upload, roles: CLINICAL },
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3, roles: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'] },
   { id: 'config', label: 'Parámetros', icon: SlidersHorizontal, roles: ['MEDICO', 'ADMIN'] },
+  { id: 'privacy', label: 'Privacidad', icon: ShieldCheck, roles: CLINICAL },
   { id: 'panel', label: 'Administración', icon: Settings, roles: ['ADMIN'] },
 ];
 

@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 def ensure_reference_data(db: Session) -> None:
     """La configuración de triage v1 la crea la migración; esto la repone si la tabla quedó vacía."""
+    from app.services.privacy_service import ensure_consent_text
     from app.services.triage_service import ensure_default_config
 
     ensure_default_config(db)
+    ensure_consent_text(db)

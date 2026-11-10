@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Search, UserPlus, User, Loader2, ShieldCheck } from 'lucide-react';
 import { apiClient } from '../services/api';
-import type { Patient, PatientInput, Sex } from '../types';
+import type { ConsentText, Patient, PatientInput, Sex } from '../types';
 import { isValidRut, normalizeRut } from '../utils/rut';
 import { errorBox, inputClass, labelClass, primaryButton, secondaryButton, formatDate } from './ui';
 
@@ -31,6 +31,16 @@ export default function PatientModal({ isOpen, onClose, onSelectPatient }: Patie
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<PatientInput>(EMPTY_FORM);
+  const [consentText, setConsentText] = useState<ConsentText | null>(null);
+
+  // El texto de consentimiento vigente se muestra completo y su versión se envía al registrar
+  useEffect(() => {
+    if (!isOpen || mode !== 'create' || consentText) return;
+    apiClient.getConsentText().then((r) => {
+      if (r.data) setConsentText(r.data);
+      else setError(r.error || 'No se pudo cargar el texto de consentimiento');
+    });
+  }, [isOpen, mode, consentText]);
 
   const rutError = form.rut.trim() !== '' && !isValidRut(form.rut) ? 'RUT inválido: revise el dígito verificador' : null;
   const canSubmit =
@@ -40,7 +50,8 @@ export default function PatientModal({ isOpen, onClose, onSelectPatient }: Patie
     form.first_name.trim() !== '' &&
     form.last_name.trim() !== '' &&
     form.birth_date !== '' &&
-    form.consent_given;
+    form.consent_given &&
+    consentText !== null;
 
   const searchPatients = async () => {
     setLoading(true);
@@ -63,6 +74,7 @@ export default function PatientModal({ isOpen, onClose, onSelectPatient }: Patie
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
       medical_history: form.medical_history?.trim() || null,
+      consent_text_version: consentText?.version,
     });
     setLoading(false);
     if (response.data) {
@@ -262,19 +274,37 @@ export default function PatientModal({ isOpen, onClose, onSelectPatient }: Patie
                 />
               </div>
 
-              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded">
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded space-y-2">
+                <p className="text-xs font-semibold text-foreground">
+                  Consentimiento informado (obligatorio)
+                  {consentText && (
+                    <span className="ml-1 font-normal text-muted-foreground">· versión {consentText.version}</span>
+                  )}
+                </p>
+                {consentText ? (
+                  <div
+                    className="max-h-48 overflow-y-auto whitespace-pre-line rounded border border-border bg-background p-2 text-[11px] leading-relaxed text-muted-foreground"
+                    tabIndex={0}
+                    aria-label="Texto de consentimiento informado"
+                  >
+                    {consentText.body}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Cargando el texto de consentimiento…
+                  </div>
+                )}
                 <label className="flex items-start gap-2 text-xs text-foreground">
                   <input
                     type="checkbox"
                     className="mt-0.5"
                     checked={form.consent_given}
+                    disabled={!consentText}
                     onChange={(e) => setForm({ ...form, consent_given: e.target.checked })}
                   />
                   <span>
-                    <strong>Consentimiento informado (obligatorio).</strong> Declaro que el paciente fue informado
-                    de que sus datos e imágenes se usarán en una plataforma de apoyo a la priorización de casos,
-                    que no reemplaza el criterio médico, y que autorizó su tratamiento conforme a la Ley 19.628.
-                    Se registrará la fecha y el usuario que confirma.
+                    Declaro que mostré o leí este texto al paciente y que autorizó el tratamiento de sus datos.
+                    Se registrará la versión del texto, la fecha y el usuario que confirma.
                   </span>
                 </label>
               </div>

@@ -23,6 +23,10 @@ ACTIONS = {
     "SIGN_FAIL",
     "PASSWORD_CHANGE",
     "PASSWORD_CHANGE_FAIL",
+    "CONSENT_GRANT",
+    "CONSENT_WITHDRAW",
+    "BLOCK",
+    "UNBLOCK",
 }
 
 

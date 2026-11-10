@@ -70,6 +70,8 @@ def create_case(db: Session, data: CaseCreate, actor: User, ip: str | None = Non
     patient = db.get(Patient, data.patient_id)
     if patient is None:
         raise NotFoundError("Paciente no encontrado")
+    if patient.blocked_at is not None:
+        raise ConflictError("Los datos del paciente están bloqueados: no se pueden crear casos")
     if not patient.consent_given:
         raise ConflictError(
             "El paciente no tiene consentimiento informado registrado; no se puede crear el caso"

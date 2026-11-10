@@ -10,6 +10,7 @@ import Footer from './components/Footer';
 import ChangePassword from './components/ChangePassword';
 import TriageQueue from './components/TriageQueue';
 import TriageConfigPanel from './components/TriageConfigPanel';
+import PrivacyPanel from './components/PrivacyPanel';
 import { apiClient } from './services/api';
 import type { Me } from './types';
 
@@ -81,6 +82,7 @@ function App() {
           <CaseManagement key={openCaseNonce} me={me} initialCaseId={openCaseId} />
         )}
         {currentSection === 'dashboard' && <Dashboard />}
+        {currentSection === 'privacy' && me.role !== 'ADMIN' && <PrivacyPanel me={me} />}
         {currentSection === 'panel' && me.role === 'ADMIN' && <AdminPanel />}
       </main>
       <Footer />

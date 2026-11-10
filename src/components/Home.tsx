@@ -14,7 +14,7 @@ const FEATURES = [
   {
     icon: ShieldCheck,
     title: 'Datos protegidos',
-    description: 'Imágenes cifradas, acceso por rol, consentimiento registrado y bitácora de auditoría (Ley 19.628).',
+    description: 'Imágenes cifradas, acceso por rol, consentimiento registrado y bitácora de auditoría y derechos de los titulares (Ley 19.628 y Ley 21.719).',
   },
   {
     icon: Stethoscope,
