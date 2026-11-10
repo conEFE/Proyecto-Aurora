@@ -1,0 +1,40 @@
+# Proyecto Aurora: sitio estático + API en /api.
+# SITE_ADDRESS=":80" en local (HTTP). En producción, el dominio (p. ej. aurora.midominio.cl):
+# Caddy obtiene y renueva solo el certificado TLS de Let's Encrypt.
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	# API: Caddy quita el prefijo /api y agrega X-Forwarded-For (la API lo usa con TRUST_PROXY_HEADERS=true).
+	# La API envía sus propios encabezados de seguridad (CSP estricta para JSON).
+	handle_path /api/* {
+		request_body {
+			max_size 64MB
+		}
+		reverse_proxy backend:8000
+	}
+
+	# Sitio (SPA): rutas desconocidas vuelven a index.html
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+		header {
+			Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+			X-Content-Type-Options "nosniff"
+			X-Frame-Options "DENY"
+			Referrer-Policy "no-referrer"
+			Permissions-Policy "camera=(), microphone=(), geolocation=()"
+			Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		}
+		@static path /assets/*
+		header @static Cache-Control "public, max-age=31536000, immutable"
+		@html not path /assets/*
+		header @html Cache-Control "no-cache"
+	}
+
+	header -Server
+	log {
+		output stdout
+		format json
+	}
+}

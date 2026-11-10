@@ -123,6 +123,18 @@ copy .env.example .env.local     # VITE_API_URL=http://localhost:8000
 npm run dev
 ```
 
+### Con Docker (todo el sistema)
+
+Requiere Docker con Compose v2. Levanta PostgreSQL, la API y el sitio (Caddy) en <http://localhost:8080>:
+
+```bash
+cp deploy/.env.example deploy/.env     # complete POSTGRES_PASSWORD, SECRET_KEY, ENCRYPTION_KEY y AURORA_ADMIN_*
+docker compose --env-file deploy/.env up -d --build
+docker compose --env-file deploy/.env exec backend python init_user.py
+```
+
+La API queda en `/api` (mismo dominio, sin CORS). Despliegue en AWS: `docs/despliegue_aws.md`.
+
 ## Pruebas y calidad
 
 ```bash
@@ -143,7 +155,11 @@ set TEST_DB_DSN=postgresql+psycopg2://usuario:clave@localhost:5432/aurora_test  
 pytest --cov=app
 ```
 
-Resultados de la versión 2.4.0: 258 tests aprobados y 97% de cobertura (`docs/resultados_tests.md`).
+Resultados de la versión 2.5.0: 270 tests aprobados y 97% de cobertura (`docs/resultados_tests.md`).
+
+GitHub Actions (`.github/workflows/`) corre lo mismo en cada PR: `ci.yml` (ruff, pytest con PostgreSQL 16,
+pip-audit, lint, typecheck, build, npm audit, imágenes Docker y prueba de humo), `publish.yml` (publica las imágenes
+en ghcr.io al crear un tag `vX.Y.Z`) y `zap.yml` (escaneo OWASP ZAP a pedido).
 
 ## Documentación
 
@@ -157,6 +173,7 @@ Resultados de la versión 2.4.0: 258 tests aprobados y 97% de cobertura (`docs/r
 | `docs/stack.md` | Versiones exactas y propósito de cada dependencia |
 | `docs/seguridad_owasp.md` | Revisión OWASP Top 10 (2021) y controles de seguridad |
 | `docs/cumplimiento_legal.md` | Cumplimiento Ley 19.628 / 21.719 / 20.584: matriz, evaluación de impacto, brechas y conservación |
+| `docs/despliegue_aws.md` | Despliegue en AWS paso a paso (EC2 + Docker + Caddy + S3/KMS + CloudWatch; variante RDS) |
 
 ## Crear ZIP del proyecto para distribución
 
@@ -174,6 +191,26 @@ Para instalar desde el ZIP, extráigalo y siga la sección [Instalación](#insta
 
 ## Seguridad
 
-- Las credenciales que estuvieron versionadas en la v1.0 (`backend/.env`, `backend/create_user.sql`) siguen en el
-  historial de Git: **deben rotarse** (ver `docs/CHANGELOG_SPRINTS.md`, Sprint 1).
 - Use solo datos ficticios y RUT de prueba fuera de producción.
+- Revisión OWASP y controles: `docs/seguridad_owasp.md`. Cumplimiento legal: `docs/cumplimiento_legal.md`.
+
+### Rotación de secretos
+
+Las credenciales que estuvieron versionadas en la v1.0 (`backend/.env` y `backend/create_user.sql`: contraseña del
+rol de PostgreSQL, `SECRET_KEY` y `ENCRYPTION_KEY`) siguen en el historial público de Git y **deben rotarse** en
+cada instalación que las use. El script lo hace en un paso, sin mostrar los valores nuevos:
+
+```bash
+cd backend
+python -m scripts.rotate_secrets --dry-run          # 1. verifica que todas las imágenes se pueden descifrar
+python -m scripts.rotate_secrets --db-password      # 2. rota (con la API detenida)
+```
+
+- Genera una `SECRET_KEY` nueva (cierra todas las sesiones) y una `ENCRYPTION_KEY` nueva, y vuelve a cifrar cada
+  imagen. Si se interrumpe, se vuelve a ejecutar: mientras dura, la API lee con la clave nueva o la anterior.
+- Con `--db-password`, cambia la contraseña del rol de PostgreSQL de `DB_DSN` y actualiza `.env`. El cambio solo se
+  confirma después de guardar el `.env` nuevo.
+- Deja `.env.antes-de-rotar-FECHA` para recuperar en caso de error: **bórrelo** después de comprobar que la API
+  inicia y muestra las imágenes.
+- Si el rol tiene otro nombre en su PostgreSQL (por ejemplo `"Aurora"` de `create_user.sql`) y ya no se usa,
+  elimínelo: `DROP ROLE "Aurora";`.

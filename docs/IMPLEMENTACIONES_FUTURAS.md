@@ -1,7 +1,7 @@
 # Implementaciones futuras — Proyecto Aurora
 
 Trabajo pendiente en el repositorio, ordenado por épica, a partir de la revisión del informe de la Unidad 2 y de
-las correcciones del 05-10-2026. Lo implementado hasta la versión 2.4.0 está en `docs/CHANGELOG_SPRINTS.md`.
+las correcciones del 05-10-2026. Lo implementado hasta la versión 2.5.0 está en `docs/CHANGELOG_SPRINTS.md`.
 
 Actualizado: 10-11-2026.
 
@@ -10,8 +10,8 @@ Actualizado: 10-11-2026.
 | Épica | Tema | Estado en el repo |
 |---|---|---|
 | E5 | Validación médica del informe de IA, métricas del modelo por versión y firma del reporte | Hecho (2.1.0 y 2.2.0) |
-| E6 | Cuentas, seguridad y registro de errores | Hecho (2.3.0); queda el escaneo con OWASP ZAP (S7) |
-| E7 | Versionado, CI/CD y despliegue (local → staging → piloto) | Pendiente (solo tags y `.env.example`) |
+| E6 | Cuentas, seguridad y registro de errores | Hecho (2.3.0); workflow ZAP listo para ejecutar (2.5.0) |
+| E7 | Versionado, CI/CD y despliegue (local → staging → piloto) | Preparado (2.5.0): Docker, CI/CD y guía de AWS; falta ejecutar el despliegue |
 | E9 | Pruebas no funcionales (carga, estrés y seguridad) | Pendiente (unitarias, integración y E2E listas) |
 | E10 | Clasificador CNN (ResNet18) y YOLO para el triage | Modelo CNN entrenado fuera del repo (AUC 0,843); integración pendiente; YOLO en desarrollo |
 | — | Cumplimiento Ley 19.628 / 21.719 / 20.584 | Hecho en código (2.4.0); quedan decisiones del equipo |
@@ -49,23 +49,33 @@ Responde a «entorno local → deploy» y a los comentarios C13 y C14 (acceso a 
   contrato de inferencia (CNN).
 
 ### Contenedores y entornos
-- [ ] `Dockerfile` para API (Uvicorn), frontend (build de Vite servido por Nginx) e inferencia.
-- [ ] `docker-compose.yml` para local (con PostgreSQL) y `docker-compose.prod.yml` para staging y piloto.
-- [ ] Healthchecks y política de reinicio automático.
+- [x] `Dockerfile` para API (Uvicorn) y frontend (build de Vite servido por **Caddy**, que además da TLS automático)
+  (2.5.0).
+- [ ] `Dockerfile` del servicio de inferencia (cuando exista el servicio real, E10/S8).
+- [x] `docker-compose.yml` para local (con PostgreSQL) y `deploy/docker-compose.prod.yml` para producción (2.5.0).
+- [x] Healthchecks y política de reinicio automático (2.5.0).
 
 ### CI/CD (GitHub Actions)
-- [ ] **CI en cada PR**: ruff, black, pytest con `--cov-fail-under=70` y PostgreSQL de servicio, prueba de
-  downgrade de Alembic, ESLint, `tsc`, `npm run build`, gitleaks.
-- [ ] **Build al hacer merge**: imágenes Docker etiquetadas con versión y SHA, escaneo Trivy, push a GHCR.
+- [x] **CI en cada PR** (`ci.yml`, 2.5.0): ruff, pytest con `--cov-fail-under=90` y PostgreSQL de servicio (incluye
+  la prueba de downgrade de Alembic), pip-audit, ESLint, `tsc`, `npm run build` y npm audit.
+- [ ] Agregar `black --check` (falta formatear `init_db.py`) y gitleaks.
+- [x] **Imágenes** amd64/arm64 etiquetadas con versión y SHA y publicadas en GHCR al crear un tag (`publish.yml`,
+  2.5.0).
+- [ ] Escaneo Trivy de las imágenes.
 - [ ] **Deploy a staging** automático: OIDC hacia AWS (sin llaves fijas), SSM Run Command en EC2,
   `alembic upgrade head` y `docker compose up -d`.
-- [ ] **Verificación**: prueba de humo (`/health`, login, cola) y OWASP ZAP baseline sobre staging.
+- [x] Prueba de humo en CI (`/api/health` y encabezados detrás de Caddy) y workflow ZAP baseline a pedido (2.5.0).
+- [ ] **Verificación sobre staging** (login, cola) y ZAP contra staging.
 - [ ] **Deploy a piloto** al crear un tag `vX.Y.Z`, con aprobación manual (GitHub Environments).
 - [ ] **Rollback**: volver a desplegar el tag anterior; la BD se revierte solo si la migración lo exige.
 - [ ] Dependabot para pip, npm y GitHub Actions.
 
 ### Infraestructura AWS (sa-east-1)
-- [ ] `S3EncryptedStorage` (implementación de `IStorage` con SSE-KMS y versionado) en reemplazo del disco local.
+- [x] **Etapa de demostración** lista para desplegar: `docs/despliegue_aws.md` (EC2 t4g.small + Docker Compose +
+  Caddy + S3/KMS + CloudWatch, unos USD 20–30 al mes; variante con RDS). Lo que sigue es la arquitectura del
+  **piloto** del informe.
+- [x] `S3EncryptedStorage` con SSE-KMS (más el cifrado Fernet de la aplicación); el versionado se activa en el bucket
+  (guía) (2.5.0).
 - [ ] EC2 t3.large, RDS PostgreSQL db.t3.medium (50 GB gp3), S3, KMS, AWS Backup, CloudWatch; secretos en SSM
   Parameter Store. Costo estimado del piloto: US$241 al mes (detalle en el informe, sección VIII).
 - [ ] Cloudflare delante del origen (DNS, TLS Full Strict, WAF); EC2 solo acepta tráfico de los rangos de Cloudflare.
@@ -146,10 +156,10 @@ El informe describe prácticas que deben existir en el repositorio para que la e
 - [x] Consentimiento versionado, retiro, bloqueo, exportación (acceso/portabilidad) y registro de solicitudes con
   plazo de 30 días (2.4.0).
 - [x] Evaluación de impacto, procedimiento ante vulneraciones y política de conservación (documento).
-- [ ] Validar el texto de consentimiento v1 con el establecimiento o un abogado.
+- [x] Validar el texto de consentimiento v1 (equipo, 10-11-2026).
 - [ ] Acceso por equipo tratante (Ley 20.584): hoy todo MEDICO/ADMINISTRATIVO ve todos los casos.
 - [ ] Tarea programada que proponga anonimizar las fichas con el plazo de conservación vencido.
-- [ ] Región de la nube, DPA del proveedor, cifrado de la BD en reposo y TLS (con S7).
+- [ ] Región de la nube y DPA del proveedor al desplegar (cifrado y TLS ya preparados en la 2.5.0).
 
 ## Mejoras menores detectadas
 - [ ] Recálculo periódico del triage (tarea programada) para que el factor «tiempo de espera» suba sin datos nuevos.

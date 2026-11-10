@@ -1,4 +1,4 @@
-# Resultados de pruebas — Proyecto Aurora 2.4.0
+# Resultados de pruebas — Proyecto Aurora 2.5.0
 
 Ejecución: 10-11-2026, Linux, Python 3.13, PostgreSQL 16 local vía `TEST_DB_DSN` (con Python 3.13 no existe
 `pgserver`; ver README), BD aislada por corrida.
@@ -13,10 +13,10 @@ pytest --cov=app
 
 | Indicador | Resultado | Meta |
 |---|---|---|
-| Tests ejecutados | **258** | — |
-| Aprobados | **258 (100%)** | 100% |
+| Tests ejecutados | **270** | — |
+| Aprobados | **270 (100%)** | 100% |
 | Fallidos | 0 | 0 |
-| Cobertura total de `app/` | **97%** (2.838 sentencias, 83 sin cubrir) | — |
+| Cobertura total de `app/` | **97%** (2.918 sentencias, 84 sin cubrir) | — |
 | Cobertura de `app/services/` | **≈96%** (1.301 sentencias, 52 sin cubrir) | ≥ 70% |
 | Duración | ≈ 45 s | — |
 | `ruff check` | sin hallazgos | 0 |
@@ -39,6 +39,8 @@ pytest --cov=app
 | `test_signature_model_performance.py` | 13 | 2.2.0: firma del médico sobre el reporte y desempeño del modelo por versión (K5) |
 | `test_account_security.py` | 35 | 2.3.0 (E6): política de contraseñas, cambio de contraseña y revocación de tokens, cambio obligatorio, bloqueo y desbloqueo, límite por IP (sin confiar en `X-Forwarded-For`), `error_log` sin datos sensibles, vista de errores, K9, encabezados de seguridad, todas las rutas exigen token, `SECRET_KEY` corta, `alg: none` |
 | `test_privacy.py` | 16 | 2.4.0 (Ley 21.719): texto de consentimiento vigente y copia de la migración, versión obligatoria y obsoleta, retiro (sin casos ni imágenes nuevas), nuevo registro, bloqueo (casos cerrados, oculto, sin edición), exportación completa y solo MEDICO, ciclo de solicitudes con plazo, vencidas y resumen del ADMIN |
+| `test_rotate_secrets.py` | 8 | 2.5.0: rotación de `SECRET_KEY`, `ENCRYPTION_KEY` (cada imagen se vuelve a cifrar) y contraseña de PostgreSQL; simulación sin cambios, archivo ilegible que aborta, reanudación tras un corte y respaldo con permisos 600 |
+| `test_storage_s3.py` | 4 | 2.5.0: `S3EncryptedStorage` con S3 y KMS simulados (moto): SSE-KMS, contenido cifrado también en la aplicación, rotación, path traversal y selección del backend |
 
 ## Cobertura por módulo
 
@@ -124,3 +126,15 @@ de una solicitud de acceso → exportación JSON (con el RUT, el historial de co
 consentimiento → bloqueo → la solicitud se resuelve con su respuesta. Como ADMIN: resumen de solicitudes en el
 panel. Sin errores de consola. Migración `c1d4f2a8e910`: `upgrade` → `downgrade -1` → `upgrade` sobre la BD de
 desarrollo.
+
+### 2.5.0 (Sprint 7), con Docker y Playwright
+
+Stack de `docker-compose.yml` (PostgreSQL 16 + API + Caddy) en `http://localhost:8080`:
+- Primer ADMIN con `init_user.py` dentro del contenedor.
+- Cambio obligatorio de contraseña y alta de un médico.
+- La médica registra una paciente con el texto de consentimiento, crea un caso y sube una imagen, que se muestra
+  (`blob:`, permitido por la CSP).
+- Sin errores de consola ni de CSP, después de quitar Google Fonts.
+- La imagen quedó cifrada en el volumen y la auditoría registró la IP del cliente (no la de Caddy).
+- Encabezados verificados: CSP del sitio, CSP estricta de la API, `X-Request-ID`, `/api/docs` en 404 y rutas de la
+  SPA en 200.

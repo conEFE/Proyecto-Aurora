@@ -14,3 +14,6 @@ cryptography==50.0.2
 python-dotenv==1.2.4
 Pillow==13.0.0
 email-validator==2.2.0
+boto3==1.43.127
+# Cliente HTTP del proveedor de inferencia (HttpYoloProvider) y de TestClient
+httpx==0.27.2

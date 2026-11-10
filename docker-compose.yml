@@ -1,0 +1,59 @@
+# Entorno completo con Docker (local): PostgreSQL + API + sitio, en http://localhost:8080
+#
+#   cp deploy/.env.example deploy/.env      # complete los secretos (ver comentarios)
+#   docker compose --env-file deploy/.env up -d --build
+#   docker compose exec backend python init_user.py     # primer ADMIN (variables AURORA_ADMIN_*)
+#
+# Producción en AWS: ver docs/despliegue_aws.md y deploy/docker-compose.prod.yml
+name: aurora
+
+services:
+  db:
+    image: public.ecr.aws/docker/library/postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aurora
+      POSTGRES_USER: aurora
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en deploy/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aurora -d aurora"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    profiles: ["db"]
+
+  backend:
+    build: ./backend
+    image: ${AURORA_IMAGE_PREFIX:-aurora}-backend:${AURORA_VERSION:-local}
+    restart: unless-stopped
+    env_file: deploy/.env
+    environment:
+      DB_DSN: ${DB_DSN:-postgresql+psycopg2://aurora:${POSTGRES_PASSWORD}@db:5432/aurora}
+      ROOT_PATH: /api
+      ALLOWED_ORIGINS: ${PUBLIC_URL:-http://localhost:8080}
+    volumes:
+      - images:/data/images
+    expose:
+      - "8000"
+
+  web:
+    build: .
+    image: ${AURORA_IMAGE_PREFIX:-aurora}-web:${AURORA_VERSION:-local}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  images:
+  caddy_data:
+  caddy_config:

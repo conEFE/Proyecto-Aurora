@@ -1,7 +1,7 @@
-# Cumplimiento legal en protección de datos — Proyecto Aurora 2.4.0
+# Cumplimiento legal en protección de datos — Proyecto Aurora 2.5.0
 
 Documento de cumplimiento de la plataforma frente a la normativa chilena de datos personales y de salud.
-Fecha: 10-11-2026.
+Fecha: 10-11-2026. **Validado por el equipo del proyecto el 10-11-2026**, incluido el texto de consentimiento v1.
 
 > **Advertencia.** Es un análisis técnico hecho por el equipo del proyecto, no una asesoría legal. Antes de
 > tratar datos reales de pacientes, un abogado o el encargado de protección de datos del establecimiento debe
@@ -38,7 +38,7 @@ documento · ⏳ pendiente.
 | **Plazo de respuesta** (30 días corridos, prorrogables una vez) | 21.719 | Registro de solicitudes con fecha de recepción, vencimiento automático a 30 días, estados, respuesta obligatoria al cerrar y alerta de vencidas. El ADMIN ve un resumen sin datos de pacientes | `/privacy/requests`, `/privacy/requests/summary` | ✅ (la prórroga se anota en la respuesta) |
 | **Decisiones automatizadas** (derecho a no ser objeto de decisiones basadas solo en tratamiento automatizado) | 21.719 art. 8 bis | Ninguna decisión es solo automática. El triage muestra su desglose (es explicable). El médico valida cada resultado de IA, puede corregir el nivel de triage con un motivo, registra la revisión y **firma** el reporte. La IA simulada se marca siempre | Sprints 5–6, 2.1.0, 2.2.0; `test_validation.py`, `test_triage_api.py` | ✅ |
 | **Evaluación de impacto** (tratamiento de alto riesgo) | 21.719 art. 15 ter | Ver la sección 3 | Este documento | 📄 |
-| **Seguridad** (medidas técnicas y organizativas) | 21.719; 19.628 art. 11 | Control de acceso por rol leído desde la BD, contraseñas bcrypt con política y cambio obligatorio, bloqueo por intentos, revocación de sesiones, imágenes cifradas (Fernet), encabezados de seguridad, dependencias sin vulnerabilidades conocidas. Revisión OWASP en `seguridad_owasp.md` | `test_account_security.py`; `docs/seguridad_owasp.md` | ✅ en la aplicación · 🟡 cifrado de la BD y TLS en el despliegue |
+| **Seguridad** (medidas técnicas y organizativas) | 21.719; 19.628 art. 11 | Control de acceso por rol leído desde la BD, contraseñas bcrypt con política y cambio obligatorio, bloqueo por intentos, revocación de sesiones, imágenes cifradas (Fernet, y SSE-KMS en S3), encabezados de seguridad, dependencias sin vulnerabilidades conocidas, rotación de secretos. Despliegue preparado con TLS automático, EBS/S3/respaldos cifrados con KMS y sin puerto 22. Revisión OWASP en `seguridad_owasp.md` | `test_account_security.py`, `test_storage_s3.py`, `test_rotate_secrets.py`; `docs/seguridad_owasp.md`; `docs/despliegue_aws.md` | ✅ en la aplicación · 🟡 se cumple al desplegar según la guía |
 | **Registro y responsabilidad** (poder demostrar el cumplimiento) | 21.719 (responsabilidad) | Bitácora append-only (un trigger impide modificarla) de accesos (`VIEW`), cambios, exportaciones, consentimientos, bloqueos y firmas. Registro de errores 5xx | `audit_log`, `error_log` | ✅ |
 | **Notificación de vulneraciones de seguridad** | 21.719 | Ver la sección 4 | Este documento | 📄 |
 | **Transferencia internacional** (alojamiento fuera de Chile) | 21.719 | Ver la sección 6 | Este documento | 📄 · ⏳ decisión de región |
@@ -72,7 +72,7 @@ médico decide.
 |---|:-:|:-:|---|:-:|
 | Acceso no autorizado a datos clínicos | Media | Alto | Control de acceso por rol, mínimo privilegio, bloqueo por intentos, revocación de sesiones, auditoría de accesos | Bajo |
 | Robo de credenciales o fuerza bruta | Media | Alto | Política de contraseñas, bloqueo de cuenta, límite de intentos por IP, tokens de 30 min | Bajo |
-| Filtración de imágenes o de la base de datos | Baja | Muy alto | Imágenes cifradas (Fernet). **Pendiente:** cifrado de la BD en reposo y TLS en el despliegue | Medio → Bajo con S7 |
+| Filtración de imágenes o de la base de datos | Baja | Muy alto | Imágenes cifradas (Fernet + SSE-KMS en S3). Guía de despliegue: disco EBS y respaldos cifrados con KMS, TLS automático, bucket privado | Bajo al desplegar según la guía |
 | Decisión clínica tomada solo por la IA | Media | Muy alto | Médico en el circuito (valida, corrige, firma), triage explicable, badge IA SIMULADA, métricas del modelo por versión (K5) | Bajo |
 | Sesgo o error del modelo de IA | Media | Alto | Validación médica de cada resultado, métricas de concordancia y desempeño por versión, KPI K5 solo con resultados reales | Medio (depende del modelo real, E10) |
 | Uso para otra finalidad o cesión indebida | Baja | Alto | Finalidad en el consentimiento, exportación solo por MEDICO y auditada | Bajo |
@@ -82,8 +82,8 @@ médico decide.
 | Datos personales en registros técnicos | Baja | Medio | Auditoría sin RUT ni términos de búsqueda, `error_log` saneado, nombres de archivo aleatorios en disco | Bajo |
 
 ### 3.4 Conclusión
-El tratamiento es aceptable si antes de usar datos reales se cumplen tres condiciones: (1) cifrado en reposo de la
-BD y TLS en el despliegue; (2) contrato de tratamiento con el proveedor de nube y una decisión sobre la región; y
+El tratamiento es aceptable si antes de usar datos reales se cumplen tres condiciones: (1) desplegar según
+`docs/despliegue_aws.md` (cifrado en reposo de la BD y TLS); (2) contrato de tratamiento con el proveedor de nube y una decisión sobre la región; y
 (3) validación de este documento y del texto de consentimiento por el establecimiento. La EIPD se revisa al cambiar
 el modelo de IA (E10) o la infraestructura.
 
@@ -131,11 +131,15 @@ el plazo exacto con el establecimiento).
 
 ## 7. Decisiones pendientes para el equipo
 
-1. **Validar el texto de consentimiento v1** con el establecimiento o un abogado. Un cambio de redacción va en una
-   versión nueva, en una migración, y obliga a mostrársela de nuevo a los pacientes (la plataforma lo detecta).
+1. ~~Validar el texto de consentimiento v1~~: validado por el equipo (10-11-2026). Si el establecimiento pide cambios,
+   la redacción nueva va en una versión nueva, en una migración, y obliga a mostrársela de nuevo a los pacientes (la
+   plataforma lo detecta).
 2. **Acceso por equipo tratante** (Ley 20.584): hoy cualquier MEDICO o ADMINISTRATIVO ve todos los casos.
 3. **Plazos de conservación** exactos y la tarea de anonimización.
-4. **Región de la nube** y garantías de la transferencia internacional (S7).
+4. **Región de la nube** y garantías de la transferencia internacional. Preparado en la 2.5.0: región configurable
+   (`AWS_REGION`, por defecto `sa-east-1`). AWS anunció una región en Chile para fines de 2026 que no estaba confirmada
+   como disponible al 10-11-2026. Si existe al desplegar, conviene usarla. Si no, se usa `sa-east-1` con el DPA de AWS
+   (ver `docs/despliegue_aws.md`).
 5. **Pacientes registrados antes de la 2.4.0**: su consentimiento quedó sin versión de texto. La plataforma lo marca
    y permite registrarlo de nuevo con el texto vigente. Conviene hacerlo en su próxima atención.
 6. **Encargado de protección de datos** del establecimiento y canal para recibir las solicitudes de los titulares.
