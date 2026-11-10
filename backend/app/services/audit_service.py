@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import Request
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db.models.audit_log import AuditLog
 from app.db.models.user import User
 
@@ -20,15 +21,19 @@ ACTIONS = {
     "EXPORT",
     "SIGN",
     "SIGN_FAIL",
+    "PASSWORD_CHANGE",
+    "PASSWORD_CHANGE_FAIL",
 }
 
 
 def client_ip(request: Request | None) -> str | None:
     if request is None:
         return None
-    forwarded = request.headers.get("x-forwarded-for")
+    # X-Forwarded-For solo se considera detrás de un proxy propio (el cliente puede falsificarlo).
+    # Se toma la última entrada: la que agregó el proxy, no la que envió el cliente.
+    forwarded = request.headers.get("x-forwarded-for") if settings.TRUST_PROXY_HEADERS else None
     if forwarded:
-        return forwarded.split(",")[0].strip()[:45]
+        return forwarded.split(",")[-1].strip()[:45]
     return request.client.host[:45] if request.client else None
 
 

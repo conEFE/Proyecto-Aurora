@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db.models.case import Case, CaseStatus
+from app.db.models.error_log import ErrorLog
 from app.db.models.image import Image
 from app.db.models.review import AI_VERDICTS, TRIAGE_ASSESSMENTS, AIValidation, ClinicalReview, RequestMetric
 from app.db.models.triage import TriageLevel, TriageResult
@@ -208,6 +209,14 @@ def metrics(
         metric_q = metric_q.filter(RequestMetric.created_at <= date_to)
     durations = [d for (d,) in metric_q.all()]
 
+    # Errores 5xx del servidor (KPI K9)
+    errors_q = db.query(func.count(ErrorLog.id))
+    if date_from:
+        errors_q = errors_q.filter(ErrorLog.occurred_at >= date_from)
+    if date_to:
+        errors_q = errors_q.filter(ErrorLog.occurred_at <= date_to)
+    server_errors = errors_q.scalar() or 0
+
     weeks: list[WeekPoint] = []
     if case_ids:
         week_col = func.date_trunc("week", Case.created_at).label("week")
@@ -252,6 +261,8 @@ def metrics(
         alta_pending_threshold_hours=hours,
         api_p95_ms=percentile(durations, 95),
         api_requests=len(durations),
+        server_errors=server_errors,
+        server_error_rate=round(server_errors / len(durations), 4) if durations else None,
         override_ratio=round(overrides / triage_total, 4) if triage_total else None,
         triage_total=triage_total,
         triage_overrides=overrides,

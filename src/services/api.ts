@@ -4,6 +4,9 @@ import type {
   AIVerdict,
   ClinicalReview,
   DashboardMetrics,
+  ErrorLogEntry,
+  ErrorTypeCount,
+  TokenResponse,
   DicomMetadata,
   ModelPerformanceReport,
   ReportRecord,
@@ -128,15 +131,20 @@ class ApiClient {
   }
 
   async login(rut: string, password: string) {
-    return this.request<{
-      access_token: string;
-      token_type: string;
-      role: string;
-      full_name?: string | null;
-    }>('/auth/login', {
+    return this.request<TokenResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ rut, password }),
     });
+  }
+
+  /** Cambia la contraseña; el backend revoca los tokens anteriores y entrega uno nuevo. */
+  async changePassword(currentPassword: string, newPassword: string) {
+    const r = await this.request<TokenResponse>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    });
+    if (r.data?.access_token) this.setToken(r.data.access_token);
+    return r;
   }
 
   async getMe() {
@@ -375,6 +383,22 @@ class ApiClient {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+  }
+
+  async unlockUser(id: number) {
+    return this.request<UserAccount>(`/admin/users/${id}/unlock`, { method: 'POST' });
+  }
+
+  async listErrors(filters: { error_type?: string; status_code?: number; from?: string; to?: string; page?: number; size?: number }) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== '') params.append(k, String(v));
+    });
+    return this.request<Page<ErrorLogEntry>>(`/admin/errors?${params.toString()}`);
+  }
+
+  async listErrorTypes() {
+    return this.request<ErrorTypeCount[]>('/admin/errors/types');
   }
 
   async listAudit(filters: { action?: string; entity?: string; user_id?: number; from?: string; to?: string; page?: number; size?: number }) {

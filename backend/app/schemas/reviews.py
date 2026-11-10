@@ -159,6 +159,9 @@ class DashboardMetrics(BaseModel):
     api_p95_ms: float | None
     api_requests: int
     kpi_api_p95_target_ms: int = 3000
+    # Errores 5xx registrados en error_log y su proporción sobre las requests medidas (KPI K9)
+    server_errors: int = 0
+    server_error_rate: float | None = None
     override_ratio: float | None
     triage_total: int
     triage_overrides: int

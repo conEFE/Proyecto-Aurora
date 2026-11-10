@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import bcrypt
-from jose import JWTError, jwt
+import jwt
 
 from app.config import settings
 
@@ -25,12 +25,20 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def create_access_token(user_id: int, role: str, expires_minutes: int | None = None) -> str:
+def password_stamp(password_changed_at: datetime | None) -> int:
+    """Marca de la última contraseña (ms). Va en el token: si la contraseña cambia, los tokens previos caducan."""
+    return int(password_changed_at.timestamp() * 1000) if password_changed_at else 0
+
+
+def create_access_token(
+    user_id: int, role: str, expires_minutes: int | None = None, pwd_stamp: int = 0
+) -> str:
     now = datetime.now(timezone.utc)
     minutes = expires_minutes if expires_minutes is not None else settings.ACCESS_TOKEN_EXPIRE_MINUTES
     payload = {
         "sub": str(user_id),
         "role": role,
+        "pwd": pwd_stamp,
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(minutes=minutes)).timestamp()),
     }
@@ -43,8 +51,15 @@ class InvalidTokenError(Exception):
 
 def decode_access_token(token: str) -> dict[str, Any]:
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-    except JWTError as exc:  # firma inválida, expirado, mal formado
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[
+                settings.JWT_ALGORITHM
+            ],  # lista fija: impide "alg: none" y la confusión de algoritmos
+            options={"require": ["sub", "exp", "iat"]},
+        )
+    except jwt.PyJWTError as exc:  # firma inválida, expirado, mal formado
         raise InvalidTokenError(str(exc)) from exc
     if "sub" not in payload or "exp" not in payload:
         raise InvalidTokenError("Token sin claims obligatorios")

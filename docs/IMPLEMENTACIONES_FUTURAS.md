@@ -1,16 +1,16 @@
 # Implementaciones futuras — Proyecto Aurora
 
 Trabajo pendiente en el repositorio, ordenado por épica, a partir de la revisión del informe de la Unidad 2 y de
-las correcciones del 05-10-2026. Lo implementado hasta la versión 2.2.0 está en `docs/CHANGELOG_SPRINTS.md`.
+las correcciones del 05-10-2026. Lo implementado hasta la versión 2.3.0 está en `docs/CHANGELOG_SPRINTS.md`.
 
-Actualizado: 18-10-2026.
+Actualizado: 09-11-2026.
 
 ## Estado por épica
 
 | Épica | Tema | Estado en el repo |
 |---|---|---|
 | E5 | Validación médica del informe de IA, métricas del modelo por versión y firma del reporte | Hecho (2.1.0 y 2.2.0) |
-| E6 | Cuentas, seguridad y registro de errores | Pendiente |
+| E6 | Cuentas, seguridad y registro de errores | Hecho (2.3.0); queda el escaneo con OWASP ZAP (S7) |
 | E7 | Versionado, CI/CD y despliegue (local → staging → piloto) | Pendiente (solo tags y `.env.example`) |
 | E9 | Pruebas no funcionales (carga, estrés y seguridad) | Pendiente (unitarias, integración y E2E listas) |
 | E10 | Clasificador CNN (ResNet18) y YOLO para el triage | Modelo CNN entrenado fuera del repo (AUC 0,843); integración pendiente; YOLO en desarrollo |
@@ -20,18 +20,19 @@ Actualizado: 18-10-2026.
 
 Responde a los comentarios C10 (cambio de contraseña) y C12 (tabla de errores) del informe.
 
-- [ ] **Cambio de contraseña**: `POST /auth/change-password` (contraseña actual + nueva), política mínima (largo,
+- [x] **Cambio de contraseña**: `POST /auth/change-password` (contraseña actual + nueva), política mínima (largo,
   no repetir la actual), evento `PASSWORD_CHANGE` en `audit_log` y pantalla en el menú de usuario.
-- [ ] **Cambio obligatorio en el primer inicio de sesión**: columna `users.must_change_password`; el ADMIN la
+- [x] **Cambio obligatorio en el primer inicio de sesión**: columna `users.must_change_password`; el ADMIN la
   activa al crear o restablecer un usuario.
-- [ ] **Tabla `error_log`** (migración reversible): `id`, `occurred_at`, `method`, `path` (plantilla, sin ids),
+- [x] **Tabla `error_log`** (migración reversible): `id`, `occurred_at`, `method`, `path` (plantilla, sin ids),
   `status_code`, `error_type`, `message` (sin datos sensibles), `user_id` nullable, `request_id`.
   Handler global de excepciones 5xx que registra en la tabla y responde un mensaje genérico con el `request_id`.
-- [ ] Vista de errores para ADMIN (filtro por fecha y tipo) y conteo en el dashboard; alimenta el KPI K9.
-- [ ] **Rate limiting y bloqueo de login** (p. ej. `slowapi`): N intentos fallidos por RUT/IP → bloqueo temporal,
+- [x] Vista de errores para ADMIN (filtro por fecha y tipo) y conteo en el dashboard; alimenta el KPI K9.
+- [x] **Rate limiting y bloqueo de login** (limitador propio, sin dependencias nuevas): N intentos fallidos por RUT/IP → bloqueo temporal,
   auditado como `LOGIN_FAIL` con motivo.
-- [ ] Revisión OWASP Top 10 (A01, A02, A05, A07) y corrección de hallazgos.
-- [ ] Tests: cambio de contraseña (correcta, incorrecta, política), bloqueo por intentos, registro en `error_log`
+- [x] Revisión OWASP Top 10 y corrección de hallazgos (`docs/seguridad_owasp.md`).
+- [ ] Escaneo dinámico con OWASP ZAP sobre staging (S7).
+- [x] Tests: cambio de contraseña (correcta, incorrecta, política), bloqueo por intentos, registro en `error_log`
   sin datos sensibles.
 
 ## E7 · Versionado, CI/CD y despliegue
@@ -142,6 +143,6 @@ El informe describe prácticas que deben existir en el repositorio para que la e
 
 ## Mejoras menores detectadas
 - [ ] Recálculo periódico del triage (tarea programada) para que el factor «tiempo de espera» suba sin datos nuevos.
-- [ ] Actualizar `docs/resultados_tests.md` a la versión 2.2.0 (206 tests).
-- [ ] La suite usa `pgserver`, que no tiene versión para Python 3.13; documentar `TEST_DB_DSN` con un PostgreSQL
+- [x] Actualizar `docs/resultados_tests.md` (2.3.0: 241 tests).
+- [x] La suite usa `pgserver`, que no tiene versión para Python 3.13; documentar `TEST_DB_DSN` con un PostgreSQL
   local como alternativa en el README.

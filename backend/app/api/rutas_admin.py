@@ -11,8 +11,9 @@ from app.db.models.patient import Patient
 from app.db.models.user import User, UserRole
 from app.deps import get_db
 from app.schemas.audit import AuditPage
+from app.schemas.errors import ErrorLogPage, ErrorTypeCount
 from app.schemas.users import UserCreate, UserOut, UserUpdate
-from app.services import user_service
+from app.services import error_log_service, user_service
 from app.services.audit_service import client_ip
 
 router = APIRouter()
@@ -69,6 +70,39 @@ def update_user(
 ):
     """Cambia rol, datos o estado activo de un usuario."""
     return user_service.update_user(db, user_id, data, actor, client_ip(request))
+
+
+@router.post("/users/{user_id}/unlock", response_model=UserOut)
+def unlock_user(
+    user_id: int,
+    request: Request,
+    actor: User = Depends(admin_only),
+    db: Session = Depends(get_db),
+):
+    """Quita el bloqueo por intentos fallidos de inicio de sesión."""
+    return user_service.unlock_user(db, user_id, actor, client_ip(request))
+
+
+@router.get("/errors", response_model=ErrorLogPage)
+def list_errors(
+    error_type: str | None = Query(None, max_length=120),
+    status_code: int | None = Query(None, ge=500, le=599),
+    date_from: datetime | None = Query(None, alias="from"),
+    date_to: datetime | None = Query(None, alias="to"),
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
+    _: User = Depends(admin_only),
+    db: Session = Depends(get_db),
+):
+    """Errores 5xx del servidor (sin datos sensibles), con filtros por fecha, tipo y código."""
+    items, total = error_log_service.list_errors(db, date_from, date_to, error_type, status_code, page, size)
+    return ErrorLogPage(items=items, total=total, page=page, size=size)
+
+
+@router.get("/errors/types", response_model=list[ErrorTypeCount])
+def list_error_types(_: User = Depends(admin_only), db: Session = Depends(get_db)):
+    """Tipos de error registrados y su frecuencia (para el filtro de la vista)."""
+    return error_log_service.error_types(db)
 
 
 @router.get("/audit", response_model=AuditPage)

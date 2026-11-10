@@ -5,7 +5,9 @@ Las credenciales se leen SIEMPRE de variables de entorno (o de backend/.env), nu
     AURORA_ADMIN_RUT=12345678-5
     AURORA_ADMIN_EMAIL=admin@hospital.cl
     AURORA_ADMIN_NAME="Administrador Aurora"
-    AURORA_ADMIN_PASSWORD=...        # mínimo 8 caracteres
+    AURORA_ADMIN_PASSWORD=...        # temporal: mínimo 10 caracteres, con letras y números
+
+El ADMIN deberá cambiar esta contraseña en su primer inicio de sesión.
 
 Uso (desde backend/, con las migraciones aplicadas):
     python init_user.py
@@ -13,6 +15,7 @@ Uso (desde backend/, con las migraciones aplicadas):
 
 import os
 import sys
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 
@@ -21,6 +24,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"), encoding="utf-8")
 from app.auth.security import hash_password  # noqa: E402
 from app.db.models.user import User, UserRole  # noqa: E402
 from app.deps import SessionLocal  # noqa: E402
+from app.services.password_policy import policy_errors  # noqa: E402
 from app.utils.rut import validate_rut  # noqa: E402
 
 REQUIRED = ("AURORA_ADMIN_RUT", "AURORA_ADMIN_EMAIL", "AURORA_ADMIN_NAME", "AURORA_ADMIN_PASSWORD")
@@ -37,8 +41,9 @@ def main() -> int:
         print(exc)
         return 1
     password = os.environ["AURORA_ADMIN_PASSWORD"]
-    if len(password) < 8:
-        print("La contraseña debe tener al menos 8 caracteres")
+    errors = policy_errors(password, rut)
+    if errors:
+        print("La contraseña " + "; ".join(errors) + ".")
         return 1
 
     with SessionLocal() as db:
@@ -56,10 +61,12 @@ def main() -> int:
                 password_hash=hash_password(password),
                 role=UserRole.ADMIN,
                 is_active=True,
+                must_change_password=True,
+                password_changed_at=datetime.now(timezone.utc),
             )
         )
         db.commit()
-    print(f"Usuario ADMIN creado (RUT {rut}).")
+    print(f"Usuario ADMIN creado (RUT {rut}). Deberá cambiar la contraseña en su primer ingreso.")
     return 0
 
 

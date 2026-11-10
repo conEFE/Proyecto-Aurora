@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from jose import jwt
+import jwt
 
 from app.auth.security import create_access_token
 from app.tests.conftest import PASSWORD, auth, login
@@ -13,7 +13,7 @@ def test_login_ok_returns_jwt(client, users):
     assert body["token_type"] == "bearer"
     assert body["role"] == "MEDICO"
     assert "full_name" in body
-    claims = jwt.get_unverified_claims(body["access_token"])
+    claims = jwt.decode(body["access_token"], options={"verify_signature": False})
     assert claims["sub"] == str(users["MEDICO"].id)
     assert claims["role"] == "MEDICO"
     assert {"exp", "iat"} <= claims.keys()
@@ -62,7 +62,7 @@ def test_token_signed_with_other_key_is_401(client, users):
             "iat": int(now.timestamp()),
             "exp": int((now + timedelta(minutes=5)).timestamp()),
         },
-        "otra-clave",
+        "otra-clave-distinta-de-la-del-servidor-0123",
         algorithm="HS256",
     )
     assert client.get("/auth/me", headers=auth(forged)).status_code == 401

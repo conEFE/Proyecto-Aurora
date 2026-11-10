@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, BarChart3, CheckCircle2, Clock, Gauge, Loader2, Timer } from 'lucide-react';
+import { AlertTriangle, BarChart3, CheckCircle2, Clock, Gauge, Loader2, ServerCrash, Timer } from 'lucide-react';
 import { apiClient } from '../services/api';
 import type {
   AIVerdict,
@@ -265,7 +265,7 @@ export default function Dashboard() {
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <Kpi icon={BarChart3} label="Casos en el período" value={data.total_cases.toLocaleString('es-CL')} />
             <Kpi
               icon={Timer}
@@ -286,6 +286,16 @@ export default function Dashboard() {
               value={data.api_p95_ms === null ? '—' : `${data.api_p95_ms.toFixed(0)} ms`}
               hint="Meta < 3 s"
               ok={data.api_p95_ms === null ? null : data.api_p95_ms < data.kpi_api_p95_target_ms}
+            />
+            <Kpi
+              icon={ServerCrash}
+              label="Errores del servidor (5xx)"
+              value={
+                data.server_error_rate === null
+                  ? String(data.server_errors)
+                  : `${data.server_errors} (${(data.server_error_rate * 100).toLocaleString('es-CL', { maximumFractionDigits: 2 })} %)`
+              }
+              hint="Proporción sobre las requests medidas (K9)"
             />
           </div>
 

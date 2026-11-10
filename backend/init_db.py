@@ -4,7 +4,8 @@ Crea la base de datos si no existe antes de ejecutar las migraciones.
 """
 import os
 import sys
-from urllib.parse import urlparse, unquote
+from urllib.parse import unquote, urlparse
+
 from dotenv import load_dotenv
 
 try:

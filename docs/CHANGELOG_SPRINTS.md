@@ -366,6 +366,95 @@ medir el modelo en funcionamiento, y el reporte se emitía sin un acto de confor
 
 ---
 
+## 2.3.0 — Cuentas, seguridad y registro de errores (E6)
+
+Responde a los comentarios C10 (cambio de contraseña) y C12 (tabla de errores) del informe. Por pedido explícito del
+equipo (09-11-2026) incluye además dos ítems de S7: el límite de intentos con bloqueo de login y la revisión OWASP
+Top 10. El resto de S7–S8 sigue pendiente. El login se mantiene con **RUT y contraseña**.
+
+### Cuentas y contraseñas
+- Migración `c9a3e1d8f709` (reversible): `users.must_change_password`, `password_changed_at`,
+  `failed_login_attempts` (CHECK ≥ 0) y `locked_until`. Los usuarios existentes no quedan obligados a cambiar la
+  contraseña al migrar.
+- Política de contraseñas (`password_policy.py`): mínimo `PASSWORD_MIN_LENGTH` (10), letras y números, distinta de
+  la actual, sin el RUT y fuera de una lista de contraseñas comunes. Se aplica al crear, restablecer y cambiar, y en
+  `init_user.py` y el seed.
+- `POST /auth/change-password` (contraseña actual + nueva): audita `PASSWORD_CHANGE` (con `forced`) o
+  `PASSWORD_CHANGE_FAIL` (con su motivo, nunca la contraseña), con un máximo de 5 intentos por minuto. Devuelve un
+  token nuevo.
+- **Revocación de sesiones:** el token lleva una marca (`pwd`) de la última contraseña. Cambiarla o que el ADMIN la
+  restablezca invalida los tokens anteriores (401).
+- **Cambio obligatorio:** los usuarios que crea el ADMIN, las contraseñas restablecidas y el primer ADMIN
+  (`init_user.py`) quedan con `must_change_password`. Mientras tanto la API solo permite `GET /auth/me` y el cambio
+  de contraseña; el resto responde 403 «Debe cambiar su contraseña antes de continuar».
+- Los usuarios del seed de desarrollo no quedan obligados (comodidad para las demostraciones).
+
+### Bloqueo de login y límite por IP
+- Tras `LOGIN_MAX_FAILED_ATTEMPTS` (5) fallos seguidos, la cuenta se bloquea `LOGIN_LOCKOUT_MINUTES` (15) y responde
+  423. Mientras dura el bloqueo no se evalúa la contraseña. Un login correcto reinicia el contador. Se audita como
+  `LOGIN_FAIL` con motivo `credenciales`, `bloqueo` o `bloqueado`.
+- `POST /admin/users/{id}/unlock` (ADMIN) quita el bloqueo antes de que venza (auditado como UPDATE con `unlock`).
+  Restablecer la contraseña también lo quita.
+- Límite de `LOGIN_RATE_LIMIT_PER_MINUTE` (10) intentos por IP por minuto (429 con `Retry-After`). Vive en memoria
+  por proceso, y el rechazo se audita una vez por ventana (`limite_ip`).
+- Con un RUT inexistente igual se calcula un bcrypt, para que el tiempo de respuesta no revele qué RUT tienen cuenta.
+- La IP del cliente solo se toma de `X-Forwarded-For` con `TRUST_PROXY_HEADERS=true` (antes se confiaba siempre en
+  ese encabezado y se podía evadir el límite).
+
+### Registro de errores (KPI K9)
+- Tabla `error_log` (misma migración): `occurred_at`, `method`, `path` (plantilla, sin ids), `status_code`,
+  `error_type`, `message`, `location` (archivo:línea), `user_id`, `request_id`.
+- El middleware genera un `X-Request-ID` por request. Ante una excepción no controlada registra el error y responde
+  500 con un mensaje genérico que incluye el código. Las respuestas 5xx también se registran.
+- El mensaje se sanea: sin SQL ni parámetros, sin `DETAIL` de PostgreSQL, con RUT, emails, números y valores entre
+  comillas reemplazados, y truncado a 500 caracteres.
+- `GET /admin/errors` (filtros por fecha, tipo y código, con paginación) y `GET /admin/errors/types` (solo ADMIN).
+- Dashboard: `server_errors` y `server_error_rate` (proporción sobre las requests medidas).
+
+### Revisión OWASP Top 10
+Detalle en `docs/seguridad_owasp.md`. Además de lo anterior:
+- `SECRET_KEY` de al menos 32 caracteres (la API no arranca con una más corta).
+- JWT con **PyJWT** en lugar de `python-jose`, que tiene una vulnerabilidad sin corrección (igual que `ecdsa`, que
+  llega con ella). Algoritmo fijo y claims obligatorios. Se agregó una prueba de que un token `alg: none` se rechaza.
+- Dependencias actualizadas por vulnerabilidades conocidas: FastAPI 0.115.0 → 0.135.4 con starlette 1.10.0 (fijada
+  aparte), python-multipart 0.0.33, Pillow 13.0.0, jsPDF 4.2.1, jspdf-autotable 5.0.9 y black 26.10.1. Se eligió
+  FastAPI 0.135.4 porque las versiones siguientes cambian la estructura interna de las rutas incluidas, lo que
+  rompía la plantilla de ruta de las métricas y `gen_docs`. `pip-audit` y `npm audit --omit=dev` quedan en 0.
+- Encabezados de seguridad en todas las respuestas (nosniff, `X-Frame-Options`, `Referrer-Policy`,
+  `Permissions-Policy`, HSTS, `Cache-Control: no-store`, CSP restrictiva en las respuestas JSON), CORS limitado a
+  `Authorization` y `Content-Type`, `/docs` configurable con `ENABLE_API_DOCS`, y largo máximo del RUT y la
+  contraseña en el login.
+
+### Frontend
+- Pantalla de cambio de contraseña obligatorio (antes de mostrar la aplicación) y opción «Contraseña» en el
+  encabezado. Muestra las reglas de la política mientras se escribe.
+- Panel de administración: la contraseña inicial pasa a llamarse temporal (mín. 10 caracteres). Se agregan los
+  estados «Bloqueado · desbloquear» y «Cambio de contraseña pendiente», la acción «Restablecer» y la pestaña
+  «Errores», con filtros por tipo y fecha. La bitácora suma `PASSWORD_CHANGE` y `PASSWORD_CHANGE_FAIL`.
+- Dashboard: tarjeta «Errores del servidor (5xx)».
+
+### Otros
+- `requirements-dev.txt`: `pgserver` solo para Python < 3.13. El README explica cómo usar `TEST_DB_DSN`.
+- `scripts/gen_docs.py`: reconoce `get_authenticated_user` y documenta `error_log`. Se regeneraron `endpoints.md` y
+  `modelo_datos.md`.
+- `init_db.py`: imports ordenados (`ruff`).
+- Versión 2.3.0 (API y `package.json`).
+
+### Pruebas
+- 35 tests nuevos (`test_account_security.py`) y ajuste de `test_auth.py` a PyJWT. Total: **241 tests aprobados,
+  cobertura 97 %**. Migración probada con `downgrade -1` / `upgrade`.
+- Flujo en el navegador (Playwright): cambio obligatorio del ADMIN, alta de usuario, bloqueo, desbloqueo, vista de
+  errores y PDF generado con jsPDF 4.
+
+### Pendiente (para confirmar con el equipo)
+- **Rotar las credenciales expuestas del Sprint 1.** Sigue pendiente y no depende del código.
+- Escaneo dinámico con OWASP ZAP, límite por IP en un almacén compartido si hay réplicas, CSP del sitio del frontend
+  y avisos de `npm audit` en las herramientas de desarrollo (exigen subir Vite a una versión mayor). Todo esto va
+  en S7.
+
+---
+
 ## Pendiente para S7–S8 (no implementado, según la regla 2)
-Docker y docker-compose, GitHub Actions, `S3EncryptedStorage`, rate limiting y bloqueo de login, revisión OWASP,
-despliegue en AWS, `HttpYoloProvider` real, pruebas de carga con Locust y soporte DICOM en la carga.
+Docker y docker-compose, GitHub Actions, `S3EncryptedStorage`, escaneo con OWASP ZAP, despliegue en AWS,
+`HttpYoloProvider` real, pruebas de carga con Locust y soporte DICOM en la carga. (El límite de intentos con
+bloqueo de login y la revisión OWASP Top 10 se adelantaron en la 2.3.0.)

@@ -19,6 +19,10 @@ Usuarios de la plataforma y su rol.
 | is_active | BOOLEAN | NOT NULL, DEFAULT true |  |
 | created_at | DATETIME | NULL, DEFAULT now() |  |
 | last_login_at | DATETIME | NULL |  |
+| must_change_password | BOOLEAN | NOT NULL, DEFAULT false |  |
+| password_changed_at | DATETIME | NULL |  |
+| failed_login_attempts | INTEGER | NOT NULL, DEFAULT 0 |  |
+| locked_until | DATETIME | NULL |  |
 
 Índices únicos: `ix_users_rut (rut)`; `ix_users_email (email)`
 
@@ -255,6 +259,23 @@ Validación médica del resultado de IA de cada imagen (base de las métricas de
 
 CHECK: `verdict IN ('CONCORDANTE','FALSO_POSITIVO','FALSO_NEGATIVO','NO_EVALUABLE')`
 
+### error_log
+
+Errores 5xx del servidor (KPI K9), sin datos personales ni clínicos.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| id | BIGINT | PK, NOT NULL |  |
+| occurred_at | DATETIME | NOT NULL, DEFAULT now() |  |
+| method | VARCHAR(10) | NOT NULL |  |
+| path | VARCHAR(200) | NOT NULL |  |
+| status_code | INTEGER | NOT NULL |  |
+| error_type | VARCHAR(120) | NOT NULL |  |
+| message | VARCHAR(500) | NULL |  |
+| location | VARCHAR(200) | NULL |  |
+| user_id | INTEGER | FK → users.id, NULL |  |
+| request_id | VARCHAR(32) | NOT NULL |  |
+
 ## Diagrama entidad-relación
 
 ```mermaid
@@ -269,6 +290,10 @@ erDiagram
         boolean is_active
         datetime created_at
         datetime last_login_at
+        boolean must_change_password
+        datetime password_changed_at
+        integer failed_login_attempts
+        datetime locked_until
     }
     patients {
         integer id PK
@@ -420,6 +445,18 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
+    error_log {
+        biginteger id PK
+        datetime occurred_at
+        string method
+        string path
+        integer status_code
+        string error_type
+        string message
+        string location
+        integer user_id FK
+        string request_id
+    }
     users ||--o{ patients : "consent_registered_by"
     users ||--o{ patients : "created_by"
     patients ||--o{ cases : "patient_id"
@@ -445,4 +482,5 @@ erDiagram
     images ||--o| ai_validations : "image_id"
     inference_results ||--o{ ai_validations : "inference_result_id"
     users ||--o{ ai_validations : "medico_id"
+    users ||--o{ error_log : "user_id"
 ```

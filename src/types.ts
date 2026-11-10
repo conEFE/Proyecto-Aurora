@@ -12,6 +12,7 @@ export interface Me {
   email: string;
   full_name: string;
   role: Role;
+  must_change_password: boolean;
 }
 
 export interface UserAccount {
@@ -23,6 +24,8 @@ export interface UserAccount {
   is_active: boolean;
   created_at?: string | null;
   last_login_at?: string | null;
+  must_change_password?: boolean;
+  locked_until?: string | null;
 }
 
 export interface UserCreateInput {
@@ -386,6 +389,8 @@ export interface DashboardMetrics {
   alta_pending_threshold_hours: number;
   api_p95_ms: number | null;
   api_requests: number;
+  server_errors: number;
+  server_error_rate: number | null;
   kpi_api_p95_target_ms: number;
   override_ratio: number | null;
   triage_total: number;
@@ -405,4 +410,30 @@ export interface AdminStats {
   active_users: number;
   total_cases: number;
   total_patients: number;
+}
+
+export interface ErrorLogEntry {
+  id: number;
+  occurred_at: string;
+  method: string;
+  path: string;
+  status_code: number;
+  error_type: string;
+  message: string | null;
+  location: string | null;
+  user_id: number | null;
+  request_id: string;
+}
+
+export interface ErrorTypeCount {
+  error_type: string;
+  count: number;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  role: string;
+  full_name?: string | null;
+  must_change_password: boolean;
 }
