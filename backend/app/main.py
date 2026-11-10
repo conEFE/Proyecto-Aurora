@@ -20,7 +20,14 @@ from app.services.errors import DomainError
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
-app = FastAPI(title="Proyecto Aurora API", version="2.1.0")
+_docs = settings.ENABLE_API_DOCS
+app = FastAPI(
+    title="Proyecto Aurora API",
+    version="2.3.0",
+    docs_url="/docs" if _docs else None,
+    redoc_url="/redoc" if _docs else None,
+    openapi_url="/openapi.json" if _docs else None,
+)
 
 app.add_middleware(ProcessTimeMiddleware)
 app.add_middleware(
@@ -28,14 +35,15 @@ app.add_middleware(
     allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-    expose_headers=["X-Process-Time-Ms"],
+    allow_headers=["Authorization", "Content-Type"],
+    expose_headers=["X-Process-Time-Ms", "X-Request-ID", "Retry-After"],
 )
 
 
 @app.exception_handler(DomainError)
 async def domain_error_handler(_: Request, exc: DomainError):
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+    headers = {"Retry-After": str(exc.retry_after)} if getattr(exc, "retry_after", None) else None
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.message}, headers=headers)
 
 
 @app.get("/health")

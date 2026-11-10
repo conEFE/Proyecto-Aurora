@@ -23,3 +23,8 @@ class User(Base):
     is_active = Column(Boolean, nullable=False, server_default=text("true"), default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_login_at = Column(DateTime(timezone=True), nullable=True)
+    # Seguridad de cuentas (E6)
+    must_change_password = Column(Boolean, nullable=False, server_default=text("false"), default=False)
+    password_changed_at = Column(DateTime(timezone=True), nullable=True)
+    failed_login_attempts = Column(Integer, nullable=False, server_default=text("0"), default=0)
+    locked_until = Column(DateTime(timezone=True), nullable=True)

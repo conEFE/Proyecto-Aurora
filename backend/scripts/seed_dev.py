@@ -30,6 +30,7 @@ from app.db.models.user import User, UserRole  # noqa: E402
 from app.deps import SessionLocal  # noqa: E402
 from app.schemas.cases import CaseCreate  # noqa: E402
 from app.services import case_service, image_service, seed_service, triage_service  # noqa: E402
+from app.services.password_policy import policy_errors  # noqa: E402
 from app.utils.rut import compute_dv  # noqa: E402
 
 USERS = [
@@ -80,8 +81,13 @@ def fake_image(seed: int) -> bytes:
 
 def main() -> int:
     password = os.getenv("AURORA_SEED_PASSWORD", "")
-    if len(password) < 8:
-        print("Defina AURORA_SEED_PASSWORD (mínimo 8 caracteres) para los usuarios de prueba.")
+    errors = policy_errors(password)
+    if not password or errors:
+        print(
+            "Defina AURORA_SEED_PASSWORD para los usuarios de prueba. La contraseña "
+            + "; ".join(errors or ["no puede estar vacía"])
+            + "."
+        )
         return 1
     today = date.today()
     with SessionLocal() as db:

@@ -1,5 +1,8 @@
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Activity,
+  KeyRound,
   Upload,
   FolderOpen,
   BarChart3,
@@ -13,6 +16,7 @@ import { apiClient } from '../services/api';
 import type { Me, Role } from '../types';
 import { ROLE_LABELS } from '../types';
 import NotificationBell from './NotificationBell';
+import ChangePassword from './ChangePassword';
 
 export type Section = 'home' | 'queue' | 'upload' | 'cases' | 'dashboard' | 'config' | 'panel';
 
@@ -44,6 +48,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function Header({ currentSection, onSectionChange, onOpenCase, me }: HeaderProps) {
   const navItems = NAV_ITEMS.filter((item) => item.roles.includes(me.role));
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
@@ -63,6 +68,14 @@ export default function Header({ currentSection, onSectionChange, onOpenCase, me
 
           <div className="flex items-center gap-1">
           {me.role === 'MEDICO' && <NotificationBell onOpenCase={onOpenCase} />}
+          <button
+            onClick={() => setShowPassword(true)}
+            className="flex items-center space-x-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
+            title="Cambiar contraseña"
+          >
+            <KeyRound className="w-3 h-3" />
+            <span className="hidden sm:inline">Contraseña</span>
+          </button>
           <button
             onClick={() => {
               apiClient.setToken(null);
@@ -97,6 +110,18 @@ export default function Header({ currentSection, onSectionChange, onOpenCase, me
           })}
         </nav>
       </div>
+      {/* Portal: el header usa backdrop-blur, que rompe el posicionamiento fixed de sus hijos */}
+      {showPassword &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 bg-black/60 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+          >
+            <ChangePassword onCancel={() => setShowPassword(false)} />
+          </div>,
+          document.body
+        )}
     </header>
   );
 }

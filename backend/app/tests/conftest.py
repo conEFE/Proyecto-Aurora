@@ -42,11 +42,13 @@ def _resolve_test_dsn() -> str:
 # Configurar el entorno ANTES de importar la app
 TEST_DSN = _resolve_test_dsn()
 os.environ["DB_DSN"] = TEST_DSN
-os.environ["SECRET_KEY"] = "clave-solo-para-tests"
+os.environ["SECRET_KEY"] = "clave-solo-para-tests-0123456789abcdef"
 os.environ["ENCRYPTION_KEY"] = Fernet.generate_key().decode()
 os.environ["FILES_DIR"] = str(_TMP / f"aurora_files_{uuid.uuid4().hex[:8]}")
 os.environ["INFERENCE_PROVIDER"] = "simulated"
 os.environ["BCRYPT_ROUNDS"] = "4"
+# Las pruebas inician sesión muchas veces desde la misma IP; el límite se prueba aparte
+os.environ["LOGIN_RATE_LIMIT_PER_MINUTE"] = "100000"
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
@@ -91,6 +93,9 @@ def truncate_all():
 @pytest.fixture(autouse=True)
 def _clean_db(_schema):
     truncate_all()
+    from app.utils.rate_limit import login_limiter
+
+    login_limiter.reset()
     from app.services import seed_service
 
     if hasattr(seed_service, "ensure_reference_data"):

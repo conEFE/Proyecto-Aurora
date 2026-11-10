@@ -28,11 +28,26 @@ class Settings(BaseSettings):
     # Casos ALTA sin revisar por más de estas horas se marcan en el dashboard
     ALTA_PENDING_HOURS: int = 24
 
+    # Seguridad de cuentas (E6)
+    PASSWORD_MIN_LENGTH: int = 10
+    # Intentos fallidos seguidos antes de bloquear la cuenta, y minutos de bloqueo
+    LOGIN_MAX_FAILED_ATTEMPTS: int = 5
+    LOGIN_LOCKOUT_MINUTES: int = 15
+    # Intentos de login por IP por minuto (límite en memoria, por proceso)
+    LOGIN_RATE_LIMIT_PER_MINUTE: int = 10
+    # Usar X-Forwarded-For para la IP del cliente: solo si la API está detrás de un proxy propio
+    TRUST_PROXY_HEADERS: bool = False
+    # Documentación interactiva (/docs, /redoc, /openapi.json); desactivar en producción
+    ENABLE_API_DOCS: bool = True
+
     @field_validator("SECRET_KEY")
     @classmethod
     def secret_key_not_empty(cls, v: str) -> str:
         if not v or not v.strip():
             raise ValueError("SECRET_KEY no puede estar vacío")
+        # HS256 necesita una clave de al menos 256 bits (OWASP A02)
+        if len(v.encode("utf-8")) < 32:
+            raise ValueError("SECRET_KEY debe tener al menos 32 caracteres")
         return v
 
     @property

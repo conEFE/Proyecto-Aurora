@@ -1,9 +1,19 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Users, UserPlus, Activity, Loader2, Shield, ScrollText, X } from 'lucide-react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Users, UserPlus, Activity, Loader2, Shield, ScrollText, X, ServerCrash, KeyRound, Unlock } from 'lucide-react';
 import { apiClient } from '../services/api';
-import type { AdminStats, AuditEntry, Page, Role, UserAccount, UserCreateInput } from '../types';
+import type {
+  AdminStats,
+  AuditEntry,
+  ErrorLogEntry,
+  ErrorTypeCount,
+  Page,
+  Role,
+  UserAccount,
+  UserCreateInput,
+} from '../types';
 import { ROLE_LABELS } from '../types';
 import { isValidRut, normalizeRut } from '../utils/rut';
+import { PASSWORD_MIN_LENGTH, passwordHints } from '../utils/password';
 import {
   cardClass,
   errorBox,
@@ -29,7 +39,11 @@ const ACTIONS = [
   'SIGN',
   'SIGN_FAIL',
   'EXPORT',
+  'PASSWORD_CHANGE',
+  'PASSWORD_CHANGE_FAIL',
 ];
+
+const isLocked = (u: UserAccount) => !!u.locked_until && new Date(u.locked_until).getTime() > Date.now();
 
 const EMPTY_USER: UserCreateInput = { rut: '', email: '', full_name: '', password: '', role: 'MEDICO' };
 
@@ -90,9 +104,15 @@ function UserForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: ()
           </select>
         </div>
         <div className="sm:col-span-2">
-          <label className={labelClass} htmlFor="u-pass">Contraseña inicial (mín. 8 caracteres)</label>
-          <input id="u-pass" type="password" className={inputClass} value={form.password} required minLength={8}
+          <label className={labelClass} htmlFor="u-pass">
+            Contraseña temporal (mín. {PASSWORD_MIN_LENGTH} caracteres, con letras y números)
+          </label>
+          <input id="u-pass" type="password" className={inputClass} value={form.password} required
+            minLength={PASSWORD_MIN_LENGTH}
             onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" />
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            El usuario deberá cambiarla en su primer inicio de sesión.
+          </p>
         </div>
       </div>
       <button type="submit" disabled={saving || !!rutError} className={primaryButton}>
@@ -175,7 +195,7 @@ function AuditViewer({ users }: { users: UserAccount[] }) {
                 <td className={`${tdClass} text-foreground`}>{userName(a.user_id)}</td>
                 <td className={tdClass}>
                   <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                    a.action === 'LOGIN_FAIL' ? 'bg-red-500/10 text-red-400' : 'bg-primary/10 text-primary'
+                    a.action.endsWith('_FAIL') ? 'bg-red-500/10 text-red-400' : 'bg-primary/10 text-primary'
                   }`}>{a.action}</span>
                 </td>
                 <td className={`${tdClass} text-muted-foreground`}>
@@ -199,13 +219,160 @@ function AuditViewer({ users }: { users: UserAccount[] }) {
   );
 }
 
+function ResetPasswordForm({ user, onDone }: { user: UserAccount; onDone: (error?: string) => void }) {
+  const [password, setPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+  const ok = passwordHints(password).every((h) => h.ok);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ok) return;
+    setSaving(true);
+    const r = await apiClient.updateUser(user.id, { password });
+    setSaving(false);
+    onDone(r.error);
+  };
+
+  return (
+    <form onSubmit={submit} className="flex flex-wrap items-center gap-2">
+      <input
+        type="password"
+        className={`${inputClass} py-1 w-48`}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder={`Temporal (mín. ${PASSWORD_MIN_LENGTH}, letras y números)`}
+        aria-label={`Contraseña temporal para ${user.full_name}`}
+        autoComplete="new-password"
+        required
+      />
+      <button type="submit" className={primaryButton} disabled={!ok || saving}>
+        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Restablecer'}
+      </button>
+      <button type="button" className={secondaryButton} onClick={() => onDone()}>
+        Cancelar
+      </button>
+      <span className="text-[10px] text-muted-foreground">
+        Cierra sus sesiones y le exige cambiarla al ingresar.
+      </span>
+    </form>
+  );
+}
+
+function ErrorViewer({ users }: { users: UserAccount[] }) {
+  const [filters, setFilters] = useState({ error_type: '', from: '', to: '' });
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<Page<ErrorLogEntry> | null>(null);
+  const [types, setTypes] = useState<ErrorTypeCount[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const size = 25;
+
+  const load = useCallback(async () => {
+    const [r, t] = await Promise.all([
+      apiClient.listErrors({
+        error_type: filters.error_type || undefined,
+        from: filters.from ? `${filters.from}T00:00:00` : undefined,
+        to: filters.to ? `${filters.to}T23:59:59` : undefined,
+        page,
+        size,
+      }),
+      apiClient.listErrorTypes(),
+    ]);
+    if (t.data) setTypes(t.data);
+    if (r.data) {
+      setData(r.data);
+      setError(null);
+    } else setError(r.error || 'Error al cargar el registro de errores');
+  }, [filters, page]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const userName = (id: number | null) =>
+    id === null ? '—' : users.find((u) => u.id === id)?.full_name ?? `#${id}`;
+  const totalPages = data ? Math.max(1, Math.ceil(data.total / size)) : 1;
+
+  return (
+    <div className={`${cardClass} p-4`}>
+      <div className="flex items-center gap-2 mb-1">
+        <ServerCrash className="w-4 h-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">Errores del servidor (5xx)</h3>
+        {data && <span className="text-[10px] text-muted-foreground">{data.total} registros</span>}
+      </div>
+      <p className="mb-3 text-[10px] text-muted-foreground">
+        Sin datos personales ni clínicos. El código de solicitud es el que ve el usuario en el mensaje de error.
+      </p>
+      <div className="grid sm:grid-cols-3 gap-2 mb-3">
+        <select className={inputClass} value={filters.error_type} aria-label="Tipo de error"
+          onChange={(e) => { setPage(1); setFilters({ ...filters, error_type: e.target.value }); }}>
+          <option value="">Todos los tipos</option>
+          {types.map((t) => (
+            <option key={t.error_type} value={t.error_type}>{t.error_type} ({t.count})</option>
+          ))}
+        </select>
+        <input type="date" className={inputClass} value={filters.from} aria-label="Desde"
+          onChange={(e) => { setPage(1); setFilters({ ...filters, from: e.target.value }); }} />
+        <input type="date" className={inputClass} value={filters.to} aria-label="Hasta"
+          onChange={(e) => { setPage(1); setFilters({ ...filters, to: e.target.value }); }} />
+      </div>
+      {error && <div className={errorBox}>{error}</div>}
+      {data && data.items.length === 0 ? (
+        <p className="py-6 text-center text-xs text-muted-foreground">No hay errores registrados con estos filtros.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-secondary/50 border-b border-border">
+              <tr>
+                <th className={thClass}>Fecha</th>
+                <th className={thClass}>Código</th>
+                <th className={thClass}>Ruta</th>
+                <th className={thClass}>Tipo</th>
+                <th className={thClass}>Mensaje</th>
+                <th className={thClass}>Ubicación</th>
+                <th className={thClass}>Usuario</th>
+                <th className={thClass}>Solicitud</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {data?.items.map((e) => (
+                <tr key={e.id}>
+                  <td className={`${tdClass} text-muted-foreground`}>{formatDateTime(e.occurred_at)}</td>
+                  <td className={tdClass}>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/10 text-red-400">
+                      {e.status_code}
+                    </span>
+                  </td>
+                  <td className={`${tdClass} text-foreground font-mono`}>{e.method} {e.path}</td>
+                  <td className={`${tdClass} text-muted-foreground font-mono`}>{e.error_type}</td>
+                  <td className={`${tdClass} text-muted-foreground max-w-xs truncate`} title={e.message ?? ''}>
+                    {e.message ?? '—'}
+                  </td>
+                  <td className={`${tdClass} text-muted-foreground font-mono`}>{e.location ?? '—'}</td>
+                  <td className={`${tdClass} text-muted-foreground`}>{userName(e.user_id)}</td>
+                  <td className={`${tdClass} text-muted-foreground font-mono`}>{e.request_id.slice(0, 8)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div className="flex items-center justify-between pt-2">
+        <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Anterior</button>
+        <span className="text-xs text-muted-foreground">Página {page} de {totalPages}</span>
+        <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Siguiente</button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPanel() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [tab, setTab] = useState<'users' | 'audit'>('users');
+  const [tab, setTab] = useState<'users' | 'audit' | 'errors'>('users');
+  const [resetFor, setResetFor] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     const [s, u] = await Promise.all([apiClient.getAdminStats(), apiClient.listUsers()]);
@@ -221,6 +388,12 @@ export default function AdminPanel() {
 
   const updateUser = async (user: UserAccount, change: { role?: Role; is_active?: boolean }) => {
     const r = await apiClient.updateUser(user.id, change);
+    if (r.error) setError(r.error);
+    loadData();
+  };
+
+  const unlockUser = async (user: UserAccount) => {
+    const r = await apiClient.unlockUser(user.id);
     if (r.error) setError(r.error);
     loadData();
   };
@@ -245,7 +418,7 @@ export default function AdminPanel() {
       <div>
         <h2 className="text-lg font-bold text-foreground">Administración</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Usuarios, roles y auditoría. Por mínimo privilegio, el administrador no accede a datos clínicos.
+          Usuarios, roles, auditoría y errores del servidor. Por mínimo privilegio, el administrador no accede a datos clínicos.
         </p>
       </div>
 
@@ -267,6 +440,9 @@ export default function AdminPanel() {
         </button>
         <button className={tab === 'audit' ? primaryButton : secondaryButton} onClick={() => setTab('audit')}>
           <ScrollText className="w-3.5 h-3.5" /> Auditoría
+        </button>
+        <button className={tab === 'errors' ? primaryButton : secondaryButton} onClick={() => setTab('errors')}>
+          <ServerCrash className="w-3.5 h-3.5" /> Errores
         </button>
       </div>
 
@@ -299,11 +475,13 @@ export default function AdminPanel() {
                   <th className={thClass}>Rol</th>
                   <th className={thClass}>Último acceso</th>
                   <th className={thClass}>Estado</th>
+                  <th className={thClass}>Acceso</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {users.map((u) => (
-                  <tr key={u.id}>
+                  <Fragment key={u.id}>
+                  <tr>
                     <td className={`${tdClass} text-foreground font-medium`}>{u.full_name}</td>
                     <td className={`${tdClass} text-muted-foreground`}>{u.rut}</td>
                     <td className={`${tdClass} text-muted-foreground`}>{u.email}</td>
@@ -331,14 +509,56 @@ export default function AdminPanel() {
                         {u.is_active ? 'Activo' : 'Inactivo'}
                       </button>
                     </td>
+                    <td className={tdClass}>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {isLocked(u) && (
+                          <button
+                            onClick={() => unlockUser(u)}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border bg-orange-500/10 text-orange-400 border-orange-500/20"
+                            title={`Bloqueado hasta ${formatDateTime(u.locked_until)} por intentos fallidos. Clic para desbloquear`}
+                          >
+                            <Unlock className="w-3 h-3" /> Bloqueado · desbloquear
+                          </button>
+                        )}
+                        {u.must_change_password && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold border bg-secondary text-muted-foreground border-border">
+                            Cambio de contraseña pendiente
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setResetFor(resetFor === u.id ? null : u.id)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent"
+                          title="Asignar una contraseña temporal"
+                        >
+                          <KeyRound className="w-3 h-3" /> Restablecer
+                        </button>
+                      </div>
+                    </td>
                   </tr>
+                  {resetFor === u.id && (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-2 bg-secondary/30">
+                        <ResetPasswordForm
+                          user={u}
+                          onDone={(err) => {
+                            setResetFor(null);
+                            if (err) setError(err);
+                            loadData();
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
-      ) : (
+      ) : tab === 'audit' ? (
         <AuditViewer users={users} />
+      ) : (
+        <ErrorViewer users={users} />
       )}
     </div>
   );

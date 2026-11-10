@@ -6,12 +6,16 @@ está en `/openapi.json` y la documentación interactiva en `/docs` del backend.
 | Método | Ruta | Roles permitidos | Descripción |
 |---|---|---|---|
 | GET | `/admin/audit` | ADMIN | Bitácora de auditoría con filtros por usuario, acción, entidad y fecha (paginada). |
+| GET | `/admin/errors` | ADMIN | Errores 5xx del servidor (sin datos sensibles), con filtros por fecha, tipo y código. |
+| GET | `/admin/errors/types` | ADMIN | Tipos de error registrados y su frecuencia (para el filtro de la vista). |
 | GET | `/admin/stats` | ADMIN | Conteos agregados del sistema (sin datos clínicos). |
 | GET | `/admin/users` | ADMIN | Lista usuarios (filtros por rol y estado). |
 | POST | `/admin/users` | ADMIN | Crea un usuario con su rol (reemplaza al signup público). |
 | PATCH | `/admin/users/{user_id}` | ADMIN | Cambia rol, datos o estado activo de un usuario. |
+| POST | `/admin/users/{user_id}/unlock` | ADMIN | Quita el bloqueo por intentos fallidos de inicio de sesión. |
+| POST | `/auth/change-password` | Cualquier usuario autenticado | Cambia la contraseña del usuario autenticado. Revoca los tokens anteriores y entrega uno nuevo. |
 | POST | `/auth/login` | Público | Login con RUT y contraseña. Devuelve un JWT firmado (HS256). |
-| GET | `/auth/me` | Cualquier usuario autenticado | Información del usuario autenticado. |
+| GET | `/auth/me` | Cualquier usuario autenticado | Información del usuario autenticado (incluye si debe cambiar su contraseña). |
 | GET | `/cases` | ADMINISTRATIVO, MEDICO | Lista casos con filtros por estado, nivel de triage vigente y paciente. |
 | POST | `/cases` | ADMINISTRATIVO, MEDICO | Crea un caso para un paciente con consentimiento registrado (409 si no lo tiene). |
 | GET | `/cases/{case_id}` | ADMINISTRATIVO, MEDICO | Detalle del caso (registra VIEW). |

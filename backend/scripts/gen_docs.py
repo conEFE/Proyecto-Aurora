@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT.parent / "docs"
 sys.path.insert(0, str(ROOT))
 os.environ.setdefault("DB_DSN", "postgresql+psycopg2://docs:docs@localhost:5432/docs")
-os.environ.setdefault("SECRET_KEY", "solo-para-generar-documentacion")
+os.environ.setdefault("SECRET_KEY", "solo-para-generar-la-documentacion-0123")
 
 from fastapi.routing import APIRoute  # noqa: E402
 from sqlalchemy import CheckConstraint, Enum, Index, UniqueConstraint  # noqa: E402
@@ -36,6 +36,7 @@ TABLE_DESCRIPTIONS = {
     "audit_log": "Bitácora append-only de accesos y cambios (trigger bloquea UPDATE/DELETE).",
     "request_metrics": "Duración de cada request de la API (p95 del dashboard).",
     "ai_validations": "Validación médica del resultado de IA de cada imagen (base de las métricas del modelo).",
+    "error_log": "Errores 5xx del servidor (KPI K9), sin datos personales ni clínicos.",
 }
 
 COLUMN_DESCRIPTIONS = {
@@ -157,7 +158,7 @@ def roles_of(route: APIRoute) -> str:
         call = dep.call
         if hasattr(call, "allowed_roles"):
             found.update(call.allowed_roles)
-        if getattr(call, "__name__", "") == "get_current_user":
+        if getattr(call, "__name__", "") in ("get_current_user", "get_authenticated_user"):
             authenticated = True
         for sub in dep.dependencies:
             walk(sub)

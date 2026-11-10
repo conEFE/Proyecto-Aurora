@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard';
 import AdminPanel from './components/AdminPanel';
 import Login from './components/Login';
 import Footer from './components/Footer';
+import ChangePassword from './components/ChangePassword';
 import TriageQueue from './components/TriageQueue';
 import TriageConfigPanel from './components/TriageConfigPanel';
 import { apiClient } from './services/api';
@@ -58,6 +59,14 @@ function App() {
 
   if (!me) {
     return <Login onLogin={loadMe} />;
+  }
+
+  if (me.must_change_password) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <ChangePassword forced onDone={loadMe} />
+      </div>
+    );
   }
 
   return (

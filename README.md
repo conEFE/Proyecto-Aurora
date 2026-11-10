@@ -60,7 +60,7 @@ Complete `backend/.env` (nunca se versiona):
 | Variable | Obligatoria | Descripción |
 |---|:-:|---|
 | `DB_DSN` | ✔ | `postgresql+psycopg2://usuario:clave@localhost:5432/aurora` |
-| `SECRET_KEY` | ✔ | Clave de firma de los JWT. La API no arranca sin ella. `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
+| `SECRET_KEY` | ✔ | Clave de firma de los JWT, mínimo 32 caracteres. La API no arranca sin ella. `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
 | `ENCRYPTION_KEY` | ✔ | Clave Fernet de las imágenes: `python generate_key.py` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | | Validez del token (30) |
 | `ALLOWED_ORIGINS` | | Orígenes CORS separados por coma |
@@ -69,6 +69,11 @@ Complete `backend/.env` (nunca se versiona):
 | `INFERENCE_PROVIDER` | | `simulated` (por defecto) o `http` |
 | `INFERENCE_URL` | | URL del servicio YOLO si `INFERENCE_PROVIDER=http` |
 | `ALTA_PENDING_HOURS` | | Umbral de casos ALTA pendientes en el dashboard (24) |
+| `PASSWORD_MIN_LENGTH` | | Largo mínimo de contraseña (10) |
+| `LOGIN_MAX_FAILED_ATTEMPTS` / `LOGIN_LOCKOUT_MINUTES` | | Bloqueo de la cuenta tras N fallos seguidos, por M minutos (5 / 15) |
+| `LOGIN_RATE_LIMIT_PER_MINUTE` | | Intentos de login por IP por minuto (10) |
+| `TRUST_PROXY_HEADERS` | | `true` solo detrás de un proxy propio que agrega `X-Forwarded-For` (`false`) |
+| `ENABLE_API_DOCS` | | Publica `/docs` y `/openapi.json` (`true`; desactivar en producción) |
 
 Cree el esquema y el primer administrador (credenciales solo por variables de entorno):
 
@@ -78,12 +83,21 @@ alembic upgrade head
 set AURORA_ADMIN_RUT=12345678-5
 set AURORA_ADMIN_EMAIL=admin@hospital.cl
 set AURORA_ADMIN_NAME=Administrador
-set AURORA_ADMIN_PASSWORD=...    # mínimo 8 caracteres
-python init_user.py
+set AURORA_ADMIN_PASSWORD=...    # temporal: mínimo 10 caracteres, con letras y números
+python init_user.py              # el ADMIN deberá cambiarla en su primer ingreso
 uvicorn app.main:app --reload --port 8000
 ```
 
 Documentación interactiva de la API: <http://localhost:8000/docs>.
+
+### Cuentas y contraseñas
+
+- El login es con **RUT y contraseña**. Las cuentas las crea el ADMIN con una contraseña temporal; el usuario debe
+  cambiarla en su primer ingreso (hasta entonces la API solo le permite ver su perfil y cambiarla).
+- Política: mínimo 10 caracteres, letras y números, distinta de la actual y sin el RUT.
+- Cambiar o restablecer una contraseña cierra las demás sesiones (los tokens anteriores dejan de servir).
+- Tras 5 intentos fallidos seguidos la cuenta queda bloqueada 15 minutos (el ADMIN puede desbloquearla antes) y cada
+  IP tiene un máximo de 10 intentos de login por minuto. Todo queda en la bitácora de auditoría.
 
 ### Datos de prueba (opcional)
 
@@ -112,7 +126,17 @@ cd ..
 npm run lint && npm run typecheck
 ```
 
-Resultados de la versión 2.2.0: 206 tests aprobados y 96% de cobertura (`docs/resultados_tests.md`).
+La suite crea una base aislada por corrida. Con Python ≤ 3.12 usa PostgreSQL embebido (`pgserver`). Con
+Python 3.13 o superior `pgserver` no existe: cree una base vacía en un PostgreSQL local y apúntela con `TEST_DB_DSN`
+(las pruebas borran sus datos en cada test; no use una base con datos reales):
+
+```bash
+createdb aurora_test
+set TEST_DB_DSN=postgresql+psycopg2://usuario:clave@localhost:5432/aurora_test   # Linux/Mac: export
+pytest --cov=app
+```
+
+Resultados de la versión 2.3.0: 240 tests aprobados y 97% de cobertura (`docs/resultados_tests.md`).
 
 ## Documentación
 
@@ -124,6 +148,7 @@ Resultados de la versión 2.2.0: 206 tests aprobados y 96% de cobertura (`docs/r
 | `docs/endpoints.md` | Endpoints con roles permitidos (generado) |
 | `docs/resultados_tests.md` | Salida de pytest y cobertura |
 | `docs/stack.md` | Versiones exactas y propósito de cada dependencia |
+| `docs/seguridad_owasp.md` | Revisión OWASP Top 10 (2021) y controles de seguridad |
 
 ## Crear ZIP del proyecto para distribución
 
