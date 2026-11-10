@@ -3,6 +3,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 
 from app.db.models.audit_log import AuditLog
+from app.services.consent_text import CONSENT_TEXT_VERSION
 from app.tests.conftest import PASSWORD, auth, login
 from app.utils.rut import compute_dv, is_valid_rut, normalize_rut
 
@@ -15,6 +16,7 @@ VALID_PATIENT = {
     "family_history_first_degree": True,
     "previous_breast_cancer": False,
     "consent_given": True,
+    "consent_text_version": CONSENT_TEXT_VERSION,
 }
 
 

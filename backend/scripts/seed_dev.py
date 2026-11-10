@@ -11,7 +11,7 @@ Uso (desde backend/, con las migraciones aplicadas):
 import io
 import os
 import sys
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -29,7 +29,13 @@ from app.db.models.triage import TriageResult  # noqa: E402
 from app.db.models.user import User, UserRole  # noqa: E402
 from app.deps import SessionLocal  # noqa: E402
 from app.schemas.cases import CaseCreate  # noqa: E402
-from app.services import case_service, image_service, seed_service, triage_service  # noqa: E402
+from app.services import (  # noqa: E402
+    case_service,
+    image_service,
+    privacy_service,
+    seed_service,
+    triage_service,
+)
 from app.services.password_policy import policy_errors  # noqa: E402
 from app.utils.rut import compute_dv  # noqa: E402
 
@@ -111,6 +117,7 @@ def main() -> int:
             users[role] = u
         db.commit()
         staff = users[UserRole.ADMINISTRATIVO]
+        consent_text = privacy_service.active_consent_text(db)
 
         patients = []
         for i, (first, last, age, family, previous) in enumerate(PATIENTS):
@@ -122,12 +129,11 @@ def main() -> int:
                 sex="F",
                 family_history_first_degree=family,
                 previous_breast_cancer=previous,
-                consent_given=True,
-                consent_at=datetime.now(timezone.utc),
-                consent_registered_by=staff.id,
                 created_by=staff.id,
             )
             db.add(p)
+            db.flush()
+            privacy_service.record_consent(db, p, consent_text, staff)
             patients.append(p)
         db.commit()
 

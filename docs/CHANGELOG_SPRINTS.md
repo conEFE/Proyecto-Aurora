@@ -454,6 +454,67 @@ Detalle en `docs/seguridad_owasp.md`. Además de lo anterior:
 
 ---
 
+## 2.4.0 — Cumplimiento de la Ley 21.719 (derechos de los titulares y consentimiento versionado)
+
+Pedido del equipo (10-11-2026): el informe declara cumplir la Ley 19.628, y la Ley 21.719 entra en vigencia el
+1-12-2026. Se revisó la plataforma contra ambas y contra la Ley 20.584, y se implementó lo que faltaba en el código.
+El análisis completo está en `docs/cumplimiento_legal.md`: matriz de cumplimiento, evaluación de impacto,
+procedimiento ante vulneraciones, conservación y transferencia internacional.
+
+### Backend
+- Migración `c1d4f2a8e910` (reversible):
+  - `consent_texts`: versiones inmutables del texto, con una sola activa (índice único parcial). Se crea la
+    `2026-11-v1`.
+  - `patient_consent_events`: historial de otorgamiento y retiro con la versión aceptada.
+  - `patients.consent_text_id`, `blocked_at`, `blocked_by` y `block_reason`.
+  - `data_subject_requests`: tipo, estado, fecha de recepción y vencimiento, respuesta, quién registró y quién
+    resolvió.
+- **Decisión sobre datos existentes:** los pacientes con consentimiento previo reciben un evento `OTORGADO` **sin
+  versión de texto** («Registrado antes de la versión 2.4.0»). No se inventa una versión que no vieron, y la interfaz
+  sugiere registrarlo de nuevo.
+- **Consentimiento versionado:** `POST /patients` exige `consent_text_version` igual al texto vigente (422 si falta,
+  409 si está obsoleto). `GET /privacy/consent-text` y `GET /privacy/consent-texts/{version}` lo entregan. El texto
+  vive en `app/services/consent_text.py`, y la migración guarda una copia congelada (un test verifica que coincidan).
+- **Retiro** (`POST /patients/{id}/consent/withdraw`) y **nuevo registro** (`POST /patients/{id}/consent`): el retiro
+  bloquea casos e imágenes nuevos (409). Los casos abiertos pueden terminar y la ficha se conserva. El motivo va al
+  historial, no a la auditoría. `PUT /patients` ya no cambia el consentimiento (422).
+- **Bloqueo** (`POST /patients/{id}/block` y `unblock`), en lugar de la supresión mientras la ficha deba
+  conservarse:
+  - Exige casos cerrados y un motivo.
+  - Un paciente bloqueado no aparece en las búsquedas (salvo con `include_blocked=true`), no se edita y no admite
+    casos nuevos.
+- **Exportación** (`GET /patients/{id}/export`, solo MEDICO, audita `EXPORT`): JSON con paciente, historial de
+  consentimiento, casos, historial de triage, imágenes (metadatos, sin la ruta interna), IA, validación médica,
+  revisión, reportes y solicitudes.
+- **Solicitudes de los titulares:**
+  - `POST /patients/{id}/requests`, `GET /privacy/requests` (filtros por estado, vencidas y paciente) y
+    `PATCH /privacy/requests/{id}`.
+  - Vencimiento automático a 30 días corridos. Transiciones válidas y respuesta obligatoria al resolver o rechazar.
+  - `GET /privacy/requests/summary` da al ADMIN los conteos y las vencidas, sin datos de pacientes.
+- Auditoría: `CONSENT_GRANT`, `CONSENT_WITHDRAW`, `BLOCK` y `UNBLOCK`. Las solicitudes se auditan como
+  CREATE/UPDATE, sin el detalle.
+
+### Frontend
+- Registro de paciente: muestra el texto de consentimiento vigente completo, con su versión, y la envía al registrar.
+- Nueva sección **«Privacidad»** (MEDICO y ADMINISTRATIVO):
+  - Lista de solicitudes con filtro por estado, marca de vencidas y acciones «En proceso», «Resolver» y «Rechazar».
+  - Vista por paciente con el estado del consentimiento, su historial y las acciones: retirar, registrar con el texto
+    vigente, bloquear o levantar el bloqueo, exportar en JSON (solo MEDICO) y registrar solicitudes.
+- Panel de ADMIN: resumen de las solicitudes y nuevas acciones en el filtro de la bitácora.
+
+### Pruebas
+- 16 tests nuevos (`test_privacy.py`) y una prueba de migración con datos previos (`test_migrations.py`). Total:
+  **258 tests aprobados, cobertura 97 %**. Migración probada con `downgrade -1` / `upgrade`.
+- Flujo en el navegador (Playwright), sin errores de consola: registro con el texto, solicitud, exportación, retiro,
+  bloqueo, resolución y resumen del ADMIN.
+
+### Pendiente (para confirmar con el equipo)
+Ver la sección 7 de `docs/cumplimiento_legal.md`: validar el texto v1, acceso por equipo tratante (Ley 20.584),
+plazos de conservación y la tarea de anonimización, región de la nube y DPA, y volver a registrar el consentimiento
+de los pacientes anteriores a la 2.4.0.
+
+---
+
 ## Pendiente para S7–S8 (no implementado, según la regla 2)
 Docker y docker-compose, GitHub Actions, `S3EncryptedStorage`, escaneo con OWASP ZAP, despliegue en AWS,
 `HttpYoloProvider` real, pruebas de carga con Locust y soporte DICOM en la carga. (El límite de intentos con

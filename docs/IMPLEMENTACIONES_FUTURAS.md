@@ -1,9 +1,9 @@
 # Implementaciones futuras — Proyecto Aurora
 
 Trabajo pendiente en el repositorio, ordenado por épica, a partir de la revisión del informe de la Unidad 2 y de
-las correcciones del 05-10-2026. Lo implementado hasta la versión 2.3.0 está en `docs/CHANGELOG_SPRINTS.md`.
+las correcciones del 05-10-2026. Lo implementado hasta la versión 2.4.0 está en `docs/CHANGELOG_SPRINTS.md`.
 
-Actualizado: 09-11-2026.
+Actualizado: 10-11-2026.
 
 ## Estado por épica
 
@@ -14,6 +14,7 @@ Actualizado: 09-11-2026.
 | E7 | Versionado, CI/CD y despliegue (local → staging → piloto) | Pendiente (solo tags y `.env.example`) |
 | E9 | Pruebas no funcionales (carga, estrés y seguridad) | Pendiente (unitarias, integración y E2E listas) |
 | E10 | Clasificador CNN (ResNet18) y YOLO para el triage | Modelo CNN entrenado fuera del repo (AUC 0,843); integración pendiente; YOLO en desarrollo |
+| — | Cumplimiento Ley 19.628 / 21.719 / 20.584 | Hecho en código (2.4.0); quedan decisiones del equipo |
 | — | Mejoras menores detectadas | Pendiente |
 
 ## E6 · Cuentas, seguridad y registro de errores
@@ -140,6 +141,15 @@ El informe describe prácticas que deben existir en el repositorio para que la e
 ## Seguridad del reporte firmado
 - [ ] Evaluar firma electrónica avanzada (Ley 19.799) con un prestador acreditado para la fase productiva; hoy la
   conformidad es una firma electrónica simple (contraseña + HMAC + auditoría).
+
+## Cumplimiento legal (detalle en `docs/cumplimiento_legal.md`)
+- [x] Consentimiento versionado, retiro, bloqueo, exportación (acceso/portabilidad) y registro de solicitudes con
+  plazo de 30 días (2.4.0).
+- [x] Evaluación de impacto, procedimiento ante vulneraciones y política de conservación (documento).
+- [ ] Validar el texto de consentimiento v1 con el establecimiento o un abogado.
+- [ ] Acceso por equipo tratante (Ley 20.584): hoy todo MEDICO/ADMINISTRATIVO ve todos los casos.
+- [ ] Tarea programada que proponga anonimizar las fichas con el plazo de conservación vencido.
+- [ ] Región de la nube, DPA del proveedor, cifrado de la BD en reposo y TLS (con S7).
 
 ## Mejoras menores detectadas
 - [ ] Recálculo periódico del triage (tarea programada) para que el factor «tiempo de espera» suba sin datos nuevos.

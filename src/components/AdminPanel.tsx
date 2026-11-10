@@ -4,6 +4,7 @@ import { apiClient } from '../services/api';
 import type {
   AdminStats,
   AuditEntry,
+  DataRequestSummary,
   ErrorLogEntry,
   ErrorTypeCount,
   Page,
@@ -41,6 +42,10 @@ const ACTIONS = [
   'EXPORT',
   'PASSWORD_CHANGE',
   'PASSWORD_CHANGE_FAIL',
+  'CONSENT_GRANT',
+  'CONSENT_WITHDRAW',
+  'BLOCK',
+  'UNBLOCK',
 ];
 
 const isLocked = (u: UserAccount) => !!u.locked_until && new Date(u.locked_until).getTime() > Date.now();
@@ -367,6 +372,7 @@ function ErrorViewer({ users }: { users: UserAccount[] }) {
 
 export default function AdminPanel() {
   const [stats, setStats] = useState<AdminStats | null>(null);
+  const [privacy, setPrivacy] = useState<DataRequestSummary | null>(null);
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -375,8 +381,13 @@ export default function AdminPanel() {
   const [resetFor, setResetFor] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
-    const [s, u] = await Promise.all([apiClient.getAdminStats(), apiClient.listUsers()]);
+    const [s, u, pr] = await Promise.all([
+      apiClient.getAdminStats(),
+      apiClient.listUsers(),
+      apiClient.dataRequestsSummary(),
+    ]);
     if (s.data) setStats(s.data);
+    if (pr.data) setPrivacy(pr.data);
     if (u.data) setUsers(u.data);
     setError(s.error || u.error || null);
     setLoading(false);
@@ -433,6 +444,22 @@ export default function AdminPanel() {
           </div>
         ))}
       </div>
+
+      {privacy && (
+        <div className={`${cardClass} p-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs`}>
+          <span className="font-semibold text-foreground">Solicitudes de titulares (Ley 21.719)</span>
+          <span className="text-muted-foreground">{privacy.open_total} abiertas</span>
+          <span className={privacy.overdue > 0 ? 'text-red-400 font-semibold' : 'text-muted-foreground'}>
+            {privacy.overdue} con el plazo de 30 días vencido
+          </span>
+          <span className="text-muted-foreground">
+            {privacy.by_status.RESUELTA} resueltas · {privacy.by_status.RECHAZADA} rechazadas
+          </span>
+          <span className="text-[10px] text-muted-foreground">
+            Las gestionan médicos y administrativos en «Privacidad».
+          </span>
+        </div>
+      )}
 
       <div className="flex gap-2">
         <button className={tab === 'users' ? primaryButton : secondaryButton} onClick={() => setTab('users')}>

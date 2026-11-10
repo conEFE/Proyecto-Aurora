@@ -10,6 +10,7 @@ from app.config import settings
 from app.db.models.case import Case, CaseStatus
 from app.db.models.image import ExamType, Image
 from app.db.models.inference_result import InferenceResult
+from app.db.models.patient import Patient
 from app.db.models.user import User, UserRole
 from app.inference.providers import get_provider
 from app.schemas.images import ImageOut, InferenceOut
@@ -72,6 +73,10 @@ def upload_image(
     case = _case(db, case_id)
     if case.status == CaseStatus.CERRADO:
         raise ConflictError("El caso está cerrado: no se pueden agregar imágenes")
+    patient = db.get(Patient, case.patient_id)
+    if patient is not None and not patient.consent_given:
+        # Retirado el consentimiento no se tratan datos nuevos (imágenes ni inferencia de IA)
+        raise ConflictError("El paciente retiró su consentimiento: no se pueden agregar imágenes")
     max_bytes = settings.MAX_UPLOAD_MB * 1024 * 1024
     if len(content) > max_bytes:
         raise PayloadTooLarge(f"La imagen supera el máximo permitido de {settings.MAX_UPLOAD_MB} MB")

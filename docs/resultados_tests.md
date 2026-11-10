@@ -1,6 +1,6 @@
-# Resultados de pruebas — Proyecto Aurora 2.3.0
+# Resultados de pruebas — Proyecto Aurora 2.4.0
 
-Ejecución: 09-11-2026, Linux, Python 3.13, PostgreSQL 16 local vía `TEST_DB_DSN` (con Python 3.13 no existe
+Ejecución: 10-11-2026, Linux, Python 3.13, PostgreSQL 16 local vía `TEST_DB_DSN` (con Python 3.13 no existe
 `pgserver`; ver README), BD aislada por corrida.
 El esquema se crea con `alembic upgrade head` (no `create_all`).
 
@@ -13,12 +13,12 @@ pytest --cov=app
 
 | Indicador | Resultado | Meta |
 |---|---|---|
-| Tests ejecutados | **241** | — |
-| Aprobados | **241 (100%)** | 100% |
+| Tests ejecutados | **258** | — |
+| Aprobados | **258 (100%)** | 100% |
 | Fallidos | 0 | 0 |
-| Cobertura total de `app/` | **97%** (2.460 sentencias, 85 sin cubrir) | — |
-| Cobertura de `app/services/` | **≈95%** (1.090 sentencias, 54 sin cubrir) | ≥ 70% |
-| Duración | ≈ 40 s | — |
+| Cobertura total de `app/` | **97%** (2.838 sentencias, 83 sin cubrir) | — |
+| Cobertura de `app/services/` | **≈96%** (1.301 sentencias, 52 sin cubrir) | ≥ 70% |
+| Duración | ≈ 45 s | — |
 | `ruff check` | sin hallazgos | 0 |
 | `npm run lint` / `npm run typecheck` | 0 errores / 0 errores | 0 |
 | `pip-audit` / `npm audit --omit=dev` | 0 / 0 vulnerabilidades | 0 |
@@ -28,7 +28,7 @@ pytest --cov=app
 | Archivo | Tests | Qué cubre |
 |---|---:|---|
 | `test_auth.py` | 11 | S1: login correcto/incorrecto, token expirado, manipulado, firmado con otra clave, `Bearer 1-ADMIN`, rol leído desde la BD, header de tiempos |
-| `test_migrations.py` | 2 | `downgrade base` → `upgrade head`; migración de filas de la v1.0 (caso sin paciente, código libre, paciente sin nombre) |
+| `test_migrations.py` | 3 | `downgrade base` → `upgrade head`; migración de filas de la v1.0 (caso sin paciente, código libre, paciente sin nombre); 2.4.0: evento de consentimiento sin versión para pacientes previos |
 | `test_users_patients.py` | 32 | S2: RUT (módulo 11), CRUD de usuarios solo ADMIN, desactivación, ADMIN sin acceso a pacientes, consentimiento obligatorio, auditoría y `audit_log` append-only |
 | `test_cases.py` | 25 | S3: 4 transiciones válidas y 8 inválidas (409), caso sin consentimiento (409), BI-RADS fuera de rango, caso cerrado no editable, filtros, auditoría |
 | `test_images.py` | 17 | S4: carga PNG/JPEG, límite de tamaño (413), formatos (415), cifrado en disco, ADMINISTRATIVO sube pero no ve (403), inferencia simulada marcada |
@@ -38,50 +38,61 @@ pytest --cov=app
 | `test_reviews_reports.py` | 22 | S6: toma y revisión, cierre solo con revisión, reporte registrado y auditado (EXPORT), métricas con datos controlados, endpoints viejos eliminados y **E2E completo** |
 | `test_signature_model_performance.py` | 13 | 2.2.0: firma del médico sobre el reporte y desempeño del modelo por versión (K5) |
 | `test_account_security.py` | 35 | 2.3.0 (E6): política de contraseñas, cambio de contraseña y revocación de tokens, cambio obligatorio, bloqueo y desbloqueo, límite por IP (sin confiar en `X-Forwarded-For`), `error_log` sin datos sensibles, vista de errores, K9, encabezados de seguridad, todas las rutas exigen token, `SECRET_KEY` corta, `alg: none` |
+| `test_privacy.py` | 16 | 2.4.0 (Ley 21.719): texto de consentimiento vigente y copia de la migración, versión obligatoria y obsoleta, retiro (sin casos ni imágenes nuevas), nuevo registro, bloqueo (casos cerrados, oculto, sin edición), exportación completa y solo MEDICO, ciclo de solicitudes con plazo, vencidas y resumen del ADMIN |
 
 ## Cobertura por módulo
 
 ```
 Name                                Stmts   Miss  Cover
 -------------------------------------------------------
+app/__init__.py                         0      0   100%
+app/api/__init__.py                     0      0   100%
 app/api/rutas_admin.py                 60      4    93%
 app/api/rutas_auth.py                  41      0   100%
 app/api/rutas_cases.py                 28      0   100%
 app/api/rutas_dashboard.py             17      0   100%
 app/api/rutas_images.py                30      0   100%
-app/api/rutas_patients.py              22      0   100%
+app/api/rutas_patients.py              49      0   100%
+app/api/rutas_privacy.py               37      0   100%
 app/api/rutas_reports.py               40      0   100%
 app/api/rutas_triage.py                48      0   100%
+app/auth/__init__.py                    0      0   100%
 app/auth/bearer.py                     29      0   100%
 app/auth/rbac.py                       11      0   100%
 app/auth/security.py                   31      3    90%
 app/config.py                          35      1    97%
 app/deps.py                            11      0   100%
+app/inference/__init__.py               0      0   100%
 app/inference/providers.py             48      8    83%
-app/main.py                            30      0   100%
+app/main.py                            31      0   100%
 app/middleware.py                      52      2    96%
-app/schemas/*                          442      4    99%
+app/schemas/*                          502      4    99%
+app/services/__init__.py                0      0   100%
 app/services/audit_service.py          22      3    86%
 app/services/auth_service.py           85      0   100%
-app/services/case_service.py           88      3    97%
+app/services/case_service.py           90      3    97%
+app/services/consent_text.py            2      0   100%
 app/services/dashboard_service.py     129      5    96%
 app/services/error_log_service.py      54      5    91%
 app/services/errors.py                 13      0   100%
-app/services/image_service.py         115     10    91%
+app/services/image_service.py         119     10    92%
 app/services/password_policy.py        26      1    96%
-app/services/patient_service.py        57      7    88%
+app/services/patient_service.py        63      2    97%
+app/services/privacy_service.py       195      3    98%
 app/services/review_service.py        180      5    97%
-app/services/seed_service.py            4      0   100%
+app/services/seed_service.py            6      0   100%
 app/services/triage_engine.py          79      2    97%
 app/services/triage_service.py        167      5    97%
 app/services/user_service.py           71      8    89%
+app/storage/__init__.py                 0      0   100%
 app/storage/base.py                     8      0   100%
 app/storage/local.py                   42      4    90%
+app/utils/__init__.py                   0      0   100%
 app/utils/quality.py                   27      0   100%
 app/utils/rate_limit.py                35      5    86%
 app/utils/rut.py                       29      0   100%
 -------------------------------------------------------
-TOTAL                                2460     85    97%
+TOTAL                                2838     83    97%
 ```
 
 Lo no cubierto es principalmente `HttpYoloProvider` (stub del Sprint 8, sin servicio YOLO disponible) y ramas de
@@ -105,3 +116,11 @@ DICOM incrustados y **sin RUT ni nombre de la paciente**) → dashboard. Sin err
   tablas, sin errores en la consola).
 - Migración `c9a3e1d8f709`: `upgrade` → `downgrade -1` → `upgrade` sobre la BD de desarrollo, además de
   `test_migrations.py` (`downgrade base` → `upgrade head`).
+
+### 2.4.0 (Ley 21.719), con Playwright
+
+Como MEDICO del seed: registro de una paciente con el texto de consentimiento `2026-11-v1` → «Privacidad» → registro
+de una solicitud de acceso → exportación JSON (con el RUT, el historial de consentimiento y la solicitud) → retiro del
+consentimiento → bloqueo → la solicitud se resuelve con su respuesta. Como ADMIN: resumen de solicitudes en el
+panel. Sin errores de consola. Migración `c1d4f2a8e910`: `upgrade` → `downgrade -1` → `upgrade` sobre la BD de
+desarrollo.

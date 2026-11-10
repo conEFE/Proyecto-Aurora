@@ -37,6 +37,9 @@ TABLE_DESCRIPTIONS = {
     "request_metrics": "Duración de cada request de la API (p95 del dashboard).",
     "ai_validations": "Validación médica del resultado de IA de cada imagen (base de las métricas del modelo).",
     "error_log": "Errores 5xx del servidor (KPI K9), sin datos personales ni clínicos.",
+    "consent_texts": "Versiones inmutables del texto de consentimiento informado (una activa).",
+    "patient_consent_events": "Historial del consentimiento de cada paciente (otorgado/retirado) con el texto aceptado.",
+    "data_subject_requests": "Solicitudes de los titulares (Ley 21.719) con su plazo de respuesta de 30 días.",
 }
 
 COLUMN_DESCRIPTIONS = {

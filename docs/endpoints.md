@@ -42,10 +42,22 @@ está en `/openapi.json` y la documentación interactiva en `/docs` del backend.
 | GET | `/health` | Público | Estado de la API. |
 | GET | `/notifications` | Cualquier usuario autenticado | Notificaciones del usuario autenticado (no leídas primero). |
 | PATCH | `/notifications/{notification_id}/read` | Cualquier usuario autenticado | Marca como leída una notificación propia. |
-| GET | `/patients` | ADMINISTRATIVO, MEDICO | Busca pacientes por RUT o nombre (registra VIEW). |
+| GET | `/patients` | ADMINISTRATIVO, MEDICO | Busca pacientes por RUT o nombre (registra VIEW). Los bloqueados solo aparecen si se piden. |
 | POST | `/patients` | ADMINISTRATIVO, MEDICO | Registra un paciente. El consentimiento informado es obligatorio. |
 | GET | `/patients/{patient_id}` | ADMINISTRATIVO, MEDICO | Detalle del paciente (registra VIEW). |
 | PUT | `/patients/{patient_id}` | ADMINISTRATIVO, MEDICO | Edita datos y antecedentes del paciente; recalcula el triage de sus casos abiertos. |
+| POST | `/patients/{patient_id}/block` | ADMINISTRATIVO, MEDICO | Bloquea el tratamiento de los datos (exige casos cerrados). Los datos se conservan por la Ley 20.584. |
+| POST | `/patients/{patient_id}/consent` | ADMINISTRATIVO, MEDICO | Registra el consentimiento con el texto vigente (nuevo otorgamiento o actualización de versión). |
+| GET | `/patients/{patient_id}/consent/events` | ADMINISTRATIVO, MEDICO | Historial del consentimiento con la versión del texto aceptado. |
+| POST | `/patients/{patient_id}/consent/withdraw` | ADMINISTRATIVO, MEDICO | Retira el consentimiento: impide nuevos casos e imágenes; la ficha clínica se conserva. |
+| GET | `/patients/{patient_id}/export` | MEDICO | Copia de todos los datos del paciente en JSON (derechos de acceso y portabilidad). Registra EXPORT. |
+| POST | `/patients/{patient_id}/requests` | ADMINISTRATIVO, MEDICO | Registra una solicitud del titular; el plazo de respuesta es de 30 días corridos. |
+| POST | `/patients/{patient_id}/unblock` | ADMINISTRATIVO, MEDICO | Levanta el bloqueo de los datos del paciente. |
+| GET | `/privacy/consent-text` | ADMINISTRATIVO, MEDICO | Texto de consentimiento vigente, para mostrarlo al paciente antes de registrarlo. |
+| GET | `/privacy/consent-texts/{version}` | ADMINISTRATIVO, MEDICO | Una versión del texto de consentimiento (para saber qué aceptó cada paciente). |
+| GET | `/privacy/requests` | ADMINISTRATIVO, MEDICO | Solicitudes de los titulares, ordenadas por vencimiento del plazo. |
+| GET | `/privacy/requests/summary` | ADMIN, ADMINISTRATIVO, MEDICO | Conteo de solicitudes por estado y vencidas (sin datos de pacientes; visible para el ADMIN). |
+| PATCH | `/privacy/requests/{request_id}` | ADMINISTRATIVO, MEDICO | Avanza el estado de una solicitud; resolverla o rechazarla exige una respuesta. |
 | GET | `/triage/config` | ADMIN, MEDICO | Configuración de triage activa. |
 | POST | `/triage/config` | MEDICO | Crea una nueva versión activa (solo MEDICO) y recalcula los casos no cerrados. |
 | GET | `/triage/config/history` | ADMIN, MEDICO | Todas las versiones de la configuración de triage. |

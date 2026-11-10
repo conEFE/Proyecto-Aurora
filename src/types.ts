@@ -53,6 +53,9 @@ export interface Patient {
   consent_given: boolean;
   consent_at?: string | null;
   consent_registered_by?: number | null;
+  consent_text_version?: string | null;
+  blocked_at?: string | null;
+  block_reason?: string | null;
   created_by?: number | null;
   created_at?: string | null;
 }
@@ -67,6 +70,8 @@ export interface PatientInput {
   family_history_first_degree: boolean;
   previous_breast_cancer: boolean;
   consent_given: boolean;
+  /** Versión del texto de consentimiento mostrado al paciente (obligatoria al registrar). */
+  consent_text_version?: string;
 }
 
 export interface AuditEntry {
@@ -436,4 +441,64 @@ export interface TokenResponse {
   role: string;
   full_name?: string | null;
   must_change_password: boolean;
+}
+
+// --- Privacidad (Ley 21.719) -------------------------------------------------
+
+export interface ConsentText {
+  version: string;
+  body: string;
+  is_active: boolean;
+  created_at?: string | null;
+}
+
+export interface ConsentEvent {
+  id: number;
+  action: 'OTORGADO' | 'RETIRADO';
+  consent_text_version: string | null;
+  occurred_at: string;
+  registered_by: number | null;
+  note: string | null;
+}
+
+export type DataRequestType = 'ACCESO' | 'RECTIFICACION' | 'SUPRESION' | 'OPOSICION' | 'PORTABILIDAD' | 'BLOQUEO';
+export type DataRequestStatus = 'RECIBIDA' | 'EN_PROCESO' | 'RESUELTA' | 'RECHAZADA';
+
+export const DATA_REQUEST_TYPE_LABELS: Record<DataRequestType, string> = {
+  ACCESO: 'Acceso',
+  RECTIFICACION: 'Rectificación',
+  SUPRESION: 'Supresión',
+  OPOSICION: 'Oposición',
+  PORTABILIDAD: 'Portabilidad',
+  BLOQUEO: 'Bloqueo',
+};
+
+export const DATA_REQUEST_STATUS_LABELS: Record<DataRequestStatus, string> = {
+  RECIBIDA: 'Recibida',
+  EN_PROCESO: 'En proceso',
+  RESUELTA: 'Resuelta',
+  RECHAZADA: 'Rechazada',
+};
+
+export interface DataSubjectRequest {
+  id: number;
+  patient_id: number;
+  patient_name: string | null;
+  patient_rut: string | null;
+  request_type: DataRequestType;
+  status: DataRequestStatus;
+  detail: string | null;
+  received_at: string;
+  due_at: string;
+  overdue: boolean;
+  registered_by: number;
+  resolved_at: string | null;
+  resolved_by: number | null;
+  resolution: string | null;
+}
+
+export interface DataRequestSummary {
+  by_status: Record<DataRequestStatus, number>;
+  open_total: number;
+  overdue: number;
 }

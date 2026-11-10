@@ -26,6 +26,8 @@ class PatientBase(BaseModel):
 class PatientCreate(PatientBase):
     rut: str
     consent_given: bool
+    # Versión del texto de consentimiento que se mostró al paciente (debe ser la vigente)
+    consent_text_version: str | None = Field(default=None, max_length=20)
 
     @field_validator("rut")
     @classmethod
@@ -48,6 +50,7 @@ class PatientUpdate(BaseModel):
     medical_history: str | None = None
     family_history_first_degree: bool | None = None
     previous_breast_cancer: bool | None = None
+    # El consentimiento se otorga o retira con /patients/{id}/consent; aquí solo se rechaza el cambio
     consent_given: bool | None = None
 
 
@@ -66,5 +69,8 @@ class PatientOut(BaseModel):
     consent_given: bool
     consent_at: datetime | None = None
     consent_registered_by: int | None = None
+    consent_text_version: str | None = None
+    blocked_at: datetime | None = None
+    block_reason: str | None = None
     created_by: int | None = None
     created_at: datetime | None = None

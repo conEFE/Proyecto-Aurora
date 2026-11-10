@@ -44,6 +44,10 @@ Pacientes (datos ficticios en desarrollo) con antecedentes y consentimiento info
 | consent_given | BOOLEAN | NOT NULL, DEFAULT false | Consentimiento informado registrado (obligatorio para crear casos) |
 | consent_at | DATETIME | NULL |  |
 | consent_registered_by | INTEGER | FK → users.id, NULL | Usuario que registró el consentimiento |
+| consent_text_id | INTEGER | FK → consent_texts.id, NULL |  |
+| blocked_at | DATETIME | NULL |  |
+| blocked_by | INTEGER | FK → users.id, NULL |  |
+| block_reason | VARCHAR(500) | NULL |  |
 | created_by | INTEGER | FK → users.id, NULL |  |
 | created_at | DATETIME | NULL, DEFAULT now() |  |
 
@@ -147,7 +151,7 @@ Cálculos de triage por caso; uno vigente y el resto como historial.
 | is_current | BOOLEAN | NOT NULL, DEFAULT true |  |
 | computed_at | DATETIME | NOT NULL, DEFAULT now() |  |
 
-CHECK: `score >= 0 AND score <= 100`; `override_by IS NULL OR (override_reason IS NOT NULL AND length(trim(override_reason)) > 0)`
+CHECK: `override_by IS NULL OR (override_reason IS NOT NULL AND length(trim(override_reason)) > 0)`; `score >= 0 AND score <= 100`
 
 Índices únicos: `uq_triage_results_current (case_id) WHERE is_current`
 
@@ -276,6 +280,56 @@ Errores 5xx del servidor (KPI K9), sin datos personales ni clínicos.
 | user_id | INTEGER | FK → users.id, NULL |  |
 | request_id | VARCHAR(32) | NOT NULL |  |
 
+### consent_texts
+
+Versiones inmutables del texto de consentimiento informado (una activa).
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| id | INTEGER | PK, NOT NULL |  |
+| version | VARCHAR(20) | UNIQUE, NOT NULL |  |
+| body | TEXT | NOT NULL |  |
+| is_active | BOOLEAN | NOT NULL, DEFAULT false |  |
+| created_at | DATETIME | NULL, DEFAULT now() |  |
+
+Índices únicos: `uq_consent_texts_active (is_active) WHERE is_active`
+
+### patient_consent_events
+
+Historial del consentimiento de cada paciente (otorgado/retirado) con el texto aceptado.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| id | INTEGER | PK, NOT NULL |  |
+| patient_id | INTEGER | FK → patients.id, NOT NULL |  |
+| action | VARCHAR(10) | NOT NULL |  |
+| consent_text_id | INTEGER | FK → consent_texts.id, NULL |  |
+| occurred_at | DATETIME | NOT NULL, DEFAULT now() |  |
+| registered_by | INTEGER | FK → users.id, NULL |  |
+| note | VARCHAR(500) | NULL |  |
+
+CHECK: `action IN ('OTORGADO','RETIRADO')`
+
+### data_subject_requests
+
+Solicitudes de los titulares (Ley 21.719) con su plazo de respuesta de 30 días.
+
+| Campo | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| id | INTEGER | PK, NOT NULL |  |
+| patient_id | INTEGER | FK → patients.id, NOT NULL |  |
+| request_type | VARCHAR(20) | NOT NULL |  |
+| status | VARCHAR(12) | NOT NULL, DEFAULT 'RECIBIDA' |  |
+| detail | VARCHAR(1000) | NULL |  |
+| received_at | DATETIME | NOT NULL |  |
+| due_at | DATETIME | NOT NULL |  |
+| registered_by | INTEGER | FK → users.id, NOT NULL |  |
+| resolved_at | DATETIME | NULL |  |
+| resolved_by | INTEGER | FK → users.id, NULL |  |
+| resolution | VARCHAR(1000) | NULL |  |
+
+CHECK: `status IN ('RECIBIDA','EN_PROCESO','RESUELTA','RECHAZADA')`; `request_type IN ('ACCESO','RECTIFICACION','SUPRESION','OPOSICION','PORTABILIDAD','BLOQUEO')`
+
 ## Diagrama entidad-relación
 
 ```mermaid
@@ -308,6 +362,10 @@ erDiagram
         boolean consent_given
         datetime consent_at
         integer consent_registered_by FK
+        integer consent_text_id FK
+        datetime blocked_at
+        integer blocked_by FK
+        string block_reason
         integer created_by FK
         datetime created_at
     }
@@ -457,7 +515,38 @@ erDiagram
         integer user_id FK
         string request_id
     }
+    consent_texts {
+        integer id PK
+        string version
+        text body
+        boolean is_active
+        datetime created_at
+    }
+    patient_consent_events {
+        integer id PK
+        integer patient_id FK
+        string action
+        integer consent_text_id FK
+        datetime occurred_at
+        integer registered_by FK
+        string note
+    }
+    data_subject_requests {
+        integer id PK
+        integer patient_id FK
+        string request_type
+        string status
+        string detail
+        datetime received_at
+        datetime due_at
+        integer registered_by FK
+        datetime resolved_at
+        integer resolved_by FK
+        string resolution
+    }
     users ||--o{ patients : "consent_registered_by"
+    consent_texts ||--o{ patients : "consent_text_id"
+    users ||--o{ patients : "blocked_by"
     users ||--o{ patients : "created_by"
     patients ||--o{ cases : "patient_id"
     users ||--o{ cases : "created_by"
@@ -483,4 +572,10 @@ erDiagram
     inference_results ||--o{ ai_validations : "inference_result_id"
     users ||--o{ ai_validations : "medico_id"
     users ||--o{ error_log : "user_id"
+    patients ||--o{ patient_consent_events : "patient_id"
+    consent_texts ||--o{ patient_consent_events : "consent_text_id"
+    users ||--o{ patient_consent_events : "registered_by"
+    patients ||--o{ data_subject_requests : "patient_id"
+    users ||--o{ data_subject_requests : "registered_by"
+    users ||--o{ data_subject_requests : "resolved_by"
 ```
