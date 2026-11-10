@@ -2,6 +2,16 @@
 
 Plataforma web de apoyo a la **detección temprana y priorización (triage)** de casos sospechosos de cáncer de mama. Es un proyecto de título (INACAP). La plataforma **apoya, no reemplaza**, el criterio médico.
 
+## Estado actual (10-11-2026)
+- **Versión 2.6.0 en `main` y desplegada en AWS** (us-east-2, plan gratuito): https://13-184-207-158.sslip.io
+- Estado del despliegue, recursos, comandos de operación y **plan para continuar**: **`docs/ESTADO_AWS.md`**.
+  Léelo antes de tocar la infraestructura.
+- Sprints S1–S7 cerrados. S8: modelo de IA integrado como prototipo (opción B: PC con GPU vía Tailscale); quedan
+  pruebas de carga y DICOM.
+- Commits en `main` con la autoría del equipo y **sin coautoría de Claude** (pedido del equipo).
+- El rediseño visual (modo claro/oscuro, manual de marca) **no está en el repositorio**: ver `docs/ESTADO_AWS.md`,
+  punto 4.
+
 ## Documento rector
 La especificación completa está en **`docs/ESPEC_AGENTE_Aurora_alineacion_sprints.md`**. Léela entera antes de tocar código. Define el diagnóstico del código actual, el modelo de datos objetivo, la matriz de permisos, el módulo de triage y el plan por sprint (S1–S6) con su Definición de Hecho.
 

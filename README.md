@@ -174,6 +174,7 @@ en ghcr.io al crear un tag `vX.Y.Z`) y `zap.yml` (escaneo OWASP ZAP a pedido).
 | `docs/seguridad_owasp.md` | Revisión OWASP Top 10 (2021) y controles de seguridad |
 | `docs/cumplimiento_legal.md` | Cumplimiento Ley 19.628 / 21.719 / 20.584: matriz, evaluación de impacto, brechas y conservación |
 | `docs/despliegue_aws.md` | Despliegue en AWS paso a paso (EC2 + Docker + Caddy + S3/KMS + CloudWatch; variante RDS) |
+| `docs/ESTADO_AWS.md` | Estado del despliegue actual en AWS, operación del servidor y plan para continuar |
 
 ## Crear ZIP del proyecto para distribución
 
