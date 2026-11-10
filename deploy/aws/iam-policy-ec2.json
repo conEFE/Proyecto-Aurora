@@ -4,7 +4,11 @@
     {
       "Sid": "ImagenesYRespaldosEnS3",
       "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
       "Resource": [
         "arn:aws:s3:::NOMBRE_DEL_BUCKET/images/*",
         "arn:aws:s3:::NOMBRE_DEL_BUCKET/backups/*"
@@ -15,18 +19,24 @@
       "Effect": "Allow",
       "Action": "s3:ListBucket",
       "Resource": "arn:aws:s3:::NOMBRE_DEL_BUCKET",
-      "Condition": {"StringLike": {"s3:prefix": ["images/*", "backups/*"]}}
-    },
-    {
-      "Sid": "CifradoConLaClaveKMSDeAurora",
-      "Effect": "Allow",
-      "Action": ["kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey"],
-      "Resource": "arn:aws:kms:REGION:ID_DE_CUENTA:key/ID_DE_LA_CLAVE"
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "images/*",
+            "backups/*"
+          ]
+        }
+      }
     },
     {
       "Sid": "LogsEnCloudWatch",
       "Effect": "Allow",
-      "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams"],
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
+      ],
       "Resource": "arn:aws:logs:REGION:ID_DE_CUENTA:log-group:/aurora/*"
     }
   ]

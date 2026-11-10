@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     S3_BUCKET: str = ""
     S3_PREFIX: str = "images/"
     S3_KMS_KEY_ID: str = ""
-    AWS_REGION: str = "sa-east-1"
+    AWS_REGION: str = "us-east-2"
     MAX_UPLOAD_MB: int = 60
     BCRYPT_ROUNDS: int = 12
 

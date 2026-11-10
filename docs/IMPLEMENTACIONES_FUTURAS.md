@@ -70,9 +70,10 @@ Responde a «entorno local → deploy» y a los comentarios C13 y C14 (acceso a 
 - [ ] **Rollback**: volver a desplegar el tag anterior; la BD se revierte solo si la migración lo exige.
 - [ ] Dependabot para pip, npm y GitHub Actions.
 
-### Infraestructura AWS (sa-east-1)
-- [x] **Etapa de demostración** lista para desplegar: `docs/despliegue_aws.md` (EC2 t4g.small + Docker Compose +
-  Caddy + S3/KMS + CloudWatch, unos USD 20–30 al mes; variante con RDS). Lo que sigue es la arquitectura del
+### Infraestructura AWS
+- [x] **Etapa de demostración** lista para desplegar en `us-east-2`, la región fija del proyecto de AWS:
+  `docs/despliegue_aws.md` (EC2 t4g.micro + Docker Compose + Caddy + S3 con `aws/s3` + CloudWatch, ≈ USD 11 al mes
+  descontados de los créditos del plan gratuito; variante con RDS). Lo que sigue es la arquitectura del
   **piloto** del informe.
 - [x] `S3EncryptedStorage` con SSE-KMS (más el cifrado Fernet de la aplicación); el versionado se activa en el bucket
   (guía) (2.5.0).

@@ -5,7 +5,7 @@
 x-cloudwatch: &cloudwatch
   driver: awslogs
   options:
-    awslogs-region: ${AWS_REGION:-sa-east-1}
+    awslogs-region: ${AWS_REGION:-us-east-2}
     awslogs-group: ${CLOUDWATCH_LOG_GROUP:-/aurora/prod}
     awslogs-create-group: "true"
     tag: "{{.Name}}"

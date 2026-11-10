@@ -1,8 +1,7 @@
 """Servicio de inferencia de Aurora: POST /predict recibe una mamografía y responde con la CNN y YOLO."""
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
-
 from analyzer import DEVICE, MODEL_VERSION, Analyzer
+from fastapi import FastAPI, File, HTTPException, UploadFile
 
 app = FastAPI(title="Aurora - servicio de inferencia")
 analyzer = Analyzer()

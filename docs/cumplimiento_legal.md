@@ -41,7 +41,7 @@ documento · ⏳ pendiente.
 | **Seguridad** (medidas técnicas y organizativas) | 21.719; 19.628 art. 11 | Control de acceso por rol leído desde la BD, contraseñas bcrypt con política y cambio obligatorio, bloqueo por intentos, revocación de sesiones, imágenes cifradas (Fernet, y SSE-KMS en S3), encabezados de seguridad, dependencias sin vulnerabilidades conocidas, rotación de secretos. Despliegue preparado con TLS automático, EBS/S3/respaldos cifrados con KMS y sin puerto 22. Revisión OWASP en `seguridad_owasp.md` | `test_account_security.py`, `test_storage_s3.py`, `test_rotate_secrets.py`; `docs/seguridad_owasp.md`; `docs/despliegue_aws.md` | ✅ en la aplicación · 🟡 se cumple al desplegar según la guía |
 | **Registro y responsabilidad** (poder demostrar el cumplimiento) | 21.719 (responsabilidad) | Bitácora append-only (un trigger impide modificarla) de accesos (`VIEW`), cambios, exportaciones, consentimientos, bloqueos y firmas. Registro de errores 5xx | `audit_log`, `error_log` | ✅ |
 | **Notificación de vulneraciones de seguridad** | 21.719 | Ver la sección 4 | Este documento | 📄 |
-| **Transferencia internacional** (alojamiento fuera de Chile) | 21.719 | Ver la sección 6 | Este documento | 📄 · ⏳ decisión de región |
+| **Transferencia internacional** (alojamiento fuera de Chile) | 21.719 | La demostración usa `us-east-2` (EE. UU.) solo con datos ficticios. Para el piloto, ver la sección 6 | Este documento | 📄 · ⏳ decisión de región para el piloto |
 | **Encargado del tratamiento** (proveedor de nube) | 21.719 | Contrato de tratamiento de datos (DPA) del proveedor. Ver la sección 6 | — | ⏳ al desplegar |
 | **Confidencialidad de la ficha clínica** | 20.584 | El acceso está limitado a MEDICO y ADMINISTRATIVO y queda auditado. El ADMIN no ve datos clínicos | Matriz de permisos | 🟡 cualquier MEDICO o ADMINISTRATIVO ve todos los casos (sin asignación por equipo tratante); decisión de diseño a revisar |
 | **Conservación limitada** | 21.719; 20.584 | Ver la sección 5 | Este documento | 📄 · ⏳ tarea de anonimización al vencer el plazo |
@@ -120,11 +120,20 @@ el plazo exacto con el establecimiento).
 
 ## 6. Alojamiento en la nube y transferencia internacional
 
-- Alojar los datos en una región fuera de Chile (por ejemplo, AWS `sa-east-1`, São Paulo) es una **transferencia
-  internacional**. La Ley 21.719 la permite hacia países con nivel de protección adecuado, o con garantías
-  (cláusulas contractuales). El texto de consentimiento v1 ya informa que los datos pueden alojarse fuera de Chile.
+- **La ley no exige alojar los datos en Chile.** Alojarlos fuera es una **transferencia internacional**, que la
+  Ley 21.719 permite hacia países con nivel de protección adecuado o con garantías (cláusulas contractuales, como el
+  DPA del proveedor). El texto de consentimiento v1 ya informa que los datos pueden alojarse fuera de Chile.
+- **Situación al 10-11-2026:** el proyecto de AWS del equipo (nueva experiencia, plan gratuito) tiene la región fija en
+  **`us-east-2` (Ohio, Estados Unidos)**, asignada por la dirección de contacto. AWS no permite crear recursos en otras
+  regiones desde ese proyecto. Se verificó: `sa-east-1` responde «no autorizado» y `sa-west-1` (Chile) no aparece.
+- **Demostración:** `us-east-2` con datos ficticios. No hay transferencia de datos personales reales.
+- **Piloto con datos reales**, a elegir:
+  - (a) activar las funciones avanzadas de la cuenta y usar la región de Chile, si está disponible, para evitar la
+    transferencia;
+  - (b) mantener `us-east-2` con el DPA de AWS y la transferencia documentada;
+  - (c) instalación local en el establecimiento, sin transferencia.
 - Antes de usar datos reales:
-  1. Revisar si el proveedor tiene una región en Chile; si la hay, preferirla.
+  1. Decidir la región según el punto anterior.
   2. Firmar o aceptar el contrato de tratamiento de datos (DPA) del proveedor como encargado del tratamiento.
   3. Activar el cifrado en reposo (RDS y S3 con KMS) y TLS en tránsito.
   4. Restringir el acceso administrativo a la nube (MFA, mínimo privilegio) y registrarlo (CloudTrail).
@@ -136,10 +145,9 @@ el plazo exacto con el establecimiento).
    plataforma lo detecta).
 2. **Acceso por equipo tratante** (Ley 20.584): hoy cualquier MEDICO o ADMINISTRATIVO ve todos los casos.
 3. **Plazos de conservación** exactos y la tarea de anonimización.
-4. **Región de la nube** y garantías de la transferencia internacional. Preparado en la 2.5.0: región configurable
-   (`AWS_REGION`, por defecto `sa-east-1`). AWS anunció una región en Chile para fines de 2026 que no estaba confirmada
-   como disponible al 10-11-2026. Si existe al desplegar, conviene usarla. Si no, se usa `sa-east-1` con el DPA de AWS
-   (ver `docs/despliegue_aws.md`).
+4. **Región de la nube para el piloto** (sección 6): la demostración usa `us-east-2`, la región fija del proyecto de
+   AWS. Con datos reales hay que elegir entre la región de Chile (activando las funciones avanzadas), `us-east-2` con
+   el DPA y la transferencia documentada, o la instalación local. La región es configurable con `AWS_REGION`.
 5. **Pacientes registrados antes de la 2.4.0**: su consentimiento quedó sin versión de texto. La plataforma lo marca
    y permite registrarlo de nuevo con el texto vigente. Conviene hacerlo en su próxima atención.
 6. **Encargado de protección de datos** del establecimiento y canal para recibir las solicitudes de los titulares.

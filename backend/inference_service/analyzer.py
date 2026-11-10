@@ -6,10 +6,9 @@ import time
 
 import torch
 import torch.nn as nn
+from preprocessing import for_cnn, for_yolo, read_image
 from torchvision import models
 from ultralytics import YOLO
-
-from preprocessing import for_cnn, for_yolo, read_image
 
 WEIGHTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weights")
 CNN_PATH = os.path.join(WEIGHTS_DIR, "cnn_proporcion.pt")
@@ -60,7 +59,7 @@ class Analyzer:
 
         height, width = yolo_img.shape[:2]
         detections = []
-        for (x1, y1, x2, y2), conf in zip(result.boxes.xyxy.tolist(), result.boxes.conf.tolist()):
+        for (x1, y1, x2, y2), conf in zip(result.boxes.xyxy.tolist(), result.boxes.conf.tolist(), strict=False):
             w, h = (x2 - x1) / width, (y2 - y1) / height
             detections.append({
                 "x": round(x1 / width, 4),

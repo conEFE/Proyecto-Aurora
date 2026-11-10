@@ -599,6 +599,25 @@ credenciales de AWS en el proyecto. La guía paso a paso está en `docs/desplieg
 
 ---
 
+## 2.5.1 — Despliegue ajustado al proyecto de AWS (us-east-2, costo mínimo)
+
+- El proyecto de AWS del equipo usa la nueva experiencia de AWS: plan gratuito con USD 100 de créditos hasta el
+  10-05-2027 y región fija en `us-east-2` (Ohio), asignada por la dirección de contacto. Se verificó con el AWS CLI:
+  `sa-east-1` responde «no autorizado» y la región de Chile no aparece.
+- Valores por defecto: `AWS_REGION=us-east-2` (config, `.env.example`, logs de CloudWatch).
+- `docs/despliegue_aws.md` con costo mínimo, ≈ USD 11 al mes descontados de los créditos:
+  - `t4g.micro` con swap y disco de 10 GB;
+  - clave administrada por AWS `aws/s3` (sin el USD 1 al mes de una clave propia);
+  - `sslip.io` como dominio gratuito;
+  - pasos de la nueva experiencia (AWS Settings, *team members*, créditos y presupuesto).
+- `deploy/aws/iam-policy-ec2.json` ya no incluye permisos de KMS: la clave `aws/s3` los da por sí misma.
+- `docs/cumplimiento_legal.md`: la ley no exige alojar en Chile. La demostración usa `us-east-2` solo con datos
+  ficticios. Para el piloto con datos reales se elige entre la región de Chile (funciones avanzadas), `us-east-2` con
+  DPA o la instalación local.
+- `CLAUDE.md`: reglas del AWS Agent Toolkit para la nueva experiencia de AWS.
+
+---
+
 ## Pendiente para S8 (no implementado, según la regla 2)
 `HttpYoloProvider` real, pruebas de carga con Locust y soporte DICOM en la carga. De S7 queda ejecutar el
 despliegue (guía lista) y correr el escaneo ZAP (workflow listo).

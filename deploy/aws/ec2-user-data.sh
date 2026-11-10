@@ -15,7 +15,7 @@ curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-co
   -o /usr/local/lib/docker/cli-plugins/docker-compose
 chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
-# 2 GB de swap: una t4g.small tiene 2 GB de RAM
+# 2 GB de swap: una t4g.micro tiene 1 GB de RAM (y una t4g.small, 2 GB)
 if [ ! -f /swapfile ]; then
   dd if=/dev/zero of=/swapfile bs=1M count=2048
   chmod 600 /swapfile

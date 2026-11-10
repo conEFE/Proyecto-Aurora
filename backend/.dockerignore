@@ -8,3 +8,5 @@ venv/
 htmlcov/
 data/
 create_user.sql
+# Servicio de inferencia: imagen propia (pesos de los modelos, ~63 MB)
+inference_service/
