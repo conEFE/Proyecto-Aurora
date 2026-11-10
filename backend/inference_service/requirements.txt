@@ -1,9 +1,13 @@
-# PyTorch se instala aparte y primero, con soporte para la GPU (CUDA 12.4):
-# pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
-fastapi==0.115.0
+# PyTorch se instala aparte y primero (ver README):
+#   GPU NVIDIA (CUDA 12.4): pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
+#   Solo CPU (AWS):         pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cpu
+# Mismas versiones de FastAPI que el backend (sin vulnerabilidades conocidas)
+fastapi==0.135.4
+starlette==1.10.0
 uvicorn[standard]==0.32.0
-python-multipart==0.0.12
+python-multipart==0.0.33
 ultralytics==8.4.173
-opencv-python==5.0.0.93
+# headless: sin dependencias gráficas (servidores y contenedores)
+opencv-python-headless==5.0.0.93
 numpy==2.5.2
 pydicom==3.0.2

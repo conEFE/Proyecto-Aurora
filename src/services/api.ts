@@ -27,6 +27,7 @@ import type {
   CaseImage,
   ExamType,
   InferenceResult,
+  InferenceStatus,
   Laterality,
   CaseStatus,
   CaseSymptoms,
@@ -313,6 +314,15 @@ class ApiClient {
   }
 
   /** Descarga la imagen con el header Authorization y devuelve un object URL (no se expone el token en la URL). */
+  /** Vuelve a analizar la imagen con el modelo real (sin resultado o con el respaldo simulado). */
+  async retryInference(caseId: number, imageId: number) {
+    return this.request<InferenceResult>(`/cases/${caseId}/images/${imageId}/inference/retry`, { method: 'POST' });
+  }
+
+  async getInferenceStatus() {
+    return this.request<InferenceStatus>('/inference/status');
+  }
+
   async fetchImageBlob(caseId: number, imageId: number): Promise<Blob | null> {
     try {
       const response = await fetch(`${this.baseURL}/cases/${caseId}/images/${imageId}/file`, {

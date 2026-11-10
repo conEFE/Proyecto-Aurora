@@ -1,0 +1,25 @@
+# Servicio de inferencia en un PC con GPU NVIDIA (Docker Desktop + WSL2 en Windows, o Linux con
+# NVIDIA Container Toolkit). Desde backend/inference_service:
+#   docker compose -f docker-compose.gpu.yml --env-file .env up -d --build
+# .env (no se versiona) debe tener INFERENCE_API_TOKEN, el mismo valor configurado en la plataforma.
+services:
+  inference:
+    build:
+      context: .
+      args:
+        TORCH_INDEX: https://download.pytorch.org/whl/cu124
+    image: aurora-inference:gpu
+    restart: unless-stopped
+    environment:
+      INFERENCE_API_TOKEN: ${INFERENCE_API_TOKEN:?Defina INFERENCE_API_TOKEN en .env}
+      INFERENCE_DEVICE: cuda:0
+    ports:
+      # Solo se publica para Tailscale/local; no abrir este puerto en el router
+      - "8080:8080"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

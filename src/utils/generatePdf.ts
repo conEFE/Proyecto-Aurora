@@ -15,6 +15,7 @@ import { AI_VERDICT_LABELS, EXAM_TYPE_LABELS, RECOMMENDATION_LABELS, TRIAGE_ASSE
 type RGB = [number, number, number];
 const PRIMARY: RGB = [124, 58, 237];
 const AMBER: RGB = [217, 119, 6];
+const FUCHSIA: RGB = [192, 38, 211];
 const LEVEL_COLOR: Record<string, RGB> = { ALTA: [220, 38, 38], MEDIA: [217, 119, 6], BAJA: [22, 163, 74] };
 
 const FACTOR_LABELS: Record<string, string> = {
@@ -61,6 +62,7 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
   const margin = 18;
   const generatedAt = new Date();
   const simulated = metadata.AIIsSimulated === true;
+  const prototype = metadata.AIIsPrototype === true;
 
   // Metadatos tipo DICOM (SC-02) incrustados en las propiedades del documento
   doc.setProperties({
@@ -90,6 +92,18 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.text('IA SIMULADA: los resultados de análisis de imagen son ficticios y no tienen valor clínico.', pageWidth / 2, y + 7.5, {
+      align: 'center',
+    });
+    doc.setTextColor(0, 0, 0);
+    y += 18;
+  }
+  if (prototype) {
+    doc.setFillColor(...FUCHSIA);
+    doc.roundedRect(margin, y, pageWidth - 2 * margin, 12, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('MODELO PROTOTIPO, NO VALIDADO: el resultado de IA no tiene validación clínica y no es un diagnóstico.', pageWidth / 2, y + 7.5, {
       align: 'center',
     });
     doc.setTextColor(0, 0, 0);
@@ -165,7 +179,7 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
       table(
         ['Factor', 'Valor', 'Peso', 'Aporte'],
         Object.keys(FACTOR_LABELS).map((k) => [
-          FACTOR_LABELS[k] + (k === 'ai' && simulated ? ' [IA SIMULADA]' : ''),
+          FACTOR_LABELS[k] + (k === 'ai' && simulated ? ' [IA SIMULADA]' : k === 'ai' && prototype ? ' [PROTOTIPO]' : ''),
           typeof b[k].value === 'boolean' ? (b[k].value ? 'Sí' : 'No') : String(b[k].value),
           String(b[k].weight),
           b[k].points.toFixed(2),
@@ -194,7 +208,7 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
       ...validated.map((img) => [
         `${EXAM_TYPE_LABELS[img.exam_type]}${img.laterality ? ` (${img.laterality === 'L' ? 'izq.' : 'der.'})` : ''}`,
         `${img.inference!.detected ? 'Hallazgo' : 'Sin hallazgos'} ${img.inference!.confidence.toFixed(1)}%` +
-          (img.inference!.is_simulated ? ' [IA SIMULADA]' : ''),
+          (img.inference!.is_simulated ? ' [IA SIMULADA]' : img.inference!.clinically_validated ? '' : ' [PROTOTIPO NO VALIDADO]'),
         img.validation
           ? AI_VERDICT_LABELS[img.validation.verdict] + (img.validation.comment ? ` — ${img.validation.comment}` : '')
           : 'Sin validar',

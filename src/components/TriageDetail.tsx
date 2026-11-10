@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { Gauge, History, Loader2, RefreshCw, ShieldAlert } from 'lucide-react';
 import { apiClient } from '../services/api';
 import type { TriageBreakdown, TriageLevel, TriageResult } from '../types';
-import { LevelBadge, SimulatedBadge } from './Badges';
+import { LevelBadge, PrototypeBadge, SimulatedBadge } from './Badges';
 import { cardClass, errorBox, formatDateTime, inputClass, labelClass, primaryButton, secondaryButton } from './ui';
 
-const FACTOR_LABELS: Record<keyof Omit<TriageBreakdown, 'escalation_rule' | 'ai_is_simulated' | 'images_analyzed'>, string> = {
+const FACTOR_LABELS: Record<keyof Omit<TriageBreakdown, 'escalation_rule' | 'ai_is_simulated' | 'ai_is_prototype' | 'images_analyzed'>, string> = {
   ai: 'IA (máx. confianza con hallazgo)',
   age: 'Edad',
   family_history: 'Antecedente familiar 1er grado',
@@ -103,6 +103,7 @@ export default function TriageDetail({ caseId, closed, onChanged }: TriageDetail
         </h4>
         <div className="flex items-center gap-2">
           {b?.ai_is_simulated && <SimulatedBadge />}
+          {b?.ai_is_prototype && <PrototypeBadge />}
           <LevelBadge level={triage.final_level} />
         </div>
       </div>

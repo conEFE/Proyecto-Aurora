@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, ImageIcon, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ImageIcon, Loader2, RefreshCw } from 'lucide-react';
 import { apiClient } from '../services/api';
-import type { AIVerdict, CaseImage, InferenceResult, Me } from '../types';
+import type { AIVerdict, CaseImage, InferenceResult, InferenceStatus, Me } from '../types';
 import { AI_VERDICT_LABELS, EXAM_TYPE_LABELS } from '../types';
-import { SimulatedBadge } from './Badges';
+import { AiOriginBadge } from './Badges';
 import { formatDateTime } from './ui';
 
 /** Carga la imagen con Authorization y libera el object URL al desmontar. */
@@ -43,16 +43,22 @@ export function InferenceCard({ result }: { result: InferenceResult }) {
         <span className="font-semibold text-foreground">
           {result.detected ? 'Hallazgo' : 'Sin hallazgos'} · {result.confidence.toFixed(1)}%
         </span>
-        {result.is_simulated && <SimulatedBadge />}
+        <AiOriginBadge isSimulated={result.is_simulated} clinicallyValidated={result.clinically_validated} />
       </div>
       <p className="text-muted-foreground">{result.message}</p>
       <p className="text-muted-foreground">
         Modelo {result.model_version} · {result.processing_time_ms} ms
       </p>
-      {result.is_simulated && (
+      {result.is_simulated ? (
         <p className="text-amber-300/90">
           Resultado ficticio para probar el flujo. No tiene valor clínico ni diagnóstico.
         </p>
+      ) : (
+        !result.clinically_validated && (
+          <p className="text-fuchsia-300/90">
+            Modelo de IA en etapa de prototipo, sin validación clínica. Apoya, no reemplaza, el criterio médico.
+          </p>
+        )
       )}
     </div>
   );
@@ -143,19 +149,52 @@ function AIValidationBox({
   );
 }
 
+/** Reanaliza con el modelo real una imagen que quedó con el respaldo simulado (el modelo estaba apagado). */
+function RetryInference({ image, onDone }: { image: CaseImage; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const run = async () => {
+    setBusy(true);
+    setError(null);
+    const r = await apiClient.retryInference(image.case_id, image.id);
+    setBusy(false);
+    if (r.data) onDone();
+    else setError(r.error || 'No se pudo analizar con el modelo');
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-[10px]">
+      <button
+        onClick={run}
+        disabled={busy}
+        className="inline-flex items-center gap-1 px-2 py-1 rounded border border-primary/40 text-primary hover:bg-primary/10 disabled:opacity-50"
+      >
+        {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+        Analizar con el modelo
+      </button>
+      <span className="text-muted-foreground">El modelo no estaba disponible cuando se subió la imagen.</span>
+      {error && <span className="text-red-400">{error}</span>}
+    </div>
+  );
+}
+
 function ImageCard({
   image,
   canView,
   readOnly,
+  modelAvailable,
   onChanged,
 }: {
   image: CaseImage;
   canView: boolean;
   readOnly: boolean;
+  modelAvailable: boolean;
   onChanged: () => void;
 }) {
   const url = useImageUrl(image.case_id, image.id, canView);
-  const detections = image.inference?.detected ? image.inference.detections ?? [] : [];
+  // Las cajas se muestran siempre (también si la CNN no supera el umbral): YOLO marca masas aparte
+  const detections = image.inference?.detections ?? [];
+  const canRetry =
+    modelAvailable && !readOnly && !!image.inference?.is_simulated && !image.validation;
 
   return (
     <div className="border border-border rounded p-2 space-y-2">
@@ -167,34 +206,37 @@ function ImageCard({
         <span>{formatDateTime(image.uploaded_at)}</span>
       </div>
       {canView && (
-        <div className="relative aspect-video bg-background border border-border rounded overflow-hidden">
+        <div className="flex justify-center bg-background border border-border rounded overflow-hidden min-h-[8rem]">
           {url ? (
-            <img src={url} alt={image.filename} className="w-full h-full object-contain" />
+            // El contenedor se ajusta al tamaño real de la imagen: las cajas (0-1) quedan sobre la mamografía
+            <div className="relative inline-block">
+              <img src={url} alt={image.filename} className="block max-w-full max-h-96" />
+              {detections.map((d, i) => (
+                <div
+                  key={i}
+                  className="absolute border-2 border-amber-400 rounded"
+                  style={{
+                    left: `${d.x * 100}%`,
+                    top: `${d.y * 100}%`,
+                    width: `${d.width * 100}%`,
+                    height: `${d.height * 100}%`,
+                  }}
+                  title={`${d.class_name} ${(d.confidence * 100).toFixed(0)}%${image.inference?.is_simulated ? ' (simulado)' : ''}`}
+                />
+              ))}
+            </div>
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full flex items-center justify-center py-12">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
           )}
-          {url &&
-            detections.map((d, i) => (
-              <div
-                key={i}
-                className="absolute border-2 border-amber-400 rounded"
-                style={{
-                  left: `${d.x * 100}%`,
-                  top: `${d.y * 100}%`,
-                  width: `${d.width * 100}%`,
-                  height: `${d.height * 100}%`,
-                }}
-                title={`${d.class_name} ${(d.confidence * 100).toFixed(0)}% (simulado)`}
-              />
-            ))}
         </div>
       )}
       {canView ? (
         image.inference ? (
           <>
             <InferenceCard result={image.inference} />
+            {canRetry && <RetryInference image={image} onDone={onChanged} />}
             <AIValidationBox image={image} readOnly={readOnly} onSaved={onChanged} />
           </>
         ) : (
@@ -222,7 +264,14 @@ interface CaseImagesProps {
 export default function CaseImages({ caseId, me, refreshKey = 0, readOnly = false, onValidationChange }: CaseImagesProps) {
   const [images, setImages] = useState<CaseImage[] | null>(null);
   const [localKey, setLocalKey] = useState(0);
+  const [status, setStatus] = useState<InferenceStatus | null>(null);
   const canView = me.role === 'MEDICO';
+
+  useEffect(() => {
+    if (!canView) return;
+    apiClient.getInferenceStatus().then((r) => setStatus(r.data ?? null));
+  }, [canView, localKey]);
+  const modelAvailable = status?.provider === 'http' && status.reachable === true;
 
   useEffect(() => {
     let cancelled = false;
@@ -264,6 +313,7 @@ export default function CaseImages({ caseId, me, refreshKey = 0, readOnly = fals
           image={img}
           canView={canView}
           readOnly={readOnly}
+          modelAvailable={modelAvailable}
           onChanged={() => {
             setLocalKey((k) => k + 1);
             onValidationChange?.();

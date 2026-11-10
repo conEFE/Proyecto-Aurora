@@ -70,3 +70,15 @@ def get_inference(
 ):
     """Resultado de la inferencia de una imagen (solo MEDICO)."""
     return image_service.get_inference(db, case_id, image_id, actor, client_ip(request))
+
+
+@router.post("/{case_id}/images/{image_id}/inference/retry", response_model=InferenceOut)
+def retry_inference(
+    case_id: int,
+    image_id: int,
+    request: Request,
+    actor: User = Depends(medico_only),
+    db: Session = Depends(get_db),
+):
+    """Vuelve a analizar la imagen con el modelo real (sin resultado o con el respaldo simulado). Solo MEDICO."""
+    return image_service.reanalyze(db, case_id, image_id, actor, client_ip(request))

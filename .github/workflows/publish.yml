@@ -23,6 +23,10 @@ jobs:
           - name: web
             context: .
             file: Dockerfile
+          # Modelo en CPU (opción «todo en AWS»); para GPU se construye en el PC con docker-compose.gpu.yml
+          - name: inference
+            context: backend/inference_service
+            file: backend/inference_service/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - name: Nombre de la imagen (en minúsculas)

@@ -31,6 +31,10 @@ class UnsupportedMedia(DomainError):
     status_code = 415
 
 
+class ModelUnavailableError(DomainError):
+    status_code = 503
+
+
 def _case(db: Session, case_id: int) -> Case:
     case = db.get(Case, case_id)
     if case is None:
@@ -146,12 +150,71 @@ def run_inference(db: Session, image_id: int) -> InferenceResult | None:
         processing_time_ms=output.processing_time_ms,
         model_version=output.model_version,
         is_simulated=output.is_simulated,
+        clinically_validated=output.clinically_validated,
         message=output.message,
     )
     db.add(result)
     db.commit()
     db.refresh(result)
     on_inference_completed(db, image.case_id)
+    return result
+
+
+def reanalyze(
+    db: Session, case_id: int, image_id: int, actor: User, ip: str | None = None
+) -> InferenceResult:
+    """Vuelve a analizar una imagen con el modelo real: cuando quedó sin resultado o con el respaldo simulado
+    porque el servicio estaba apagado. No toca resultados ya validados por un médico."""
+    from datetime import datetime, timezone
+
+    from app.db.models.review import AIValidation
+    from app.inference.providers import SimulatedProvider
+
+    case = _case(db, case_id)
+    if case.status == CaseStatus.CERRADO:
+        raise ConflictError("El caso está cerrado: no se pueden volver a analizar sus imágenes")
+    image = db.get(Image, image_id)
+    if image is None or image.case_id != case.id:
+        raise NotFoundError("Imagen no encontrada")
+    provider = get_provider()
+    if isinstance(provider, SimulatedProvider):
+        raise ConflictError(
+            "La plataforma usa la IA simulada: no hay un modelo con el cual volver a analizar"
+        )
+    result = image.inference_result
+    if result is not None:
+        if not result.is_simulated:
+            raise ConflictError("La imagen ya tiene el resultado del modelo")
+        if db.query(AIValidation).filter(AIValidation.image_id == image.id).first():
+            raise ConflictError("El médico ya validó el resultado de esta imagen: no se reemplaza")
+    output = provider.analyze(get_storage().load(image.filepath))
+    if output.is_simulated:
+        raise ModelUnavailableError("El modelo sigue sin responder. Intente más tarde")
+    if result is None:
+        result = InferenceResult(image_id=image.id)
+        db.add(result)
+    result.detected = output.detected
+    result.confidence = output.confidence
+    result.detections = output.detections
+    result.processing_time_ms = output.processing_time_ms
+    result.model_version = output.model_version
+    result.is_simulated = False
+    result.clinically_validated = output.clinically_validated
+    result.message = output.message
+    result.created_at = datetime.now(timezone.utc)
+    audit(
+        db,
+        actor,
+        "UPDATE",
+        "image",
+        image.id,
+        {"case_id": case.id, "reanalyzed": True, "model_version": output.model_version},
+        ip,
+        commit=False,
+    )
+    db.commit()
+    db.refresh(result)
+    on_inference_completed(db, case.id)
     return result
 
 

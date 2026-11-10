@@ -618,6 +618,75 @@ credenciales de AWS en el proyecto. La guía paso a paso está en `docs/desplieg
 
 ---
 
+## Sprint 8 (parte 1) — Modelo de IA real como prototipo, en un PC con GPU y movible a AWS (2.6.0)
+
+Pedido del equipo (10-11-2026): integrar el servicio de inferencia de Juan Meneses (`backend/inference_service/`:
+CNN ResNet18 + YOLO11s) con la **opción B**. La plataforma queda en AWS (≈ USD 11 al mes, de los créditos) y el
+modelo corre en el PC de Juan con GPU, conectado por Tailscale, **programado para poder moverse a AWS** cambiando
+solo `INFERENCE_URL`.
+
+### Plataforma (backend)
+- `HttpInferenceProvider` (antes `HttpYoloProvider`, que se mantiene como alias):
+  - Envía `Authorization: Bearer INFERENCE_API_TOKEN`, con un tiempo máximo configurable
+    (`INFERENCE_TIMEOUT_SECONDS`, 60).
+  - Valida el contrato: campos obligatorios y `confidence` en 0–100.
+- `FallbackProvider` (`INFERENCE_FALLBACK_SIMULATED=true`): si el modelo no responde, la imagen se analiza con la IA
+  simulada, con su marca y un mensaje que lo explica. La plataforma nunca queda sin resultado.
+- `POST /cases/{id}/images/{id}/inference/retry` (MEDICO): vuelve a analizar con el modelo real una imagen que quedó
+  con el respaldo simulado. No reemplaza resultados validados por el médico. Responde 503 si el modelo sigue
+  apagado. Recalcula el triage y queda auditado.
+- `GET /inference/status` (todos los roles, sin datos de pacientes): proveedor, si el modelo responde, versión,
+  dispositivo y si está validado clínicamente.
+- Migración `d2e7b3c9a011` (reversible): `inference_results.clinically_validated` (false).
+- El triage agrega `ai_is_prototype` y los metadatos del reporte agregan `AIIsPrototype`. Este último **solo cuando
+  hay resultados del prototipo**, para que los reportes ya firmados conserven su hash y su firma siga válida.
+
+### Servicio del modelo (`backend/inference_service/`)
+- Token obligatorio cuando `INFERENCE_API_TOKEN` está definido, con comparación en tiempo constante. Límite de
+  tamaño y `/docs` configurable.
+- `clinically_validated=false` en `/predict` y `/health`.
+- Pesos de la CNN cargados con `weights_only=True`.
+- Dependencias alineadas con el backend (FastAPI 0.135.4, starlette 1.10.0, python-multipart 0.0.33; antes tenía
+  las versiones vulnerables) y `opencv-python-headless`.
+- `Dockerfile` único: CPU por defecto (AWS) o CUDA con `--build-arg TORCH_INDEX=...cu124` (PC de Juan).
+  `docker-compose.gpu.yml` para el PC.
+- Perfil `inference` en el `docker-compose.yml` de la raíz (opción «todo en AWS»). `publish.yml` publica también la
+  imagen `-inference`.
+- Imports ordenados (ruff) en la integración anterior. No se cambió la lógica del modelo.
+
+### Interfaz
+- Badge **«MODELO PROTOTIPO — NO VALIDADO»** en los resultados del modelo real, en el triage y en el PDF (franja y
+  tablas). La IA simulada mantiene «IA SIMULADA».
+- Cajas de YOLO dibujadas sobre la imagen real (antes quedaban corridas en un recuadro 16:9) y también cuando la CNN
+  no supera el umbral.
+- Botón «Analizar con el modelo» cuando la imagen quedó con el respaldo simulado y el modelo ya responde.
+- La carga de imágenes y el inicio indican si el modelo está conectado. Textos de «hoy: simulado» actualizados.
+
+### Documentación
+- `docs/inferencia_remota.md`: opción B paso a paso (token, Tailscale sin abrir puertos, firewall, configuración) y
+  cómo mover el modelo a AWS (mismo servidor `t4g.medium` o Lambda).
+- README del servicio actualizado (token, Docker, contrato, pendientes resueltos).
+
+### Pruebas
+- 19 tests nuevos (`test_inference_model.py`), sin PyTorch:
+  - Cliente HTTP con token y contrato.
+  - Fallas: red, 500, 401, JSON inválido, campos faltantes y `confidence` fuera de rango.
+  - Respaldo a la IA simulada y selección del proveedor.
+  - Resultado guardado como prototipo, triage y metadatos del reporte.
+  - Reanálisis y sus reglas.
+  - Estado del modelo.
+  - Contrato del servicio con el analizador simulado: token, 400, 413 y 415.
+- Total: **289 tests aprobados**. Lint y typecheck limpios.
+- La imagen Docker del modelo no se construyó en este entorno (necesita descargar PyTorch). La construye GitHub
+  Actions (`publish.yml`).
+
+### Pendiente
+- Configurar Tailscale y levantar el servicio en el PC de Juan (`docs/inferencia_remota.md`).
+- KPI K5 con AUC ≥ 0,80 y sensibilidad ≥ 0,80, umbral 0,35 como parámetro versionado, y pesos (≈63 MB) fuera de Git.
+
+---
+
 ## Pendiente para S8 (no implementado, según la regla 2)
-`HttpYoloProvider` real, pruebas de carga con Locust y soporte DICOM en la carga. De S7 queda ejecutar el
+Pruebas de carga con Locust y soporte DICOM en la carga (el servicio del modelo ya lee DICOM; la plataforma
+todavía no lo acepta). De S7 queda ejecutar el
 despliegue (guía lista) y correr el escaneo ZAP (workflow listo).

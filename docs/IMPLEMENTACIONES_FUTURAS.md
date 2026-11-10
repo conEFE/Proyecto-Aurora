@@ -13,7 +13,7 @@ Actualizado: 10-11-2026.
 | E6 | Cuentas, seguridad y registro de errores | Hecho (2.3.0); workflow ZAP listo para ejecutar (2.5.0) |
 | E7 | Versionado, CI/CD y despliegue (local → staging → piloto) | Preparado (2.5.0): Docker, CI/CD y guía de AWS; falta ejecutar el despliegue |
 | E9 | Pruebas no funcionales (carga, estrés y seguridad) | Pendiente (unitarias, integración y E2E listas) |
-| E10 | Clasificador CNN (ResNet18) y YOLO para el triage | Modelo CNN entrenado fuera del repo (AUC 0,843); integración pendiente; YOLO en desarrollo |
+| E10 | Clasificador CNN (ResNet18) y YOLO para el triage | Prototipo integrado (2.6.0): servicio con CNN + YOLO, marcado «no validado»; corre en un PC con GPU (opción B) y se puede mover a AWS. Pendiente: K5 con AUC, umbral versionado y pesos fuera de Git |
 | — | Cumplimiento Ley 19.628 / 21.719 / 20.584 | Hecho en código (2.4.0); quedan decisiones del equipo |
 | — | Mejoras menores detectadas | Pendiente |
 
@@ -51,7 +51,7 @@ Responde a «entorno local → deploy» y a los comentarios C13 y C14 (acceso a 
 ### Contenedores y entornos
 - [x] `Dockerfile` para API (Uvicorn) y frontend (build de Vite servido por **Caddy**, que además da TLS automático)
   (2.5.0).
-- [ ] `Dockerfile` del servicio de inferencia (cuando exista el servicio real, E10/S8).
+- [x] `Dockerfile` del servicio de inferencia (CPU o CUDA con un argumento) y `docker-compose.gpu.yml` (2.6.0).
 - [x] `docker-compose.yml` para local (con PostgreSQL) y `deploy/docker-compose.prod.yml` para producción (2.5.0).
 - [x] Healthchecks y política de reinicio automático (2.5.0).
 
@@ -117,13 +117,12 @@ umbral 0,35). Detalle en el informe, sección 3.8. YOLO (localización de la les
   externo no usado en el entrenamiento.
 
 ### Integración con la plataforma
-- [ ] Servicio de inferencia en contenedor propio (puerto 8080) que implemente `POST /predict`: recibe la imagen,
-  aplica el mismo preprocesamiento (escala de grises, CLAHE 2,0 / 8×8, 512×512) y devuelve `probability`,
-  `detected` (según el umbral), `model_version` e `is_simulated=false`.
-- [ ] Adaptar `HttpYoloProvider` (renombrar a `HttpInferenceProvider`) para leer la probabilidad y guardarla en
-  `inference_results.confidence`.
+- [x] Servicio de inferencia en contenedor propio (puerto 8080, `backend/inference_service/`, de Juan Meneses):
+  `POST /predict` con CNN (672×1024) y YOLO (1280), token de acceso y `clinically_validated=false` (2.6.0).
+- [x] `HttpInferenceProvider` (con alias `HttpYoloProvider`): token, validación del contrato, respaldo a la IA
+  simulada si el modelo no responde y reanálisis posterior (2.6.0).
 - [ ] Umbral de operación (0,35) como parámetro clínico versionado en `triage_configs`, editable por el médico (CU13).
-- [ ] Usar la probabilidad como factor IA del triage en lugar de la confianza simulada.
+- [x] Usar la probabilidad como factor IA del triage en lugar de la confianza simulada (llega en `confidence`).
 
 ### KPI K5 alineado con el informe
 - [ ] Cambiar `meets_k5` en `/dashboard/model-performance`: hoy evalúa exactitud ≥ 90 %, y el informe fija
@@ -132,9 +131,10 @@ umbral 0,35). Detalle en el informe, sección 3.8. YOLO (localización de la les
 - [ ] Actualizar los tests de `test_signature_model_performance.py` a los nuevos criterios.
 
 ### YOLO (segunda etapa)
-- [ ] Integrar la detección de la lesión (cajas en `inference_results.detections`) y combinarla con la probabilidad
-  de la CNN en la regla de prioridad.
-- [ ] Publicar la integración del modelo real como versión 3.0.0 (cambia el contrato de inferencia).
+- [x] Cajas de YOLO guardadas en `inference_results.detections` y dibujadas sobre la mamografía (2.6.0).
+- [ ] Combinar las cajas con la probabilidad de la CNN en la regla de prioridad.
+- [ ] Publicar como 3.0.0 cuando el modelo deje de ser prototipo (K5 con AUC, umbral versionado, validación). La
+  2.6.0 integra el prototipo sin romper el contrato: la IA simulada sigue funcionando igual.
 
 ## Gestión del proyecto en GitHub (respaldo de lo que declara el informe)
 

@@ -150,6 +150,7 @@ export interface TriageBreakdown {
   wait_time: TriageFactor;
   escalation_rule: string | null;
   ai_is_simulated: boolean | null;
+  ai_is_prototype?: boolean | null;
   images_analyzed?: number;
 }
 
@@ -234,8 +235,20 @@ export interface InferenceResult {
   processing_time_ms: number;
   model_version: string;
   is_simulated: boolean;
+  /** Solo un modelo con validación clínica formal; el prototipo actual no la tiene. */
+  clinically_validated?: boolean;
   message: string;
   created_at?: string | null;
+}
+
+export interface InferenceStatus {
+  provider: 'simulated' | 'http';
+  reachable: boolean | null;
+  fallback: boolean;
+  model_version?: string | null;
+  device?: string | null;
+  clinically_validated?: boolean;
+  error?: string | null;
 }
 
 export interface CaseImage {

@@ -35,8 +35,9 @@ export default function Home({ onGetStarted }: HomeProps) {
             </h3>
             <p className="text-xs text-muted-foreground">
               Registre pacientes y casos, cargue imágenes y trabaje sobre una cola priorizada. El análisis de
-              imágenes funciona hoy con un proveedor <strong className="text-amber-300">simulado</strong>: sus
-              resultados se marcan como «IA SIMULADA» y no tienen valor clínico.
+              imágenes usa un modelo de IA en etapa de prototipo (sin validación clínica) o, si no está disponible,
+              un proveedor <strong className="text-amber-300">simulado</strong>. Cada resultado indica su origen y
+              ninguno reemplaza el criterio médico.
             </p>
             <button
               onClick={onGetStarted}

@@ -16,6 +16,8 @@ class InferenceResult(Base):
     model_version = Column(String, nullable=False)
     # Todo resultado del proveedor simulado queda marcado (nunca se presenta como clínico real)
     is_simulated = Column(Boolean, nullable=False, server_default=text("true"), default=True)
+    # Solo un modelo validado clínicamente puede marcarse así; el prototipo actual NO lo está
+    clinically_validated = Column(Boolean, nullable=False, server_default=text("false"), default=False)
     message = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

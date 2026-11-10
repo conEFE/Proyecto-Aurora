@@ -7,7 +7,12 @@ al backend, en lugar de la IA simulada.
   sospechosa (`detected = true`). Esta probabilidad es la que usa el triage.
 - **YOLO (yolo11s):** ubica las masas y entrega su caja. No detecta calcificaciones.
 
-No es un modelo clínico validado: es un prototipo para probar el flujo completo de la plataforma.
+No es un modelo clínico validado: es un prototipo para probar el flujo completo de la plataforma. Por eso cada
+resultado lleva `clinically_validated = false` y la plataforma lo muestra con el aviso
+**«MODELO PROTOTIPO — NO VALIDADO»**, en pantalla y en el PDF.
+
+**Dónde corre:** en el PC de un integrante con GPU, y la plataforma en AWS lo alcanza por Tailscale (opción B,
+`docs/inferencia_remota.md`). El mismo contenedor corre en AWS con CPU: para moverlo solo cambia `INFERENCE_URL`.
 
 ## Cómo encaja con la plataforma
 
@@ -49,13 +54,25 @@ pip install torch==2.6.0 torchvision==0.21.0
 
 ## 2. Configurar el backend (una sola vez)
 
+Genera un token (el mismo valor va en la plataforma y en el servicio):
+
+```
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
 Abre `backend\.env` y busca la línea `INFERENCE_PROVIDER`. Viene en `simulated` (así está en `.env.example`).
-Cámbiala a `http`. Modifica la línea que ya existe, no agregues otra. Debe quedar así:
+Cámbiala a `http`. Modifica las líneas que ya existen, no agregues otras. Debe quedar así:
 
 ```
 INFERENCE_PROVIDER=http
 INFERENCE_URL=http://localhost:8080
+INFERENCE_API_TOKEN=<el token>
+INFERENCE_FALLBACK_SIMULATED=true
 ```
+
+Antes de levantar el servicio (terminal 1), define el mismo token en esa terminal: `set INFERENCE_API_TOKEN=<el token>`.
+Con `INFERENCE_FALLBACK_SIMULATED=true`, si el servicio está apagado la plataforma usa la IA simulada (marcada) y el
+médico puede volver a analizar la imagen después con el botón «Analizar con el modelo».
 
 Para volver a la IA simulada, deja `INFERENCE_PROVIDER=simulated` y reinicia el backend.
 
@@ -115,11 +132,10 @@ También se puede probar el servicio solo, sin la plataforma: en <http://localho
 
 ### Importante
 
-- **La inferencia se ejecuta una sola vez, al subir la imagen.** Si el servicio estaba apagado en ese momento,
-  la imagen queda sin resultado y la consola del backend muestra `Falló la inferencia de la imagen N`.
-  No hay forma de reintentarla: levanta el servicio y sube la imagen de nuevo.
-- **Las imágenes que ya se analizaron con la IA simulada conservan ese resultado.** Para ver el modelo real,
-  sube imágenes nuevas.
+- **Si el servicio estaba apagado al subir la imagen**, la plataforma usa la IA simulada (marcada). Cuando el servicio
+  vuelva, el médico usa **«Analizar con el modelo»** en la imagen (`POST /cases/{id}/images/{id}/inference/retry`).
+  No se reemplazan resultados que el médico ya validó.
+- `GET /inference/status` en la plataforma dice si el modelo está conectado (sin datos de pacientes).
 
 ## Qué responde el servicio
 
@@ -130,6 +146,10 @@ También se puede probar el servicio solo, sin la plataforma: en <http://localho
 | `probability` | la misma probabilidad, de 0 a 1 |
 | `detections` | cajas de masa de YOLO: `x`, `y` (esquina superior izquierda), `width`, `height` (de 0 a 1 respecto a la imagen), `confidence`, `class_name`, `relative_area` |
 | `model_version`, `processing_time_ms`, `is_simulated`, `message` | datos del análisis |
+| `clinically_validated` | `false`: el modelo no tiene validación clínica (la plataforma muestra el aviso de prototipo) |
+
+`GET /health` responde `status`, `model_version`, `device` y `clinically_validated`. Ambas rutas exigen
+`Authorization: Bearer <INFERENCE_API_TOKEN>` cuando el token está definido.
 
 ## Si algo falla
 
@@ -146,13 +166,25 @@ También se puede probar el servicio solo, sin la plataforma: en <http://localho
 - **CNN:** AUC 0,838 (CBIS-DDSM 0,841; CMMD 0,807). Con umbral 0,35: sensibilidad 0,849, especificidad 0,641.
 - **YOLO, masas:** mAP50 0,538.
 
-## Pendientes en el frontend (`src/components/CaseImages.tsx` y pantalla de carga)
+## Con Docker (misma imagen en el PC con GPU y en AWS con CPU)
 
-- Las cajas se posicionan respecto al recuadro 16:9 y no a la imagen: en mamografías quedan corridas
-  (verificado: la caja de la masa cae en la franja vacía).
-- Las cajas solo se dibujan si `detected` es verdadero; una masa que la CNN considera benigna no se muestra.
-- Textos desactualizados: "hoy: simulado", el aviso de que todo se marca como IA SIMULADA, el "(simulado)" en el
-  título de la caja, y "Sin hallazgos" cuando `detected` es falso aunque haya masas.
+En el PC con GPU NVIDIA (Docker Desktop con WSL2 en Windows), desde `backend/inference_service`, con un archivo
+`.env` que tenga `INFERENCE_API_TOKEN=<el token>`:
+
+```
+docker compose -f docker-compose.gpu.yml --env-file .env up -d --build
+```
+
+En AWS (CPU) se usa la imagen `-inference` que publica GitHub Actions y el perfil `inference` del
+`docker-compose.yml` de la raíz (ver `docs/inferencia_remota.md`, «Mover el modelo a AWS»).
+
+## Resuelto en la plataforma (2.6.0)
+
+- Las cajas se dibujan sobre la imagen real (el contenedor se ajusta a la mamografía), y también cuando la CNN no
+  supera el umbral: YOLO marca masas aparte.
+- Textos actualizados: la carga indica si el modelo está conectado, y los resultados llevan «IA SIMULADA» o
+  «MODELO PROTOTIPO — NO VALIDADO» según su origen.
+- Reintento del análisis cuando el modelo estaba apagado.
 
 ## Limitaciones conocidas
 

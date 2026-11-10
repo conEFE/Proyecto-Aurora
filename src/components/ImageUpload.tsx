@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Upload, Image as ImageIcon, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { apiClient } from '../services/api';
-import type { ClinicalCase, ExamType, Laterality, Me } from '../types';
+import type { ClinicalCase, ExamType, InferenceStatus, Laterality, Me } from '../types';
 import { EXAM_TYPE_LABELS } from '../types';
 import { compressionEnabled, prepareForUpload } from '../utils/compress';
 import CaseImages from './CaseImages';
@@ -13,6 +13,17 @@ export default function ImageUpload({ me }: { me: Me }) {
   const [cases, setCases] = useState<ClinicalCase[]>([]);
   const [caseId, setCaseId] = useState<number | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [inference, setInference] = useState<InferenceStatus | null>(null);
+
+  useEffect(() => {
+    apiClient.getInferenceStatus().then((r) => setInference(r.data ?? null));
+  }, []);
+  const modelText =
+    inference?.provider === 'http'
+      ? inference.reachable
+        ? 'el modelo de IA (prototipo, conectado)'
+        : 'la IA simulada: el modelo de IA no responde en este momento'
+      : 'la IA simulada (el modelo de IA no está configurado)';
   const [preview, setPreview] = useState<string | null>(null);
   const [examType, setExamType] = useState<ExamType>('MAMOGRAFIA');
   const [laterality, setLaterality] = useState<Laterality | ''>('');
@@ -82,7 +93,7 @@ export default function ImageUpload({ me }: { me: Me }) {
         <h2 className="text-lg font-bold text-foreground">Carga de imágenes</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           Mamografías o ecografías en PNG o JPEG (máx. {MAX_UPLOAD_MB} MB). Se guardan cifradas y se analizan
-          automáticamente con el proveedor de IA configurado (hoy: simulado).
+          automáticamente con {modelText}.
         </p>
       </div>
 
@@ -175,9 +186,10 @@ export default function ImageUpload({ me }: { me: Me }) {
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
             <p className="text-[10px] text-muted-foreground">
-              Herramienta de apoyo: no reemplaza el criterio médico. Mientras el modelo YOLO no esté integrado,
-              todo resultado se marca como <strong className="text-amber-300">IA SIMULADA</strong> y no tiene valor
-              clínico.
+              Herramienta de apoyo: no reemplaza el criterio médico. Los resultados de la IA simulada se marcan como{' '}
+              <strong className="text-amber-300">IA SIMULADA</strong> y los del modelo real, que aún no tiene
+              validación clínica, como <strong className="text-fuchsia-300">MODELO PROTOTIPO — NO VALIDADO</strong>.
+              Si el modelo no responde, se usa la IA simulada y el médico puede volver a analizar la imagen después.
             </p>
           </div>
         </div>

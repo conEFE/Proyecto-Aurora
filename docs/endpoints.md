@@ -24,6 +24,7 @@ está en `/openapi.json` y la documentación interactiva en `/docs` del backend.
 | POST | `/cases/{case_id}/images` | ADMINISTRATIVO, MEDICO | Sube una imagen (PNG o JPEG, máx. MAX_UPLOAD_MB). La inferencia corre en segundo plano. |
 | GET | `/cases/{case_id}/images/{image_id}/file` | MEDICO | Devuelve la imagen descifrada (solo MEDICO; queda registrado como VIEW). |
 | GET | `/cases/{case_id}/images/{image_id}/inference` | MEDICO | Resultado de la inferencia de una imagen (solo MEDICO). |
+| POST | `/cases/{case_id}/images/{image_id}/inference/retry` | MEDICO | Vuelve a analizar la imagen con el modelo real (sin resultado o con el respaldo simulado). Solo MEDICO. |
 | PUT | `/cases/{case_id}/images/{image_id}/validation` | MEDICO | El médico aprueba o rechaza el resultado de IA de la imagen (concordante, falso positivo/negativo, no evaluable). |
 | GET | `/cases/{case_id}/reports` | MEDICO | Reportes PDF registrados del caso. |
 | POST | `/cases/{case_id}/reports` | MEDICO | Registra un PDF generado (SHA-256) y devuelve sus metadatos DICOM. Exige la firma del médico. Auditado (EXPORT). |
@@ -40,6 +41,7 @@ está en `/openapi.json` y la documentación interactiva en `/docs` del backend.
 | GET | `/dashboard/metrics` | ADMIN, ADMINISTRATIVO, MEDICO | Métricas agregadas: volumen por estado y nivel, KPIs de tiempo, ALTA pendientes, p95 y overrides. |
 | GET | `/dashboard/model-performance` | ADMIN, MEDICO | Desempeño del modelo por versión (matriz de confusión, exactitud, sensibilidad, especificidad, IC 95 %). |
 | GET | `/health` | Público | Estado de la API. |
+| GET | `/inference/status` | ADMIN, ADMINISTRATIVO, MEDICO | Qué proveedor de IA usa la plataforma y si el modelo real responde (sin datos de pacientes). |
 | GET | `/notifications` | Cualquier usuario autenticado | Notificaciones del usuario autenticado (no leídas primero). |
 | PATCH | `/notifications/{notification_id}/read` | Cualquier usuario autenticado | Marca como leída una notificación propia. |
 | GET | `/patients` | ADMINISTRATIVO, MEDICO | Busca pacientes por RUT o nombre (registra VIEW). Los bloqueados solo aparecen si se piden. |

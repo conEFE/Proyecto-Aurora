@@ -16,6 +16,7 @@ class InferenceOut(BaseModel):
     processing_time_ms: int
     model_version: str
     is_simulated: bool
+    clinically_validated: bool = False
     message: str
     created_at: datetime | None = None
 

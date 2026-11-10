@@ -25,6 +25,25 @@ export function LevelBadge({ level }: { level?: TriageLevel | null }) {
   );
 }
 
+/** Marca obligatoria en todo resultado de un modelo real sin validación clínica (prototipo). */
+export function PrototypeBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded border bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/40 tracking-wide"
+      title="Resultado de un modelo de IA en etapa de prototipo, sin validación clínica. No es un diagnóstico."
+    >
+      MODELO PROTOTIPO — NO VALIDADO
+    </span>
+  );
+}
+
+/** Badge según el origen del resultado: IA simulada o modelo prototipo (un modelo validado no lleva marca). */
+export function AiOriginBadge({ isSimulated, clinicallyValidated }: { isSimulated: boolean; clinicallyValidated?: boolean }) {
+  if (isSimulated) return <SimulatedBadge />;
+  if (!clinicallyValidated) return <PrototypeBadge />;
+  return null;
+}
+
 /** Marca obligatoria en todo resultado del proveedor de IA simulado. */
 export function SimulatedBadge() {
   return (

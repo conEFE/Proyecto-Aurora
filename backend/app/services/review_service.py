@@ -186,7 +186,7 @@ def build_dicom_metadata(db: Session, case: Case, review: ClinicalReview, medico
     study_date = (images[0].uploaded_at if images else case.created_at).strftime("%Y%m%d")
     inferences = db.query(InferenceResult).join(Image).filter(Image.case_id == case.id).all()
     triage = triage_service.current_result(db, case.id)
-    return {
+    metadata = {
         "PatientID": case.code,
         "StudyDate": study_date,
         "Modality": "MG",
@@ -206,6 +206,10 @@ def build_dicom_metadata(db: Session, case: Case, review: ClinicalReview, medico
         "TriageAssessment": review.triage_assessment,
         "AIValidation": ai_validation_summary(db, case.id),
     }
+    # Solo se agrega si hay resultados del modelo prototipo: así los reportes ya firmados conservan su hash
+    if any(not i.is_simulated and not i.clinically_validated for i in inferences):
+        metadata["AIIsPrototype"] = True
+    return metadata
 
 
 def ai_validation_summary(db: Session, case_id: int) -> str | None:

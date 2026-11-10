@@ -38,6 +38,19 @@ services:
     expose:
       - "8000"
 
+  # Modelo de IA en el mismo servidor (opción «todo en AWS»): COMPOSE_PROFILES=db,inference e
+  # INFERENCE_URL=http://inference:8080. Necesita ~1,5 GB de RAM más (t4g.medium). En la opción B corre en el PC
+  # con GPU (backend/inference_service/docker-compose.gpu.yml) y la plataforma lo alcanza por Tailscale.
+  inference:
+    build: ./backend/inference_service
+    image: ${AURORA_IMAGE_PREFIX:-aurora}-inference:${AURORA_VERSION:-local}
+    restart: unless-stopped
+    environment:
+      INFERENCE_API_TOKEN: ${INFERENCE_API_TOKEN:-}
+    expose:
+      - "8080"
+    profiles: ["inference"]
+
   web:
     build: .
     image: ${AURORA_IMAGE_PREFIX:-aurora}-web:${AURORA_VERSION:-local}

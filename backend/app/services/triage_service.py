@@ -124,6 +124,10 @@ def recalculate(
     inferences = _inferences(db, case.id)
     output: TriageOutput = compute_triage(case, patient, inferences, params, now=now)
     output.breakdown["ai_is_simulated"] = any(i.is_simulated for i in inferences) if inferences else None
+    # Resultado de un modelo real pero sin validación clínica (prototipo)
+    output.breakdown["ai_is_prototype"] = (
+        any(not i.is_simulated and not i.clinically_validated for i in inferences) if inferences else None
+    )
     output.breakdown["images_analyzed"] = len(inferences)
 
     previous = current_result(db, case.id)

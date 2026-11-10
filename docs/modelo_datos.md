@@ -113,6 +113,7 @@ Resultado del proveedor de IA por imagen (marcado si es simulado).
 | processing_time_ms | INTEGER | NOT NULL |  |
 | model_version | VARCHAR | NOT NULL |  |
 | is_simulated | BOOLEAN | NOT NULL, DEFAULT true | true si lo generó el proveedor simulado |
+| clinically_validated | BOOLEAN | NOT NULL, DEFAULT false |  |
 | message | TEXT | NOT NULL |  |
 | created_at | DATETIME | NULL, DEFAULT now() |  |
 
@@ -151,7 +152,7 @@ Cálculos de triage por caso; uno vigente y el resto como historial.
 | is_current | BOOLEAN | NOT NULL, DEFAULT true |  |
 | computed_at | DATETIME | NOT NULL, DEFAULT now() |  |
 
-CHECK: `override_by IS NULL OR (override_reason IS NOT NULL AND length(trim(override_reason)) > 0)`; `score >= 0 AND score <= 100`
+CHECK: `score >= 0 AND score <= 100`; `override_by IS NULL OR (override_reason IS NOT NULL AND length(trim(override_reason)) > 0)`
 
 Índices únicos: `uq_triage_results_current (case_id) WHERE is_current`
 
@@ -328,7 +329,7 @@ Solicitudes de los titulares (Ley 21.719) con su plazo de respuesta de 30 días.
 | resolved_by | INTEGER | FK → users.id, NULL |  |
 | resolution | VARCHAR(1000) | NULL |  |
 
-CHECK: `status IN ('RECIBIDA','EN_PROCESO','RESUELTA','RECHAZADA')`; `request_type IN ('ACCESO','RECTIFICACION','SUPRESION','OPOSICION','PORTABILIDAD','BLOQUEO')`
+CHECK: `request_type IN ('ACCESO','RECTIFICACION','SUPRESION','OPOSICION','PORTABILIDAD','BLOQUEO')`; `status IN ('RECIBIDA','EN_PROCESO','RESUELTA','RECHAZADA')`
 
 ## Diagrama entidad-relación
 
@@ -408,6 +409,7 @@ erDiagram
         integer processing_time_ms
         string model_version
         boolean is_simulated
+        boolean clinically_validated
         text message
         datetime created_at
     }
