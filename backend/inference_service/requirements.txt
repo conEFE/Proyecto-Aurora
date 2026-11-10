@@ -1,0 +1,9 @@
+# PyTorch se instala aparte y primero, con soporte para la GPU (CUDA 12.4):
+# pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+ultralytics==8.4.173
+opencv-python==5.0.0.93
+numpy==2.5.2
+pydicom==3.0.2
