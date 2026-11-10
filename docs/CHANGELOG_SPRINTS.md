@@ -515,7 +515,90 @@ de los pacientes anteriores a la 2.4.0.
 
 ---
 
-## Pendiente para S7–S8 (no implementado, según la regla 2)
-Docker y docker-compose, GitHub Actions, `S3EncryptedStorage`, escaneo con OWASP ZAP, despliegue en AWS,
-`HttpYoloProvider` real, pruebas de carga con Locust y soporte DICOM en la carga. (El límite de intentos con
-bloqueo de login y la revisión OWASP Top 10 se adelantaron en la 2.3.0.)
+## Sprint 7 — Seguridad e infraestructura: preparación del despliegue en AWS (2.5.0)
+
+Pedido del equipo (10-11-2026): rotar las credenciales expuestas y dejar todo listo para desplegar en AWS. El
+equipo también **validó `docs/cumplimiento_legal.md`** y el texto de consentimiento v1. No se desplegó nada: no hay
+credenciales de AWS en el proyecto. La guía paso a paso está en `docs/despliegue_aws.md`.
+
+### Rotación de las credenciales expuestas
+- `scripts/rotate_secrets.py` rota los tres secretos que quedaron en el historial público:
+  - Genera una `SECRET_KEY` nueva, que cierra todas las sesiones.
+  - Genera una `ENCRYPTION_KEY` nueva y **vuelve a cifrar cada imagen**.
+  - Con `--db-password`, cambia la contraseña del rol de PostgreSQL de `DB_DSN`.
+- Cómo protege los datos:
+  - Verifica antes de tocar nada (`--dry-run`) y nunca imprime los valores.
+  - Es reanudable: mientras dura, `.env` guarda `ENCRYPTION_KEY_PREVIOUS` y la API descifra con cualquiera de las
+    dos claves (`MultiFernet`).
+  - El `ALTER ROLE` solo se confirma después de guardar el DSN nuevo.
+  - Deja una copia del `.env` anterior (permisos 600) para recuperar en caso de error.
+- **La rotación se ejecuta en cada instalación** (`backend/.env` de cada integrante). Los valores reales no están en
+  este entorno. Instrucciones en el README, en «Rotación de secretos».
+- Limpiar el historial de Git (`filter-repo` + `force push`) **no se hizo** (regla 9). Con los secretos rotados, los
+  valores del historial dejan de servir.
+
+### Almacenamiento
+- `StorageBackend` separa el cifrado (Fernet, en la aplicación) del medio donde se guarda: `write_raw`, `read_raw`,
+  `iter_keys` y `rotate`. La escritura local es atómica.
+- **`S3EncryptedStorage`** (boto3): cifrado en la aplicación y además **SSE-KMS** en S3, con clave KMS propia
+  opcional. Se elige con `STORAGE_BACKEND=local|s3`, y lo configuran `S3_BUCKET`, `S3_PREFIX`, `S3_KMS_KEY_ID` y
+  `AWS_REGION`. Las credenciales salen del rol de la instancia, nunca de `.env`.
+
+### Contenedores
+- `backend/Dockerfile`:
+  - Python 3.12.16-slim, usuario sin privilegios y healthcheck.
+  - Migraciones al iniciar (`RUN_MIGRATIONS`) y `ENABLE_API_DOCS=false` por defecto.
+  - `--root-path /api`.
+- `Dockerfile` (raíz): build de Vite con `VITE_API_URL=/api` y una imagen **Caddy** que sirve el sitio y hace de
+  proxy hacia la API en el mismo dominio. Esto quita la necesidad de CORS y le da al sitio **TLS automático** con
+  Let's Encrypt, con su propia CSP y encabezados de seguridad.
+- `docker-compose.yml` (local: PostgreSQL + API + sitio en `:8080`) y `deploy/docker-compose.prod.yml`:
+  - puertos 80 y 443;
+  - logs a **CloudWatch** (`awslogs`);
+  - `restart: always`;
+  - dominio y origen obligatorios.
+- Imágenes base desde `public.ecr.aws/docker/library`, que no tiene el límite de descargas de Docker Hub.
+- `deploy/.env.example` (todas las variables comentadas), `deploy/backup_db.sh` (respaldo diario de PostgreSQL a S3
+  con SSE-KMS), `deploy/aws/iam-policy-ec2.json` (permisos mínimos para S3, KMS y CloudWatch) y
+  `deploy/aws/ec2-user-data.sh` (Docker, Compose y swap en Amazon Linux 2023).
+
+### GitHub Actions
+- `ci.yml` (cada PR y push a `main`):
+  - Backend: ruff, pytest con PostgreSQL 16 (cobertura mínima 90 %) y pip-audit.
+  - Frontend: lint, typecheck, build y `npm audit`.
+  - Docker: build de las imágenes, `compose up` y prueba de humo de `/api/health` y de los encabezados.
+- `publish.yml`: publica las imágenes **amd64/arm64** en ghcr.io al crear un tag `vX.Y.Z`. El servidor solo hace
+  `docker compose pull`, sin compilar.
+- `zap.yml`: escaneo **OWASP ZAP baseline** a pedido sobre el stack completo, con el informe como artefacto.
+
+### Correcciones que salieron al probar con Docker
+- **`httpx` estaba solo en `requirements-dev.txt`**, pero `app/inference/providers.py` lo importa: la API no habría
+  arrancado en producción. Se movió a `requirements.txt`.
+- El sitio cargaba la fuente Inter desde **Google Fonts**, lo que enviaba la IP de cada usuario a un tercero y la CSP
+  lo bloqueaba. Se quitó y se usa la fuente del sistema.
+
+### Pruebas
+- 12 tests nuevos:
+  - `test_rotate_secrets.py`: `.env`, imágenes, reanudación, simulación, archivo ilegible y contraseña de
+    PostgreSQL.
+  - `test_storage_s3.py`: S3 y KMS simulados con moto.
+- Total: **270 tests aprobados, cobertura 97 %**. `pip-audit` y `npm audit --omit=dev` sin hallazgos.
+- Stack Docker probado en este entorno:
+  - Imagen del backend construida.
+  - Sitio servido por la imagen de Caddy con el build local. La imagen `node` no se pudo descargar aquí; el
+    `Dockerfile` completo lo construye CI.
+  - Configuración de Caddy validada y `compose config` de producción verificado.
+  - Flujo completo en el navegador a través de Caddy: cambio obligatorio de contraseña, alta de usuario, paciente
+    con consentimiento, caso e imagen subida y mostrada.
+  - Sin errores de CSP; archivo cifrado en el volumen; IP real del cliente en la auditoría.
+
+### Pendiente
+- Ejecutar el despliegue siguiendo `docs/despliegue_aws.md`. Necesita la cuenta de AWS y un dominio.
+- Correr el workflow ZAP y revisar los hallazgos.
+- Rotar los secretos en cada instalación existente.
+
+---
+
+## Pendiente para S8 (no implementado, según la regla 2)
+`HttpYoloProvider` real, pruebas de carga con Locust y soporte DICOM en la carga. De S7 queda ejecutar el
+despliegue (guía lista) y correr el escaneo ZAP (workflow listo).

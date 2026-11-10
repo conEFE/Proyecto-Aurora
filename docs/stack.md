@@ -1,6 +1,6 @@
-# Stack tecnológico — Proyecto Aurora 2.3
+# Stack tecnológico — Proyecto Aurora 2.5
 
-Versiones exactas de la 2.3.0 (fijadas en `backend/requirements*.txt` y `package-lock.json`). En la 2.3.0 se
+Versiones exactas de la 2.5.0 (fijadas en `backend/requirements*.txt` y `package-lock.json`). En la 2.3.0 se
 actualizaron las dependencias con vulnerabilidades conocidas (ver `docs/seguridad_owasp.md`, A06).
 
 ## Backend (`backend/`)
@@ -24,6 +24,8 @@ actualizaron las dependencias con vulnerabilidades conocidas (ver `docs/segurida
 | cryptography | 50.0.2 | Cifrado Fernet de las imágenes en disco |
 | python-dotenv | 1.2.4 | Carga de `backend/.env` en scripts y Alembic |
 | Pillow | 13.0.0 | Validación de formato y dimensiones de imágenes |
+| boto3 | 1.43.127 | Cliente de AWS para `S3EncryptedStorage` (S3 con SSE-KMS) |
+| httpx | 0.27.2 | Cliente HTTP del `HttpYoloProvider` (y de `TestClient`). Desde la 2.5.0 en `requirements.txt` |
 
 ### Desarrollo y pruebas (`requirements-dev.txt`)
 
@@ -31,7 +33,7 @@ actualizaron las dependencias con vulnerabilidades conocidas (ver `docs/segurida
 |---|---|---|
 | pytest | 9.1.1 | Ejecución de pruebas |
 | pytest-cov | 7.1.0 | Cobertura |
-| httpx | 0.27.2 | Cliente HTTP de `TestClient` (y del `HttpYoloProvider`) |
+| moto[s3,kms] | 5.2.5 | S3 y KMS simulados para las pruebas de almacenamiento |
 | ruff | 0.16.10 | Linter |
 | black | 26.10.1 | Formateo |
 | pgserver | 0.1.4 | PostgreSQL embebido para la BD de pruebas aislada (si no hay `TEST_DB_DSN`). Solo Python < 3.13 |
@@ -66,3 +68,15 @@ Se eliminaron `@supabase/supabase-js` (sin uso) y `@types/jspdf` (obsoleto: jsPD
 | Servicio de inferencia YOLO (Ultralytics) | Interfaz `HttpYoloProvider` lista; hoy se usa `SimulatedProvider` | S8 |
 | AWS (EC2, RDS, S3 con SSE-KMS, CloudWatch) | `StorageBackend` preparado para `S3EncryptedStorage` | S7 |
 | Docker / GitHub Actions | No implementado | S7 |
+
+## Contenedores y despliegue (2.5.0)
+
+| Componente | Versión | Propósito |
+|---|---|---|
+| Imagen base de la API | `public.ecr.aws/docker/library/python:3.12.16-slim` | Runtime de la API (usuario sin privilegios) |
+| Imagen de build del frontend | `public.ecr.aws/docker/library/node:22-alpine` | `npm ci` y build de Vite |
+| Caddy | `public.ecr.aws/docker/library/caddy:2.11-alpine` (2.11.9) | Sitio estático, proxy de `/api`, TLS automático (Let's Encrypt), CSP |
+| PostgreSQL | `public.ecr.aws/docker/library/postgres:16-alpine` (16.15) | Base de datos en contenedor (local y demo en EC2) |
+| Docker Compose | v2 (probado con 5.6.1) | Orquestación local y en EC2 |
+| GitHub Actions | `actions/checkout@v4`, `setup-python@v5`, `setup-node@v4`, `docker/*-action@v3`, `build-push-action@v6`, `upload-artifact@v4` | CI, publicación de imágenes en GHCR y escaneo ZAP |
+| OWASP ZAP | `ghcr.io/zaproxy/zaproxy:stable` | Escaneo baseline (workflow a pedido) |

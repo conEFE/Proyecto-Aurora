@@ -16,6 +16,14 @@ class Settings(BaseSettings):
 
     FILES_DIR: str = "./data/images"
     ENCRYPTION_KEY: str = ""
+    # Clave anterior durante una rotación (scripts/rotate_secrets.py): solo se usa para descifrar
+    ENCRYPTION_KEY_PREVIOUS: str = ""
+    # Almacenamiento de imágenes: "local" (FILES_DIR) o "s3" (S3_BUCKET, cifrado además con SSE-KMS)
+    STORAGE_BACKEND: str = "local"
+    S3_BUCKET: str = ""
+    S3_PREFIX: str = "images/"
+    S3_KMS_KEY_ID: str = ""
+    AWS_REGION: str = "sa-east-1"
     MAX_UPLOAD_MB: int = 60
     BCRYPT_ROUNDS: int = 12
 

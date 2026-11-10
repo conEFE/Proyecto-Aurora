@@ -1,11 +1,12 @@
-# Revisión de seguridad OWASP Top 10 (2021) — Proyecto Aurora 2.3.0
+# Revisión de seguridad OWASP Top 10 (2021) — Proyecto Aurora 2.5.0
 
 Revisión del código del backend (FastAPI) y del frontend (React), hecha junto con la épica E6 (09-11-2026).
 Los controles nombrados tienen pruebas automáticas en `backend/app/tests/` (principalmente
 `test_account_security.py`, `test_auth.py` y `test_users_patients.py`).
 
 **Alcance:** revisión de código, de configuración y de dependencias (`pip-audit` y `npm audit`). El escaneo
-dinámico con OWASP ZAP necesita la aplicación desplegada, así que queda para la fase de infraestructura (S7).
+dinámico con OWASP ZAP está listo como workflow (`.github/workflows/zap.yml`, a pedido) sobre el stack Docker
+completo. Falta ejecutarlo y revisar su informe.
 
 ## Hallazgos corregidos en la 2.3.0
 
@@ -34,11 +35,11 @@ dinámico con OWASP ZAP necesita la aplicación desplegada, así que queda para 
 | **A02** Fallas criptográficas | Cubierto | bcrypt (12 rondas), imágenes cifradas con Fernet, JWT HS256 con clave de al menos 256 bits, HMAC-SHA256 en la firma del reporte, HSTS | TLS lo pone el despliegue (S7) |
 | **A03** Inyección | Cubierto | ORM con parámetros. El único SQL literal es fijo (`nextval`). Pydantic valida toda entrada. React escapa la salida y no se usa `dangerouslySetInnerHTML` | — |
 | **A04** Diseño inseguro | Cubierto | Bloqueo y límite de intentos, cambio obligatorio de contraseña, consentimiento obligatorio, IA simulada marcada siempre | — |
-| **A05** Configuración insegura | Cubierto en la API | Encabezados de seguridad, CORS acotado, sin secretos por defecto, `/docs` configurable, errores sin detalles internos | CSP y encabezados del sitio estático del frontend: los pone el servidor web del despliegue (S7) |
-| **A06** Componentes vulnerables | Producción en 0 | `pip-audit -r requirements.txt` y `npm audit --omit=dev`: sin hallazgos | Quedan avisos solo en herramientas de desarrollo (ESLint, Vite/esbuild 5.x): el arreglo exige subir Vite a una versión mayor. No llegan al build de producción. Revisión automática en CI (S7) |
+| **A05** Configuración insegura | Cubierto | Encabezados de seguridad en la API y en el sitio (Caddy: CSP `default-src 'self'`, HSTS, `X-Frame-Options`), sin recursos de terceros (se quitó Google Fonts), CORS acotado, sin secretos por defecto, `/docs` apagado en la imagen de producción, errores sin detalles internos, contenedor sin root | — |
+| **A06** Componentes vulnerables | Producción en 0 | `pip-audit` y `npm audit --omit=dev`: sin hallazgos. Ambos corren en CI en cada PR | Quedan avisos solo en herramientas de desarrollo (ESLint, Vite/esbuild 5.x): el arreglo exige subir Vite a una versión mayor (el equipo decidió mantenerla). No llegan al build de producción |
 | **A07** Fallas de identificación y autenticación | Cubierto | Ver hallazgos 1 a 5. Token de 30 minutos. Mensajes que no distinguen entre RUT inexistente y contraseña incorrecta | Una cuenta bloqueada responde distinto (423), lo que revela que el RUT existe. Se aceptó porque el bloqueo es temporal y el límite por IP frena la enumeración. Segundo factor (MFA) para la fase productiva |
-| **A08** Fallas de integridad | Cubierto | SHA-256 del contenido del reporte y firma HMAC del médico, `package-lock.json` y versiones fijadas, bitácora append-only protegida por un trigger | Firmar las imágenes de contenedor en CI (S7) |
-| **A09** Fallas de registro y monitoreo | Cubierto | `audit_log` append-only (LOGIN_OK/FAIL con motivo, PASSWORD_CHANGE/_FAIL, SIGN/_FAIL, CRUD), `error_log` y `request_metrics` | Alertas (CloudWatch) en el despliegue (S7) |
+| **A08** Fallas de integridad | Cubierto | SHA-256 del contenido del reporte y firma HMAC del médico, `package-lock.json` y versiones fijadas, bitácora append-only protegida por un trigger, imágenes construidas en CI y referenciadas por tag | Firmar las imágenes de contenedor (cosign) |
+| **A09** Fallas de registro y monitoreo | Cubierto | `audit_log` append-only (LOGIN_OK/FAIL con motivo, PASSWORD_CHANGE/_FAIL, SIGN/_FAIL, CONSENT_*, BLOCK, CRUD), `error_log`, `request_metrics` y logs de los contenedores en CloudWatch | Alarmas de CloudWatch sobre los logs |
 | **A10** SSRF | Cubierto | La única URL saliente (`INFERENCE_URL`) viene de la configuración, nunca del usuario | — |
 
 ## Riesgos aceptados y trabajo pendiente
@@ -46,10 +47,12 @@ dinámico con OWASP ZAP necesita la aplicación desplegada, así que queda para 
 - **Token en `localStorage`.** Un XSS podría leerlo. Lo mitigan: no se inserta HTML sin escapar, el token dura
   30 minutos y un cambio de contraseña lo revoca. La alternativa (cookie `HttpOnly` + protección CSRF) conviene
   evaluarla junto con el despliegue.
-- **El límite por IP vive en memoria, por proceso.** Con varias réplicas, el límite se multiplica por el número
-  de réplicas. El bloqueo por cuenta está en la BD y sigue funcionando igual. Con réplicas hay que moverlo a un
-  almacén compartido (Redis) (S7).
-- **Escaneo dinámico con OWASP ZAP** sobre el entorno de staging (S7).
+- **El límite por IP vive en memoria, por proceso.** La configuración de despliegue usa un solo worker
+  (`WEB_CONCURRENCY=1`) y una instancia. Con réplicas, hay que moverlo a un almacén compartido (Redis). El bloqueo
+  por cuenta está en la BD y sigue funcionando igual.
+- **Escaneo dinámico con OWASP ZAP:** workflow listo (`zap.yml`); falta ejecutarlo y revisar el informe.
+- **Secretos de la v1.0 en el historial de Git:** el script `scripts/rotate_secrets.py` los vuelve inútiles. Hay que
+  ejecutarlo en cada instalación.
 - **Firma electrónica avanzada** (Ley 19.799) para la fase productiva: hoy la firma del reporte es simple
   (contraseña + HMAC + auditoría).
 

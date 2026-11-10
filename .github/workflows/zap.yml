@@ -1,0 +1,42 @@
+# Escaneo pasivo de OWASP ZAP (baseline) sobre el stack completo levantado con Docker Compose.
+# Se ejecuta a pedido (Actions > ZAP baseline > Run workflow) y deja el informe como artefacto.
+name: ZAP baseline
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zap:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configuración de prueba (secretos desechables)
+        run: |
+          python3 - <<'PY' > deploy/.env
+          import base64, os, secrets
+          print("COMPOSE_PROFILES=db")
+          print("POSTGRES_PASSWORD=" + secrets.token_urlsafe(24))
+          print("SECRET_KEY=" + secrets.token_urlsafe(48))
+          print("ENCRYPTION_KEY=" + base64.urlsafe_b64encode(os.urandom(32)).decode())
+          print("SITE_ADDRESS=:80")
+          print("PUBLIC_URL=http://localhost:8080")
+          print("HTTP_PORT=8080")
+          PY
+      - run: docker compose --env-file deploy/.env up -d --build
+      - run: |
+          for i in $(seq 1 30); do curl -fsS http://localhost:8080/api/health && break; sleep 3; done
+      - name: ZAP baseline (sitio y API)
+        run: |
+          mkdir -p zap && chmod 777 zap
+          docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://localhost:8080 -r zap-sitio.html -J zap-sitio.json -I
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: informe-zap
+          path: zap/
+      - if: always()
+        run: docker compose --env-file deploy/.env down -v

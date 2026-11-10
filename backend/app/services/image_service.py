@@ -17,7 +17,7 @@ from app.schemas.images import ImageOut, InferenceOut
 from app.services import case_service
 from app.services.audit_service import audit
 from app.services.errors import ConflictError, DomainError, NotFoundError, ValidationError
-from app.storage.local import get_storage
+from app.storage.factory import get_storage
 from app.utils.quality import ImageValidationError, inspect_image
 
 logger = logging.getLogger("aurora.images")

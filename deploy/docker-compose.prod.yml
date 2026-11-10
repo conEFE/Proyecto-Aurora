@@ -1,0 +1,33 @@
+# Ajustes de producción (EC2). Uso, desde la raíz del repositorio en el servidor:
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --build
+# Requiere SITE_ADDRESS con el dominio (TLS automático) y, para CloudWatch, un rol de instancia con permisos de logs.
+
+x-cloudwatch: &cloudwatch
+  driver: awslogs
+  options:
+    awslogs-region: ${AWS_REGION:-sa-east-1}
+    awslogs-group: ${CLOUDWATCH_LOG_GROUP:-/aurora/prod}
+    awslogs-create-group: "true"
+    tag: "{{.Name}}"
+
+services:
+  db:
+    restart: always
+    logging: *cloudwatch
+
+  backend:
+    restart: always
+    environment:
+      ENABLE_API_DOCS: "false"
+      ALLOWED_ORIGINS: ${PUBLIC_URL:?Defina PUBLIC_URL (https://su-dominio) en deploy/.env}
+    logging: *cloudwatch
+
+  web:
+    restart: always
+    ports: !override
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Defina SITE_ADDRESS (su dominio) en deploy/.env}
+    logging: *cloudwatch
