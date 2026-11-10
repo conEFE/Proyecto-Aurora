@@ -177,7 +177,7 @@ Luego **borre** las variables `AURORA_ADMIN_*` de `deploy/.env`: ya no hacen fal
 **Respaldo diario** de PostgreSQL a S3 (cifrado con KMS):
 
 ```bash
-(crontab -l 2>/dev/null; echo "15 3 * * * cd /opt/aurora && ./deploy/backup_db.sh >> /home/ec2-user/aurora-backup.log 2>&1") | crontab -
+(crontab -l 2>/dev/null | grep -v backup_db.sh | grep -v "^CRON_TZ="; echo "CRON_TZ=America/Santiago"; echo "15 3 * * * cd /opt/aurora && ./deploy/backup_db.sh >> /home/ec2-user/aurora-backup.log 2>&1") | crontab -
 ```
 
 Pruebe la restauración al menos una vez: descargue un respaldo con `aws s3 cp` y cárguelo con
