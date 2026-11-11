@@ -20,6 +20,7 @@ Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.7.0** (rediseño visua
 | Ciclo de vida del bucket | Versiones antiguas: 7 días. Respaldos (`backups/`): 35 días. Cargas incompletas: 7 días |
 | Respaldo | `deploy/backup_db.sh` diario a las **03:15 hora de Chile** (crontab de `ec2-user`), verificado (13,5 KB) |
 | Logs | CloudWatch `/aurora/prod` (backend, db, web), retención 30 días |
+| DNS | Route 53, zona `auroracare.cl` (`Z0628464DNWEOT5ICYNC`), registro `demo` → Elastic IP. Pendiente la delegación en NIC |
 | Presupuesto | `aurora-mensual`: USD 15 al mes, alertas al 85 %, 100 % y pronóstico |
 | Modelo de IA | `INFERENCE_PROVIDER=simulated` por ahora. El token del modelo ya está en `deploy/.env` |
 | Usuarios | ADMIN (Felipe, con email provisorio `admin@aurora-demo.cl`) y médico de prueba `11111111-1` (ficticio) |
@@ -70,23 +71,24 @@ Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.7.0** (rediseño visua
     con `workflow_dispatch`.
 14. Sacar del repositorio los pesos del modelo (≈63 MB) y llevarlos a un almacenamiento de artefactos.
 
-### Dominio propio: `aurorahealth.cl` (en curso)
-15. **Inscripción en NIC Chile:** Felipe estaba completando el formulario el 11-11-2026. Falta confirmar que se pagó y
-    quedó activo. En «Configuración técnica» van los **servidores DNS de Route 53** (no «Redireccionamiento Web»).
-16. **Zona en Route 53** (USD 0,50 al mes): crear la zona pública `aurorahealth.cl` (Route 53 → Zonas alojadas →
-    Crear). Copiar en NIC los **4 valores del registro NS**, uno por uno y **sin el punto final**. Si NIC permitió
-    dejar los DNS para después, se cargan desde la cuenta de NIC cuando la zona exista.
-17. **Apuntar el sitio:** registro `A` `demo.aurorahealth.cl` → `13.184.207.158`. En el servidor, `deploy/.env`:
-    `SITE_ADDRESS=demo.aurorahealth.cl` y `PUBLIC_URL=https://demo.aurorahealth.cl`, y `dc up -d`. Caddy obtiene el
-    certificado solo. Opcional: mantener `13-184-207-158.sslip.io` con redirección al dominio nuevo (bloque extra en
-    `deploy/Caddyfile`).
-18. **Marca:** antes de usar «Aurora Health» comercialmente, revisar en **INAPI** que no haya una marca igual en
+### Dominio propio: `auroracare.cl` (en curso; antes se pensó en `aurorahealth.cl`)
+15. **Inscripción en NIC Chile:** Felipe la está haciendo (11-11-2026). En «Configuración técnica» van los
+    **servidores DNS de Route 53** (no «Redireccionamiento Web»), uno por uno y **sin el punto final**:
+    `ns-1350.awsdns-40.org`, `ns-862.awsdns-43.net`, `ns-73.awsdns-09.com`, `ns-1730.awsdns-24.co.uk`.
+16. ~~Zona en Route 53~~: **hecha (11-11-2026).** Zona pública `auroracare.cl`, ID `Z0628464DNWEOT5ICYNC`
+    (USD 0,50 al mes). Si se cambia de dominio, borrar la zona para no pagarla.
+17. **Apuntar el sitio:** el registro `A` `demo.auroracare.cl` → `13.184.207.158` (TTL 300) **ya está creado**.
+    Falta, **solo cuando `dig +short demo.auroracare.cl` devuelva la IP** (si no, Caddy no obtiene el certificado y
+    Let's Encrypt puede bloquear los intentos): en el servidor, `deploy/.env`: `SITE_ADDRESS=demo.auroracare.cl` y
+    `PUBLIC_URL=https://demo.auroracare.cl`, y `dc up -d`. Opcional: mantener `13-184-207-158.sslip.io` con
+    redirección al dominio nuevo (bloque extra en `deploy/Caddyfile`).
+18. **Marca:** antes de usar «Aurora Care» comercialmente, revisar en **INAPI** que no haya una marca igual en
     salud o software.
 
 ### Venta a varias instituciones (decisión del 11-11-2026, aún no implementado)
 19. **Modelo elegido:** **una instancia por institución**, todo en **una cuenta de AWS del equipo** (cobran una
     mensualidad que incluye la infraestructura). Cada hospital: su EC2, base de datos, bucket, secretos y subdominio
-    (`<hospital>.aurorahealth.cl`). Aislamiento total y **sin cambios al código**.
+    (`<hospital>.auroracare.cl`). Aislamiento total y **sin cambios al código**.
 20. **Herramienta a construir: `aurora-admin`** (menú en terminal; plantilla de CloudFormation + script en Python).
     Opciones: inscribir institución (≈ 15 min: servidor, IP, bucket, rol, secretos en Parameter Store, registro DNS,
     instalación, respaldo y primer administrador), listar con estado, versión y costo (etiquetas por institución),

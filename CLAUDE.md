@@ -9,7 +9,7 @@ Plataforma web de apoyo a la **detección temprana y priorización (triage)** de
 - Sprints S1–S7 cerrados. S8: modelo de IA integrado como prototipo (opción B: PC con GPU vía Tailscale); quedan
   pruebas de carga y DICOM.
 - Commits en `main` con la autoría del equipo y **sin coautoría de Claude** (pedido del equipo).
-- En curso: dominio `aurorahealth.cl` (NIC Chile + Route 53), conexión del modelo de Juan por Tailscale
+- En curso: dominio `auroracare.cl` (zona de Route 53 creada; falta la delegación en NIC Chile), conexión del modelo de Juan por Tailscale
   (`docs/guia_modelo_juan.md`) y la herramienta `aurora-admin` para vender a varias instituciones (una instancia por
   institución). Detalle y orden en `docs/ESTADO_AWS.md`, sección 2.
 - Rediseño visual «Orden de mamografía» (modo claro rosado/blanco y oscuro morado/negro) integrado: el sistema
