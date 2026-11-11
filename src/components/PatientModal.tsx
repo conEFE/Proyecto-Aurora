@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
-import { X, Search, UserPlus, User, Loader2, ShieldCheck } from 'lucide-react';
+import { Loader2, Search, ShieldCheck, UserPlus } from 'lucide-react';
+import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type { ConsentText, Patient, PatientInput, Sex } from '../types';
 import { isValidRut, normalizeRut } from '../utils/rut';
-import { errorBox, inputClass, labelClass, primaryButton, secondaryButton, formatDate } from './ui';
+import { cn } from '../lib/cn';
+import Dialog from './Dialog';
+import { ErrorMessage, Loading } from './Feedback';
+import { formatDate, inputClass, labelClass, primaryButton, secondaryButton, textareaClass } from './ui';
 
 interface PatientModalProps {
   isOpen: boolean;
@@ -38,11 +42,11 @@ export default function PatientModal({ isOpen, onClose, onSelectPatient }: Patie
     if (!isOpen || mode !== 'create' || consentText) return;
     apiClient.getConsentText().then((r) => {
       if (r.data) setConsentText(r.data);
-      else setError(r.error || 'No se pudo cargar el texto de consentimiento');
+      else setError(r.error || 'No se pudo cargar el texto de consentimiento.');
     });
   }, [isOpen, mode, consentText]);
 
-  const rutError = form.rut.trim() !== '' && !isValidRut(form.rut) ? 'RUT inválido: revise el dígito verificador' : null;
+  const rutError = form.rut.trim() !== '' && !isValidRut(form.rut) ? 'RUT inválido: revise el dígito verificador.' : null;
   const canSubmit =
     !loading &&
     form.rut.trim() !== '' &&
@@ -58,7 +62,7 @@ export default function PatientModal({ isOpen, onClose, onSelectPatient }: Patie
     setError(null);
     const response = await apiClient.searchPatients(searchTerm.trim() || undefined);
     if (response.data) setPatients(response.data);
-    else setError(response.error || 'Error al buscar pacientes');
+    else setError(response.error || 'No se pudo buscar. Intente de nuevo.');
     setSearched(true);
     setLoading(false);
   };
@@ -78,249 +82,236 @@ export default function PatientModal({ isOpen, onClose, onSelectPatient }: Patie
     });
     setLoading(false);
     if (response.data) {
+      toast.success(`Paciente ${response.data.first_name} ${response.data.last_name} registrada`);
       onSelectPatient(response.data);
       setForm(EMPTY_FORM);
       onClose();
     } else {
-      setError(response.error || 'Error al registrar paciente');
+      setError(response.error || 'No se pudo registrar el paciente. Revise los datos.');
     }
   };
 
-  if (!isOpen) return null;
-
   const tabClass = (active: boolean) =>
-    `flex items-center space-x-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-      active
-        ? 'bg-primary/20 text-primary border border-primary/30'
-        : 'bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80'
-    }`;
+    cn(
+      'inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm transition-colors',
+      active ? 'bg-card text-foreground font-bold ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
+    );
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-card border border-border rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-foreground">
-            {mode === 'select' ? 'Buscar paciente' : 'Registrar paciente'}
-          </h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Cerrar">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      title={mode === 'select' ? 'Buscar paciente' : 'Registrar paciente'}
+      description={mode === 'select' ? 'Busque por RUT o nombre y selecciónela.' : 'Los campos marcados con * son obligatorios.'}
+      size="lg"
+    >
+      <div role="group" aria-label="Modo" className="inline-flex p-1 rounded-lg bg-muted mb-5">
+        <button onClick={() => setMode('select')} aria-pressed={mode === 'select'} className={tabClass(mode === 'select')}>
+          <Search aria-hidden className="w-4 h-4" /> Buscar existente
+        </button>
+        <button onClick={() => setMode('create')} aria-pressed={mode === 'create'} className={tabClass(mode === 'create')}>
+          <UserPlus aria-hidden className="w-4 h-4" /> Registrar nueva
+        </button>
+      </div>
 
-        <div className="p-4">
-          <div className="flex space-x-2 mb-4">
-            <button onClick={() => setMode('select')} className={tabClass(mode === 'select')}>
-              <Search className="w-3.5 h-3.5" />
-              <span>Buscar existente</span>
+      <ErrorMessage className="mb-4">{error}</ErrorMessage>
+
+      {mode === 'select' ? (
+        <div>
+          <form
+            className="flex gap-2 mb-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              searchPatients();
+            }}
+          >
+            <label htmlFor="p-search" className="sr-only">Buscar por RUT o nombre</label>
+            <input
+              id="p-search"
+              type="search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="RUT o nombre"
+              className={inputClass}
+              autoFocus
+            />
+            <button type="submit" disabled={loading} className={primaryButton}>
+              {loading ? <Loader2 aria-hidden className="w-4 h-4 animate-spin" /> : <Search aria-hidden className="w-4 h-4" />}
+              Buscar
             </button>
-            <button onClick={() => setMode('create')} className={tabClass(mode === 'create')}>
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Registrar nuevo</span>
-            </button>
-          </div>
+          </form>
 
-          {error && <div className={`${errorBox} mb-3`}>{error}</div>}
-
-          {mode === 'select' ? (
-            <div>
-              <div className="flex space-x-2 mb-3">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && searchPatients()}
-                  placeholder="Buscar por RUT o nombre..."
-                  className={inputClass}
-                />
-                <button onClick={searchPatients} disabled={loading} className={primaryButton}>
-                  {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Buscar'}
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                {patients.map((patient) => (
+          {loading ? (
+            <Loading label="Buscando…" className="py-6" />
+          ) : (
+            <ul className="divide-y divide-border border-y border-border">
+              {patients.map((patient) => (
+                <li key={patient.id}>
                   <button
-                    key={patient.id}
                     onClick={() => {
                       onSelectPatient(patient);
                       onClose();
                     }}
-                    className="w-full text-left p-3 border border-border rounded hover:bg-primary/10 hover:border-primary/30 transition-colors"
+                    className="w-full flex items-center justify-between gap-4 px-2 py-3 text-left hover:bg-accent transition-colors rounded-md"
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-xs text-foreground">
-                          {patient.first_name} {patient.last_name}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          RUT {patient.rut} · Nac. {formatDate(patient.birth_date)}
-                        </p>
-                      </div>
-                      {patient.consent_given ? (
-                        <span className="text-[10px] text-green-400 flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3" /> Consentimiento
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-orange-400">Sin consentimiento</span>
-                      )}
-                      <User className="w-4 h-4 text-primary" />
-                    </div>
+                    <span>
+                      <span className="block font-bold">{patient.first_name} {patient.last_name}</span>
+                      <span className="block text-sm text-muted-foreground tabular-nums">
+                        RUT {patient.rut} · nac. {formatDate(patient.birth_date)}
+                      </span>
+                    </span>
+                    {patient.consent_given ? (
+                      <span className="inline-flex items-center gap-1.5 text-sm text-baja">
+                        <ShieldCheck aria-hidden className="w-4 h-4" /> Con consentimiento
+                      </span>
+                    ) : (
+                      <span className="text-sm font-semibold text-media">Sin consentimiento</span>
+                    )}
                   </button>
-                ))}
-              </div>
+                </li>
+              ))}
+            </ul>
+          )}
 
-              {!loading && searched && patients.length === 0 && (
-                <p className="text-center py-8 text-xs text-muted-foreground">No se encontraron pacientes</p>
-              )}
-            </div>
-          ) : (
-            <form onSubmit={handleCreate} className="space-y-3">
-              <div>
-                <label className={labelClass} htmlFor="p-rut">RUT *</label>
-                <input
-                  id="p-rut"
-                  type="text"
-                  value={form.rut}
-                  onChange={(e) => setForm({ ...form, rut: e.target.value })}
-                  onBlur={() => form.rut && setForm({ ...form, rut: normalizeRut(form.rut) })}
-                  required
-                  className={inputClass}
-                  placeholder="12345678-5"
-                />
-                {rutError && <p className="mt-1 text-[10px] text-red-400">{rutError}</p>}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass} htmlFor="p-first">Nombres *</label>
-                  <input
-                    id="p-first"
-                    value={form.first_name}
-                    onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-                    required
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass} htmlFor="p-last">Apellidos *</label>
-                  <input
-                    id="p-last"
-                    value={form.last_name}
-                    onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-                    required
-                    className={inputClass}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass} htmlFor="p-birth">Fecha de nacimiento *</label>
-                  <input
-                    id="p-birth"
-                    type="date"
-                    value={form.birth_date}
-                    max={new Date().toISOString().slice(0, 10)}
-                    onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
-                    required
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass} htmlFor="p-sex">Sexo</label>
-                  <select
-                    id="p-sex"
-                    value={form.sex ?? ''}
-                    onChange={(e) => setForm({ ...form, sex: (e.target.value || null) as Sex | null })}
-                    className={inputClass}
-                  >
-                    <option value="F">Femenino</option>
-                    <option value="M">Masculino</option>
-                    <option value="O">Otro</option>
-                  </select>
-                </div>
-              </div>
-
-              <fieldset className="grid sm:grid-cols-2 gap-2 p-3 border border-border rounded">
-                <legend className="px-1 text-[10px] font-semibold text-muted-foreground uppercase">
-                  Antecedentes
-                </legend>
-                <label className="flex items-center gap-2 text-xs text-foreground">
-                  <input
-                    type="checkbox"
-                    checked={form.family_history_first_degree}
-                    onChange={(e) => setForm({ ...form, family_history_first_degree: e.target.checked })}
-                  />
-                  Antecedente familiar de primer grado
-                </label>
-                <label className="flex items-center gap-2 text-xs text-foreground">
-                  <input
-                    type="checkbox"
-                    checked={form.previous_breast_cancer}
-                    onChange={(e) => setForm({ ...form, previous_breast_cancer: e.target.checked })}
-                  />
-                  Cáncer de mama previo
-                </label>
-              </fieldset>
-
-              <div>
-                <label className={labelClass} htmlFor="p-history">Historial médico / notas</label>
-                <textarea
-                  id="p-history"
-                  value={form.medical_history ?? ''}
-                  onChange={(e) => setForm({ ...form, medical_history: e.target.value })}
-                  rows={3}
-                  className={inputClass}
-                />
-              </div>
-
-              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded space-y-2">
-                <p className="text-xs font-semibold text-foreground">
-                  Consentimiento informado (obligatorio)
-                  {consentText && (
-                    <span className="ml-1 font-normal text-muted-foreground">· versión {consentText.version}</span>
-                  )}
-                </p>
-                {consentText ? (
-                  <div
-                    className="max-h-48 overflow-y-auto whitespace-pre-line rounded border border-border bg-background p-2 text-[11px] leading-relaxed text-muted-foreground"
-                    tabIndex={0}
-                    aria-label="Texto de consentimiento informado"
-                  >
-                    {consentText.body}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <Loader2 className="w-3 h-3 animate-spin" /> Cargando el texto de consentimiento…
-                  </div>
-                )}
-                <label className="flex items-start gap-2 text-xs text-foreground">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
-                    checked={form.consent_given}
-                    disabled={!consentText}
-                    onChange={(e) => setForm({ ...form, consent_given: e.target.checked })}
-                  />
-                  <span>
-                    Declaro que mostré o leí este texto al paciente y que autorizó el tratamiento de sus datos.
-                    Se registrará la versión del texto, la fecha y el usuario que confirma.
-                  </span>
-                </label>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button type="button" onClick={onClose} className={`${secondaryButton} flex-1`}>
-                  Cancelar
-                </button>
-                <button type="submit" disabled={!canSubmit} className={`${primaryButton} flex-1`}>
-                  {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Registrar paciente'}
-                </button>
-              </div>
-            </form>
+          {!loading && searched && patients.length === 0 && (
+            <p role="status" className="text-center py-8 text-sm text-muted-foreground">
+              No se encontraron pacientes. Puede registrarla en «Registrar nueva».
+            </p>
           )}
         </div>
-      </div>
-    </div>
+      ) : (
+        <form onSubmit={handleCreate} className="space-y-4" noValidate>
+          <div>
+            <label className={labelClass} htmlFor="p-rut">RUT *</label>
+            <input
+              id="p-rut"
+              type="text"
+              value={form.rut}
+              onChange={(e) => setForm({ ...form, rut: e.target.value })}
+              onBlur={() => form.rut && setForm({ ...form, rut: normalizeRut(form.rut) })}
+              required
+              className={cn(inputClass, 'w-56')}
+              placeholder="12345678-5"
+              aria-invalid={rutError ? true : undefined}
+              aria-describedby={rutError ? 'p-rut-error' : undefined}
+            />
+            {rutError && <p id="p-rut-error" className="mt-1 text-sm text-destructive">{rutError}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass} htmlFor="p-first">Nombres *</label>
+              <input id="p-first" value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} required className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="p-last">Apellidos *</label>
+              <input id="p-last" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} required className={inputClass} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass} htmlFor="p-birth">Fecha de nacimiento *</label>
+              <input
+                id="p-birth"
+                type="date"
+                value={form.birth_date}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
+                required
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="p-sex">Sexo</label>
+              <select
+                id="p-sex"
+                value={form.sex ?? ''}
+                onChange={(e) => setForm({ ...form, sex: (e.target.value || null) as Sex | null })}
+                className={inputClass}
+              >
+                <option value="F">Femenino</option>
+                <option value="M">Masculino</option>
+                <option value="O">Otro</option>
+              </select>
+            </div>
+          </div>
+
+          <fieldset className="px-4 pb-4 pt-2 rounded-lg border border-border">
+            <legend className="px-1 text-sm font-bold">Antecedentes</legend>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.family_history_first_degree}
+                  onChange={(e) => setForm({ ...form, family_history_first_degree: e.target.checked })}
+                />
+                Antecedente familiar de primer grado
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.previous_breast_cancer}
+                  onChange={(e) => setForm({ ...form, previous_breast_cancer: e.target.checked })}
+                />
+                Cáncer de mama previo
+              </label>
+            </div>
+          </fieldset>
+
+          <div>
+            <label className={labelClass} htmlFor="p-history">Historial médico y notas</label>
+            <textarea
+              id="p-history"
+              value={form.medical_history ?? ''}
+              onChange={(e) => setForm({ ...form, medical_history: e.target.value })}
+              rows={3}
+              className={textareaClass}
+            />
+          </div>
+
+          <fieldset className="px-4 pb-4 pt-2 rounded-lg bg-muted border border-border space-y-3">
+            <legend className="px-1 text-sm font-bold">
+              Consentimiento informado *
+              {consentText && <span className="ml-1 font-normal text-muted-foreground">· versión {consentText.version}</span>}
+            </legend>
+            {consentText ? (
+              <div
+                className="max-h-48 overflow-y-auto whitespace-pre-line rounded-md border border-border bg-background p-3 text-sm leading-relaxed text-muted-foreground"
+                tabIndex={0}
+                aria-label="Texto de consentimiento informado"
+              >
+                {consentText.body}
+              </div>
+            ) : (
+              <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 aria-hidden className="w-4 h-4 animate-spin" /> Cargando el texto de consentimiento…
+              </p>
+            )}
+            <label className="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 shrink-0"
+                checked={form.consent_given}
+                disabled={!consentText}
+                onChange={(e) => setForm({ ...form, consent_given: e.target.checked })}
+              />
+              <span>
+                Declaro que mostré o leí este texto a la paciente y que autorizó el tratamiento de sus datos. Se registrará
+                la versión del texto, la fecha y el usuario que confirma.
+              </span>
+            </label>
+          </fieldset>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <button type="button" onClick={onClose} className={secondaryButton}>Cancelar</button>
+            <button type="submit" disabled={!canSubmit} className={primaryButton}>
+              {loading && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
+              Registrar paciente
+            </button>
+          </div>
+        </form>
+      )}
+    </Dialog>
   );
 }

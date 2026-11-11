@@ -1,20 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ListOrdered, Loader2, RefreshCw } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { PenLine, RefreshCw } from 'lucide-react';
 import { apiClient } from '../services/api';
 import type { Me, QueueItem, TriageLevel } from '../types';
-import { LevelBadge, StatusBadge } from './Badges';
-import { cardClass, errorBox, secondaryButton, tdClass, thClass } from './ui';
-
-const ROW_ACCENT: Record<TriageLevel, string> = {
-  ALTA: 'border-l-4 border-l-red-500',
-  MEDIA: 'border-l-4 border-l-orange-500',
-  BAJA: 'border-l-4 border-l-green-500',
-};
+import { usePolling } from '../lib/usePolling';
+import { cn } from '../lib/cn';
+import { LEVEL_RING, LEVEL_TEXT } from '../constants';
+import { LevelBadge, ScoreBar, StatusBadge } from './Badges';
+import { EmptyState, ErrorMessage, Loading } from './Feedback';
+import { cardClass, pageClass, pageSubtitle, pageTitle, secondaryButton, tdClass, thClass } from './ui';
 
 function formatWaiting(hours: number): string {
   if (hours < 1) return `${Math.round(hours * 60)} min`;
-  if (hours < 48) return `${hours.toFixed(1)} h`;
-  return `${(hours / 24).toFixed(1)} días`;
+  if (hours < 48) return `${hours.toFixed(1).replace('.', ',')} h`;
+  return `${(hours / 24).toFixed(1).replace('.', ',')} días`;
 }
 
 interface TriageQueueProps {
@@ -22,10 +20,14 @@ interface TriageQueueProps {
   onOpenCase: (caseId: number) => void;
 }
 
+type Filter = 'TODOS' | TriageLevel;
+
 export default function TriageQueue({ me, onOpenCase }: TriageQueueProps) {
   const [items, setItems] = useState<QueueItem[] | null>(null);
   const [includeInReview, setIncludeInReview] = useState(true);
+  const [filter, setFilter] = useState<Filter>('TODOS');
   const [error, setError] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const isMedico = me.role === 'MEDICO';
 
   const load = useCallback(async () => {
@@ -33,100 +35,134 @@ export default function TriageQueue({ me, onOpenCase }: TriageQueueProps) {
     if (r.data) {
       setItems(r.data);
       setError(null);
-    } else setError(r.error || 'Error al cargar la cola');
+      setUpdatedAt(new Date());
+    } else setError(r.error || 'No se pudo cargar la cola. Revise la conexión e intente de nuevo.');
   }, [includeInReview]);
 
-  useEffect(() => {
-    load();
-    const timer = window.setInterval(load, 30000);
-    return () => window.clearInterval(timer);
-  }, [load]);
+  usePolling(load, 30000);
 
   const counts = (items ?? []).reduce(
     (acc, i) => ({ ...acc, [i.level]: acc[i.level] + 1 }),
-    { ALTA: 0, MEDIA: 0, BAJA: 0 } as Record<TriageLevel, number>
+    { ALTA: 0, MEDIA: 0, BAJA: 0 } as Record<TriageLevel, number>,
   );
+  const visible = (items ?? []).filter((i) => filter === 'TODOS' || i.level === filter);
+
+  const filters: Array<{ id: Filter; label: string; n: number }> = [
+    { id: 'TODOS', label: 'Todos', n: items?.length ?? 0 },
+    { id: 'ALTA', label: 'Alta', n: counts.ALTA },
+    { id: 'MEDIA', label: 'Media', n: counts.MEDIA },
+    { id: 'BAJA', label: 'Baja', n: counts.BAJA },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className={pageClass}>
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-            <ListOrdered className="w-5 h-5 text-primary" /> Cola de triage
-          </h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Orden: nivel (ALTA → BAJA), puntaje y antigüedad. Se actualiza cada 30 segundos.
+          <h1 className={pageTitle}>Cola de triage</h1>
+          <p className={pageSubtitle}>
+            Ordenada por nivel, puntaje y antigüedad. Se actualiza sola cada 30 segundos
+            {updatedAt && ` · última vez a las ${updatedAt.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`}.
           </p>
         </div>
         <button className={secondaryButton} onClick={load}>
-          <RefreshCw className="w-3.5 h-3.5" /> Actualizar
+          <RefreshCw aria-hidden className="w-4 h-4" /> Actualizar
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        {(['ALTA', 'MEDIA', 'BAJA'] as TriageLevel[]).map((lvl) => (
-          <div key={lvl} className={`${cardClass} p-3 ${ROW_ACCENT[lvl]}`}>
-            <p className="text-xl font-bold text-foreground">{counts[lvl]}</p>
-            <p className="text-[10px] text-muted-foreground">Prioridad {lvl}</p>
-          </div>
-        ))}
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div role="group" aria-label="Filtrar por nivel" className="inline-flex p-1 rounded-lg bg-muted">
+          {filters.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              aria-pressed={filter === f.id}
+              className={cn(
+                'inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm transition-colors',
+                filter === f.id ? 'bg-card text-foreground font-bold ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {f.id !== 'TODOS' && (
+                <span aria-hidden className={cn('w-3 h-3 rounded-full border-current', LEVEL_TEXT[f.id], LEVEL_RING[f.id])} />
+              )}
+              {f.label}
+              <span className="tabular-nums text-muted-foreground">{items ? f.n : ''}</span>
+            </button>
+          ))}
+        </div>
+        <label className="inline-flex items-center gap-2 text-sm text-foreground">
+          <input type="checkbox" checked={includeInReview} onChange={(e) => setIncludeInReview(e.target.checked)} />
+          Incluir casos en revisión
+        </label>
       </div>
 
-      <label className="flex items-center gap-2 text-xs text-muted-foreground">
-        <input type="checkbox" checked={includeInReview} onChange={(e) => setIncludeInReview(e.target.checked)} />
-        Incluir casos en revisión
-      </label>
+      <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
-      {error && <div className={errorBox}>{error}</div>}
-
-      <div className={`${cardClass} overflow-hidden`}>
+      <div className={cn(cardClass, 'mt-4 overflow-hidden')}>
         {items === null ? (
-          <div className="py-8 text-center"><Loader2 className="w-6 h-6 mx-auto animate-spin text-primary" /></div>
-        ) : items.length === 0 ? (
-          <p className="py-8 text-center text-xs text-muted-foreground">No hay casos en la cola.</p>
+          <Loading label="Cargando la cola…" />
+        ) : visible.length === 0 ? (
+          <EmptyState title={items.length === 0 ? 'La cola está vacía' : 'No hay casos con este nivel'}>
+            {items.length === 0 ? 'Los casos nuevos aparecen aquí apenas se calcula su triage.' : 'Pruebe con otro filtro.'}
+          </EmptyState>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-secondary/50 border-b border-border">
+              <caption className="sr-only">Casos pendientes ordenados por prioridad</caption>
+              <thead className="bg-muted/60">
                 <tr>
-                  <th className={thClass}>#</th>
-                  <th className={thClass}>Código</th>
-                  <th className={thClass}>Nivel</th>
-                  <th className={thClass}>Estado</th>
-                  <th className={thClass}>Espera</th>
+                  <th scope="col" className={cn(thClass, 'w-12 text-right')}>N.º</th>
+                  <th scope="col" className={thClass}>Código</th>
+                  <th scope="col" className={thClass}>Nivel</th>
+                  {isMedico && <th scope="col" className={thClass}>Puntaje</th>}
+                  <th scope="col" className={thClass}>Estado</th>
+                  <th scope="col" className={cn(thClass, 'text-right')}>Espera</th>
                   {isMedico && (
                     <>
-                      <th className={thClass}>Puntaje</th>
-                      <th className={thClass}>Regla</th>
-                      <th className={thClass}>Paciente</th>
-                      <th className={thClass}></th>
+                      <th scope="col" className={thClass}>Regla</th>
+                      <th scope="col" className={thClass}>Paciente</th>
                     </>
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
-                {items.map((item, idx) => (
-                  <tr key={item.code} className={`${ROW_ACCENT[item.level]} hover:bg-secondary/30`}>
-                    <td className={`${tdClass} text-muted-foreground`}>{idx + 1}</td>
-                    <td className={`${tdClass} font-mono text-foreground`}>{item.code}</td>
-                    <td className={tdClass}><LevelBadge level={item.level} /></td>
+              <tbody>
+                {visible.map((item, idx) => (
+                  <tr key={item.code} className="hover:bg-accent/60 transition-colors">
+                    <td className={cn(tdClass, 'text-right text-muted-foreground tabular-nums')}>{idx + 1}</td>
+                    <td className={tdClass}>
+                      {isMedico && item.case_id ? (
+                        <button
+                          className="font-bold tabular-nums text-foreground hover:text-brand hover:underline"
+                          onClick={() => onOpenCase(item.case_id!)}
+                          aria-label={`Abrir caso ${item.code}`}
+                        >
+                          {item.code}
+                        </button>
+                      ) : (
+                        <span className="font-bold tabular-nums">{item.code}</span>
+                      )}
+                    </td>
+                    <td className={tdClass}>
+                      <span className="inline-flex items-center gap-2">
+                        <LevelBadge level={item.level} />
+                        {item.overridden && (
+                          <span title="Nivel ajustado por un médico" className="inline-flex items-center gap-1 text-xs text-info">
+                            <PenLine aria-hidden className="w-3.5 h-3.5" />
+                            <span>ajustado</span>
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                    {isMedico && (
+                      <td className={tdClass}>
+                        <ScoreBar score={item.score} level={item.level} />
+                      </td>
+                    )}
                     <td className={tdClass}><StatusBadge status={item.status} /></td>
-                    <td className={`${tdClass} text-muted-foreground`}>{formatWaiting(item.waiting_hours)}</td>
+                    <td className={cn(tdClass, 'text-right tabular-nums text-muted-foreground')}>{formatWaiting(item.waiting_hours)}</td>
                     {isMedico && (
                       <>
-                        <td className={`${tdClass} text-foreground`}>
-                          {item.score?.toFixed(2)}
-                          {item.overridden && <span className="ml-1 text-[10px] text-blue-300" title="Nivel ajustado por médico">✎</span>}
-                        </td>
-                        <td className={`${tdClass} text-muted-foreground`}>{item.escalation_rule ?? '—'}</td>
-                        <td className={`${tdClass} text-muted-foreground`}>{item.patient_name}</td>
-                        <td className={tdClass}>
-                          {item.case_id && (
-                            <button className="text-primary text-xs font-medium" onClick={() => onOpenCase(item.case_id!)}>
-                              Abrir
-                            </button>
-                          )}
-                        </td>
+                        <td className={cn(tdClass, 'text-muted-foreground')}>{item.escalation_rule ?? '—'}</td>
+                        <td className={cn(tdClass, 'text-muted-foreground')}>{item.patient_name ?? '—'}</td>
                       </>
                     )}
                   </tr>
@@ -137,8 +173,8 @@ export default function TriageQueue({ me, onOpenCase }: TriageQueueProps) {
         )}
       </div>
       {!isMedico && (
-        <p className="text-[10px] text-muted-foreground">
-          Vista administrativa: solo código, nivel, estado y antigüedad. El detalle clínico lo ve el personal médico.
+        <p className="mt-3 text-xs text-muted-foreground">
+          Vista administrativa: solo código, nivel, estado y espera. El detalle clínico lo ve el personal médico.
         </p>
       )}
     </div>

@@ -1,27 +1,42 @@
 import type { CaseStatus, TriageLevel } from '../types';
 import { CASE_STATUS_LABELS } from '../types';
-import { LEVEL_STYLES } from '../constants';
+import { LEVEL_FILL, LEVEL_LABELS, LEVEL_RING, LEVEL_TEXT } from '../constants';
+import { cn } from '../lib/cn';
 
-const STATUS_STYLES: Record<CaseStatus, string> = {
-  ABIERTO: 'bg-slate-500/10 text-slate-300 border-slate-500/30',
-  PRIORIZADO: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  EN_REVISION: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  CERRADO: 'bg-green-500/10 text-green-400 border-green-500/20',
+const STATUS_DOT: Record<CaseStatus, string> = {
+  ABIERTO: 'bg-muted-foreground',
+  PRIORIZADO: 'bg-info',
+  EN_REVISION: 'bg-media',
+  CERRADO: 'bg-baja',
 };
-
 
 export function StatusBadge({ status }: { status: CaseStatus }) {
   return (
-    <span className={`px-2 py-0.5 text-[10px] font-semibold rounded border ${STATUS_STYLES[status]}`}>
+    <span className="inline-flex items-center gap-1.5 text-sm text-foreground">
+      <span aria-hidden className={cn('w-2 h-2 rounded-full', STATUS_DOT[status])} />
       {CASE_STATUS_LABELS[status]}
     </span>
   );
 }
 
-export function LevelBadge({ level }: { level?: TriageLevel | null }) {
-  if (!level) return <span className="text-[10px] text-muted-foreground">Sin triage</span>;
+/** Timbre de prioridad: anillo cuyo grosor sube con la urgencia, más el nombre del nivel. */
+export function LevelBadge({ level, size = 'md' }: { level?: TriageLevel | null; size?: 'md' | 'lg' }) {
+  if (!level) return <span className="text-sm text-muted-foreground">Sin triage</span>;
   return (
-    <span className={`px-2 py-0.5 text-[10px] font-bold rounded border ${LEVEL_STYLES[level]}`}>{level}</span>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 font-extrabold tracking-wide',
+        size === 'lg' ? 'text-base' : 'text-xs',
+        LEVEL_TEXT[level],
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn('rounded-full border-current', size === 'lg' ? 'w-5 h-5' : 'w-3.5 h-3.5', LEVEL_RING[level])}
+      />
+      {level}
+      <span className="sr-only">(prioridad {LEVEL_LABELS[level].toLowerCase()})</span>
+    </span>
   );
 }
 
@@ -29,7 +44,7 @@ export function LevelBadge({ level }: { level?: TriageLevel | null }) {
 export function PrototypeBadge() {
   return (
     <span
-      className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded border bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/40 tracking-wide"
+      className="inline-flex shrink-0 whitespace-nowrap items-center px-2 py-0.5 text-xs font-extrabold rounded-md border border-proto/50 bg-[hsl(var(--proto-bg))] text-proto tracking-wide"
       title="Resultado de un modelo de IA en etapa de prototipo, sin validación clínica. No es un diagnóstico."
     >
       MODELO PROTOTIPO — NO VALIDADO
@@ -48,10 +63,27 @@ export function AiOriginBadge({ isSimulated, clinicallyValidated }: { isSimulate
 export function SimulatedBadge() {
   return (
     <span
-      className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded border bg-amber-500/15 text-amber-300 border-amber-500/40 tracking-wide"
+      className="inline-flex shrink-0 whitespace-nowrap items-center px-2 py-0.5 text-xs font-extrabold rounded-md border border-sim/50 bg-[hsl(var(--sim-bg))] text-sim tracking-wide"
       title="Resultado generado por un proveedor simulado. No es un resultado clínico real."
     >
       IA SIMULADA
+    </span>
+  );
+}
+
+/** Barra de puntaje sobre la escala fija 0–100. */
+export function ScoreBar({ score, level }: { score?: number | null; level?: TriageLevel | null }) {
+  if (score == null) return <span className="text-muted-foreground">—</span>;
+  const pct = Math.max(0, Math.min(100, score));
+  return (
+    <span className="inline-flex items-center gap-2.5">
+      <span aria-hidden className="relative w-24 h-1.5 rounded-full bg-muted overflow-hidden">
+        <span
+          className={cn('absolute inset-y-0 left-0 rounded-full', level ? LEVEL_FILL[level] : 'bg-brand')}
+          style={{ width: `${pct}%` }}
+        />
+      </span>
+      <span className="tabular-nums font-semibold">{Math.round(score)}</span>
     </span>
   );
 }

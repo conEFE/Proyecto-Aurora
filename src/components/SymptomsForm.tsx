@@ -1,5 +1,6 @@
 import type { CaseSymptoms } from '../types';
 import { BIRADS_LABELS } from '../constants';
+import { cn } from '../lib/cn';
 import { inputClass, labelClass } from './ui';
 
 interface SymptomsFormProps {
@@ -14,22 +15,23 @@ const SYMPTOMS: Array<{ key: keyof Omit<CaseSymptoms, 'birads_reported'>; label:
   { key: 'skin_or_nipple_changes', label: 'Cambios en piel o pezón' },
 ];
 
-
 export default function SymptomsForm({ value, onChange, disabled }: SymptomsFormProps) {
   return (
-    <div className="space-y-2">
-      <fieldset className="space-y-1.5" disabled={disabled}>
+    <div className="grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-5">
+      <fieldset disabled={disabled}>
         <legend className={labelClass}>Síntomas</legend>
-        {SYMPTOMS.map(({ key, label }) => (
-          <label key={key} className="flex items-center gap-2 text-xs text-foreground">
-            <input
-              type="checkbox"
-              checked={value[key]}
-              onChange={(e) => onChange({ ...value, [key]: e.target.checked })}
-            />
-            {label}
-          </label>
-        ))}
+        <div className="space-y-2">
+          {SYMPTOMS.map(({ key, label }) => (
+            <label key={key} className={cn('flex items-center gap-2.5 text-sm', disabled && 'text-muted-foreground')}>
+              <input
+                type="checkbox"
+                checked={value[key]}
+                onChange={(e) => onChange({ ...value, [key]: e.target.checked })}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
       </fieldset>
       <div>
         <label className={labelClass} htmlFor="birads">BI-RADS informado</label>

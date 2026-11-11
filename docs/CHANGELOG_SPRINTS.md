@@ -686,6 +686,27 @@ solo `INFERENCE_URL`.
 
 ---
 
+## 2.7.0 — Rediseño visual «Orden de mamografía» (modo claro y oscuro)
+
+Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con «impeccable» y su revisión final.
+
+- Tema oscuro morado y negro, y tema claro rosado y blanco, con tokens semánticos (`src/index.css`). El tema se
+  cambia en la barra lateral y en el login, y se recuerda. `DESIGN.md` documenta el sistema y `PRODUCT.md` el
+  contexto de producto.
+- Atkinson Hyperlegible Next servida por el propio sitio (cumple la CSP; sin Google Fonts). Texto mínimo de 13 px.
+- Barra lateral con contador de casos ALTA, timbres de nivel con una sola escala y lámina bilateral Derecha/Izquierda
+  con las imágenes de cada lado en el detalle del caso. El visor ajusta la imagen a su tamaño real para que las cajas
+  de YOLO queden sobre la lesión, y las marcas de la IA se pueden ocultar.
+- Badge «MODELO PROTOTIPO — NO VALIDADO» con su propio color, distinto del ocre de «IA SIMULADA».
+- Accesibilidad (WCAG 2.1 AA): diálogos y menús con Radix (foco, Esc), errores con `role="alert"`,
+  `aria-current` en la navegación, confirmación al desactivar usuarios y contraste revisado en ambos temas.
+- jsPDF se carga solo al generar el reporte y los sondeos se pausan con la pestaña oculta.
+- Logo oficial con transparencia real por tema (`src/assets/`) y favicon.
+- El script que aplica el tema antes del primer render es un archivo propio (`public/theme-init.js`): la CSP
+  bloquea los scripts inline.
+
+---
+
 ## Pendiente para S8 (no implementado, según la regla 2)
 Pruebas de carga con Locust y soporte DICOM en la carga (el servicio del modelo ya lee DICOM; la plataforma
 todavía no lo acepta). De S7 queda ejecutar el

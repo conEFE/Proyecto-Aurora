@@ -39,4 +39,10 @@ backend/.coverage
 backend/htmlcov/
 .pytest_cache/
 .ruff_cache/
+
+# Impeccable: capturas, bocetos y cachés locales (no se versionan)
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/questions/
+.impeccable/hook.cache.json
 .history/

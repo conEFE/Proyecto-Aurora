@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
-import { Users, UserPlus, Activity, Loader2, Shield, ScrollText, X, ServerCrash, KeyRound, Unlock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, KeyRound, Loader2, ScrollText, ServerCrash, Unlock, UserPlus, Users } from 'lucide-react';
+import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type {
   AdminStats,
@@ -15,14 +16,22 @@ import type {
 import { ROLE_LABELS } from '../types';
 import { isValidRut, normalizeRut } from '../utils/rut';
 import { PASSWORD_MIN_LENGTH, passwordHints } from '../utils/password';
+import { cn } from '../lib/cn';
+import Dialog from './Dialog';
+import { ErrorMessage, Loading } from './Feedback';
 import {
   cardClass,
-  errorBox,
+  dangerButton,
   formatDateTime,
+  ghostButton,
   inputClass,
   labelClass,
+  pageClass,
+  pageSubtitle,
+  pageTitle,
   primaryButton,
   secondaryButton,
+  sectionTitle,
   tdClass,
   thClass,
 } from './ui';
@@ -47,7 +56,6 @@ const ACTIONS = [
   'BLOCK',
   'UNBLOCK',
 ];
-
 const isLocked = (u: UserAccount) => !!u.locked_until && new Date(u.locked_until).getTime() > Date.now();
 
 const EMPTY_USER: UserCreateInput = { rut: '', email: '', full_name: '', password: '', role: 'MEDICO' };
@@ -56,7 +64,7 @@ function UserForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: ()
   const [form, setForm] = useState<UserCreateInput>(EMPTY_USER);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const rutError = form.rut && !isValidRut(form.rut) ? 'RUT inválido' : null;
+  const rutError = form.rut && !isValidRut(form.rut) ? 'RUT inválido: revise el dígito verificador.' : null;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,28 +74,24 @@ function UserForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: ()
     const r = await apiClient.createUser({ ...form, rut: normalizeRut(form.rut) });
     setSaving(false);
     if (r.data) {
+      toast.success(`Usuario ${form.full_name} creado`);
       setForm(EMPTY_USER);
       onCreated();
     } else {
-      setError(r.error || 'No se pudo crear el usuario');
+      setError(r.error || 'No se pudo crear el usuario. Revise los datos.');
     }
   };
 
   return (
-    <form onSubmit={submit} className="p-3 border border-border rounded space-y-3 mb-3">
-      <div className="flex items-center justify-between">
-        <h4 className="text-xs font-semibold text-foreground">Nuevo usuario</h4>
-        <button type="button" onClick={onCancel} aria-label="Cerrar" className="text-muted-foreground">
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-      {error && <div className={errorBox}>{error}</div>}
-      <div className="grid sm:grid-cols-2 gap-3">
+    <form onSubmit={submit} className="space-y-4">
+      <ErrorMessage>{error}</ErrorMessage>
+      <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass} htmlFor="u-rut">RUT</label>
           <input id="u-rut" className={inputClass} value={form.rut} required
+            aria-invalid={rutError ? true : undefined} aria-describedby={rutError ? 'u-rut-error' : undefined}
             onChange={(e) => setForm({ ...form, rut: e.target.value })} placeholder="12345678-5" />
-          {rutError && <p className="mt-1 text-[10px] text-red-400">{rutError}</p>}
+          {rutError && <p id="u-rut-error" className="mt-1 text-sm text-destructive">{rutError}</p>}
         </div>
         <div>
           <label className={labelClass} htmlFor="u-name">Nombre completo</label>
@@ -95,7 +99,7 @@ function UserForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: ()
             onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
         </div>
         <div>
-          <label className={labelClass} htmlFor="u-email">Email</label>
+          <label className={labelClass} htmlFor="u-email">Correo</label>
           <input id="u-email" type="email" className={inputClass} value={form.email} required
             onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </div>
@@ -109,20 +113,20 @@ function UserForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: ()
           </select>
         </div>
         <div className="sm:col-span-2">
-          <label className={labelClass} htmlFor="u-pass">
-            Contraseña temporal (mín. {PASSWORD_MIN_LENGTH} caracteres, con letras y números)
-          </label>
-          <input id="u-pass" type="password" className={inputClass} value={form.password} required
-            minLength={PASSWORD_MIN_LENGTH}
+          <label className={labelClass} htmlFor="u-pass">Contraseña temporal</label>
+          <input id="u-pass" type="password" className={inputClass} value={form.password} required minLength={PASSWORD_MIN_LENGTH}
+            aria-describedby="u-pass-hint"
             onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" />
-          <p className="mt-1 text-[10px] text-muted-foreground">
-            El usuario deberá cambiarla en su primer inicio de sesión.
-          </p>
+          <p id="u-pass-hint" className="mt-1 text-xs text-muted-foreground">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con letras y números. La persona deberá cambiarla en su primer ingreso; entréguela por un canal seguro.</p>
         </div>
       </div>
-      <button type="submit" disabled={saving || !!rutError} className={primaryButton}>
-        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear usuario'}
-      </button>
+      <div className="flex justify-end gap-2">
+        <button type="button" className={secondaryButton} onClick={onCancel}>Cancelar</button>
+        <button type="submit" disabled={saving || !!rutError} className={primaryButton}>
+          {saving && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
+          Crear usuario
+        </button>
+      </div>
     </form>
   );
 }
@@ -146,7 +150,7 @@ function AuditViewer({ users }: { users: UserAccount[] }) {
     if (r.data) {
       setData(r.data);
       setError(null);
-    } else setError(r.error || 'Error al cargar la auditoría');
+    } else setError(r.error || 'No se pudo cargar la auditoría.');
   }, [filters, page]);
 
   useEffect(() => {
@@ -158,69 +162,91 @@ function AuditViewer({ users }: { users: UserAccount[] }) {
   const totalPages = data ? Math.max(1, Math.ceil(data.total / size)) : 1;
 
   return (
-    <div className={`${cardClass} p-4`}>
-      <div className="flex items-center gap-2 mb-3">
-        <ScrollText className="w-4 h-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">Bitácora de auditoría</h3>
-        {data && <span className="text-[10px] text-muted-foreground">{data.total} registros</span>}
+    <section aria-labelledby="audit-title" className={cn(cardClass, 'overflow-hidden')}>
+      <div className="p-6 pb-4 space-y-4">
+        <div className="flex items-baseline gap-3">
+          <h2 id="audit-title" className={sectionTitle}>Bitácora de auditoría</h2>
+          {data && <span className="text-sm text-muted-foreground tabular-nums">{data.total} registros</span>}
+        </div>
+        <div className="grid sm:grid-cols-4 gap-3">
+          <div>
+            <label htmlFor="a-action" className={labelClass}>Acción</label>
+            <select id="a-action" className={inputClass} value={filters.action}
+              onChange={(e) => { setPage(1); setFilters({ ...filters, action: e.target.value }); }}>
+              <option value="">Todas</option>
+              {ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="a-user" className={labelClass}>Usuario</label>
+            <select id="a-user" className={inputClass} value={filters.user_id}
+              onChange={(e) => { setPage(1); setFilters({ ...filters, user_id: e.target.value }); }}>
+              <option value="">Todos</option>
+              {users.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="a-from" className={labelClass}>Desde</label>
+            <input id="a-from" type="date" className={inputClass} value={filters.from}
+              onChange={(e) => { setPage(1); setFilters({ ...filters, from: e.target.value }); }} />
+          </div>
+          <div>
+            <label htmlFor="a-to" className={labelClass}>Hasta</label>
+            <input id="a-to" type="date" className={inputClass} value={filters.to}
+              onChange={(e) => { setPage(1); setFilters({ ...filters, to: e.target.value }); }} />
+          </div>
+        </div>
+        <ErrorMessage>{error}</ErrorMessage>
       </div>
-      <div className="grid sm:grid-cols-4 gap-2 mb-3">
-        <select className={inputClass} value={filters.action}
-          onChange={(e) => { setPage(1); setFilters({ ...filters, action: e.target.value }); }}>
-          <option value="">Todas las acciones</option>
-          {ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
-        </select>
-        <select className={inputClass} value={filters.user_id}
-          onChange={(e) => { setPage(1); setFilters({ ...filters, user_id: e.target.value }); }}>
-          <option value="">Todos los usuarios</option>
-          {users.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
-        </select>
-        <input type="date" className={inputClass} value={filters.from} aria-label="Desde"
-          onChange={(e) => { setPage(1); setFilters({ ...filters, from: e.target.value }); }} />
-        <input type="date" className={inputClass} value={filters.to} aria-label="Hasta"
-          onChange={(e) => { setPage(1); setFilters({ ...filters, to: e.target.value }); }} />
-      </div>
-      {error && <div className={errorBox}>{error}</div>}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-secondary/50 border-b border-border">
-            <tr>
-              <th className={thClass}>Fecha</th>
-              <th className={thClass}>Usuario</th>
-              <th className={thClass}>Acción</th>
-              <th className={thClass}>Entidad</th>
-              <th className={thClass}>IP</th>
-              <th className={thClass}>Detalle</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {data?.items.map((a) => (
-              <tr key={a.id}>
-                <td className={`${tdClass} text-muted-foreground`}>{formatDateTime(a.created_at)}</td>
-                <td className={`${tdClass} text-foreground`}>{userName(a.user_id)}</td>
-                <td className={tdClass}>
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                    a.action.endsWith('_FAIL') ? 'bg-red-500/10 text-red-400' : 'bg-primary/10 text-primary'
-                  }`}>{a.action}</span>
-                </td>
-                <td className={`${tdClass} text-muted-foreground`}>
-                  {a.entity}{a.entity_id !== null ? ` #${a.entity_id}` : ''}
-                </td>
-                <td className={`${tdClass} text-muted-foreground`}>{a.ip_address ?? '—'}</td>
-                <td className={`${tdClass} text-muted-foreground max-w-xs truncate`}>
-                  {a.detail ? JSON.stringify(a.detail) : ''}
-                </td>
+      {data === null ? (
+        <Loading label="Cargando auditoría…" />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <caption className="sr-only">Registros de auditoría</caption>
+            <thead className="bg-muted/60">
+              <tr>
+                <th scope="col" className={thClass}>Fecha</th>
+                <th scope="col" className={thClass}>Usuario</th>
+                <th scope="col" className={thClass}>Acción</th>
+                <th scope="col" className={thClass}>Entidad</th>
+                <th scope="col" className={thClass}>IP</th>
+                <th scope="col" className={thClass}>Detalle</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.items.map((a) => (
+                <tr key={a.id}>
+                  <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{formatDateTime(a.created_at)}</td>
+                  <td className={tdClass}>{userName(a.user_id)}</td>
+                  <td className={tdClass}>
+                    <span className={cn('text-xs font-extrabold tracking-wide', a.action.endsWith('_FAIL') ? 'text-alta' : 'text-brand')}>
+                      {a.action}
+                    </span>
+                  </td>
+                  <td className={cn(tdClass, 'text-muted-foreground')}>
+                    {a.entity}{a.entity_id !== null ? ` #${a.entity_id}` : ''}
+                  </td>
+                  <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{a.ip_address ?? '—'}</td>
+                  <td className={cn(tdClass, 'text-muted-foreground max-w-xs truncate')} title={a.detail ? JSON.stringify(a.detail) : undefined}>
+                    {a.detail ? JSON.stringify(a.detail) : ''}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+        <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+          <ChevronLeft aria-hidden className="w-4 h-4" /> Anterior
+        </button>
+        <span className="text-sm text-muted-foreground tabular-nums">Página {page} de {totalPages}</span>
+        <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+          Siguiente <ChevronRight aria-hidden className="w-4 h-4" />
+        </button>
       </div>
-      <div className="flex items-center justify-between pt-2">
-        <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Anterior</button>
-        <span className="text-xs text-muted-foreground">Página {page} de {totalPages}</span>
-        <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Siguiente</button>
-      </div>
-    </div>
+    </section>
   );
 }
 
@@ -235,30 +261,32 @@ function ResetPasswordForm({ user, onDone }: { user: UserAccount; onDone: (error
     setSaving(true);
     const r = await apiClient.updateUser(user.id, { password });
     setSaving(false);
+    if (!r.error) toast.success(`Contraseña temporal asignada a ${user.full_name}`);
     onDone(r.error);
   };
 
+  const inputId = `reset-${user.id}`;
   return (
-    <form onSubmit={submit} className="flex flex-wrap items-center gap-2">
-      <input
-        type="password"
-        className={`${inputClass} py-1 w-48`}
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder={`Temporal (mín. ${PASSWORD_MIN_LENGTH}, letras y números)`}
-        aria-label={`Contraseña temporal para ${user.full_name}`}
-        autoComplete="new-password"
-        required
-      />
+    <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+      <div>
+        <label htmlFor={inputId} className={labelClass}>Contraseña temporal para {user.full_name}</label>
+        <input
+          id={inputId}
+          type="password"
+          className={cn(inputClass, 'w-72')}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder={`Mínimo ${PASSWORD_MIN_LENGTH}, con letras y números`}
+          autoComplete="new-password"
+          required
+        />
+      </div>
       <button type="submit" className={primaryButton} disabled={!ok || saving}>
-        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Restablecer'}
+        {saving && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
+        Restablecer
       </button>
-      <button type="button" className={secondaryButton} onClick={() => onDone()}>
-        Cancelar
-      </button>
-      <span className="text-[10px] text-muted-foreground">
-        Cierra sus sesiones y le exige cambiarla al ingresar.
-      </span>
+      <button type="button" className={secondaryButton} onClick={() => onDone()}>Cancelar</button>
+      <p className="w-full text-xs text-muted-foreground">Cierra sus sesiones y le exige cambiarla al ingresar.</p>
     </form>
   );
 }
@@ -286,87 +314,99 @@ function ErrorViewer({ users }: { users: UserAccount[] }) {
     if (r.data) {
       setData(r.data);
       setError(null);
-    } else setError(r.error || 'Error al cargar el registro de errores');
+    } else setError(r.error || 'No se pudo cargar el registro de errores.');
   }, [filters, page]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const userName = (id: number | null) =>
-    id === null ? '—' : users.find((u) => u.id === id)?.full_name ?? `#${id}`;
+  const userName = (id: number | null) => (id === null ? '—' : users.find((u) => u.id === id)?.full_name ?? `#${id}`);
   const totalPages = data ? Math.max(1, Math.ceil(data.total / size)) : 1;
 
   return (
-    <div className={`${cardClass} p-4`}>
-      <div className="flex items-center gap-2 mb-1">
-        <ServerCrash className="w-4 h-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">Errores del servidor (5xx)</h3>
-        {data && <span className="text-[10px] text-muted-foreground">{data.total} registros</span>}
+    <section aria-labelledby="errors-title" className={cn(cardClass, 'overflow-hidden')}>
+      <div className="p-6 pb-4 space-y-4">
+        <div>
+          <div className="flex items-baseline gap-3">
+            <h2 id="errors-title" className={sectionTitle}>Errores del servidor (5xx)</h2>
+            {data && <span className="text-sm text-muted-foreground tabular-nums">{data.total} registros</span>}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Sin datos personales ni clínicos. El código de solicitud es el que ve el usuario en el mensaje de error.
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div>
+            <label htmlFor="e-type" className={labelClass}>Tipo</label>
+            <select id="e-type" className={inputClass} value={filters.error_type}
+              onChange={(e) => { setPage(1); setFilters({ ...filters, error_type: e.target.value }); }}>
+              <option value="">Todos</option>
+              {types.map((t) => (
+                <option key={t.error_type} value={t.error_type}>{t.error_type} ({t.count})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="e-from" className={labelClass}>Desde</label>
+            <input id="e-from" type="date" className={inputClass} value={filters.from}
+              onChange={(e) => { setPage(1); setFilters({ ...filters, from: e.target.value }); }} />
+          </div>
+          <div>
+            <label htmlFor="e-to" className={labelClass}>Hasta</label>
+            <input id="e-to" type="date" className={inputClass} value={filters.to}
+              onChange={(e) => { setPage(1); setFilters({ ...filters, to: e.target.value }); }} />
+          </div>
+        </div>
+        <ErrorMessage>{error}</ErrorMessage>
       </div>
-      <p className="mb-3 text-[10px] text-muted-foreground">
-        Sin datos personales ni clínicos. El código de solicitud es el que ve el usuario en el mensaje de error.
-      </p>
-      <div className="grid sm:grid-cols-3 gap-2 mb-3">
-        <select className={inputClass} value={filters.error_type} aria-label="Tipo de error"
-          onChange={(e) => { setPage(1); setFilters({ ...filters, error_type: e.target.value }); }}>
-          <option value="">Todos los tipos</option>
-          {types.map((t) => (
-            <option key={t.error_type} value={t.error_type}>{t.error_type} ({t.count})</option>
-          ))}
-        </select>
-        <input type="date" className={inputClass} value={filters.from} aria-label="Desde"
-          onChange={(e) => { setPage(1); setFilters({ ...filters, from: e.target.value }); }} />
-        <input type="date" className={inputClass} value={filters.to} aria-label="Hasta"
-          onChange={(e) => { setPage(1); setFilters({ ...filters, to: e.target.value }); }} />
-      </div>
-      {error && <div className={errorBox}>{error}</div>}
-      {data && data.items.length === 0 ? (
-        <p className="py-6 text-center text-xs text-muted-foreground">No hay errores registrados con estos filtros.</p>
+      {data === null ? (
+        <Loading label="Cargando errores…" />
+      ) : data.items.length === 0 ? (
+        <p className="px-6 pb-8 text-sm text-muted-foreground">No hay errores registrados con estos filtros.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-secondary/50 border-b border-border">
+            <caption className="sr-only">Errores del servidor</caption>
+            <thead className="bg-muted/60">
               <tr>
-                <th className={thClass}>Fecha</th>
-                <th className={thClass}>Código</th>
-                <th className={thClass}>Ruta</th>
-                <th className={thClass}>Tipo</th>
-                <th className={thClass}>Mensaje</th>
-                <th className={thClass}>Ubicación</th>
-                <th className={thClass}>Usuario</th>
-                <th className={thClass}>Solicitud</th>
+                <th scope="col" className={thClass}>Fecha</th>
+                <th scope="col" className={thClass}>Código</th>
+                <th scope="col" className={thClass}>Ruta</th>
+                <th scope="col" className={thClass}>Tipo</th>
+                <th scope="col" className={thClass}>Mensaje</th>
+                <th scope="col" className={thClass}>Ubicación</th>
+                <th scope="col" className={thClass}>Usuario</th>
+                <th scope="col" className={thClass}>Solicitud</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
-              {data?.items.map((e) => (
+            <tbody>
+              {data.items.map((e) => (
                 <tr key={e.id}>
-                  <td className={`${tdClass} text-muted-foreground`}>{formatDateTime(e.occurred_at)}</td>
-                  <td className={tdClass}>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/10 text-red-400">
-                      {e.status_code}
-                    </span>
-                  </td>
-                  <td className={`${tdClass} text-foreground font-mono`}>{e.method} {e.path}</td>
-                  <td className={`${tdClass} text-muted-foreground font-mono`}>{e.error_type}</td>
-                  <td className={`${tdClass} text-muted-foreground max-w-xs truncate`} title={e.message ?? ''}>
-                    {e.message ?? '—'}
-                  </td>
-                  <td className={`${tdClass} text-muted-foreground font-mono`}>{e.location ?? '—'}</td>
-                  <td className={`${tdClass} text-muted-foreground`}>{userName(e.user_id)}</td>
-                  <td className={`${tdClass} text-muted-foreground font-mono`}>{e.request_id.slice(0, 8)}</td>
+                  <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{formatDateTime(e.occurred_at)}</td>
+                  <td className={tdClass}><span className="text-xs font-extrabold text-alta">{e.status_code}</span></td>
+                  <td className={tdClass}>{e.method} {e.path}</td>
+                  <td className={cn(tdClass, 'text-muted-foreground')}>{e.error_type}</td>
+                  <td className={cn(tdClass, 'text-muted-foreground max-w-xs truncate')} title={e.message ?? ''}>{e.message ?? '—'}</td>
+                  <td className={cn(tdClass, 'text-muted-foreground')}>{e.location ?? '—'}</td>
+                  <td className={cn(tdClass, 'text-muted-foreground')}>{userName(e.user_id)}</td>
+                  <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{e.request_id.slice(0, 8)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-      <div className="flex items-center justify-between pt-2">
-        <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Anterior</button>
-        <span className="text-xs text-muted-foreground">Página {page} de {totalPages}</span>
-        <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Siguiente</button>
+      <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+        <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+          <ChevronLeft aria-hidden className="w-4 h-4" /> Anterior
+        </button>
+        <span className="text-sm text-muted-foreground tabular-nums">Página {page} de {totalPages}</span>
+        <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+          Siguiente <ChevronRight aria-hidden className="w-4 h-4" />
+        </button>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -379,13 +419,10 @@ export default function AdminPanel() {
   const [showForm, setShowForm] = useState(false);
   const [tab, setTab] = useState<'users' | 'audit' | 'errors'>('users');
   const [resetFor, setResetFor] = useState<number | null>(null);
+  const [confirmUser, setConfirmUser] = useState<UserAccount | null>(null);
 
   const loadData = useCallback(async () => {
-    const [s, u, pr] = await Promise.all([
-      apiClient.getAdminStats(),
-      apiClient.listUsers(),
-      apiClient.dataRequestsSummary(),
-    ]);
+    const [s, u, pr] = await Promise.all([apiClient.getAdminStats(), apiClient.listUsers(), apiClient.dataRequestsSummary()]);
     if (s.data) setStats(s.data);
     if (pr.data) setPrivacy(pr.data);
     if (u.data) setUsers(u.data);
@@ -400,193 +437,216 @@ export default function AdminPanel() {
   const updateUser = async (user: UserAccount, change: { role?: Role; is_active?: boolean }) => {
     const r = await apiClient.updateUser(user.id, change);
     if (r.error) setError(r.error);
+    else if (change.is_active !== undefined) toast.success(`${user.full_name} ${change.is_active ? 'activado' : 'desactivado'}`);
+    else if (change.role) toast.success(`Rol de ${user.full_name}: ${ROLE_LABELS[change.role]}`);
     loadData();
   };
 
   const unlockUser = async (user: UserAccount) => {
     const r = await apiClient.unlockUser(user.id);
     if (r.error) setError(r.error);
+    else toast.success(`${user.full_name} desbloqueado`);
     loadData();
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  if (loading) return <Loading label="Cargando administración…" className="h-64" />;
 
-  const statCards = [
-    { label: 'Usuarios', value: stats?.total_users ?? 0, icon: Users },
-    { label: 'Usuarios activos', value: stats?.active_users ?? 0, icon: Shield },
-    { label: 'Casos', value: stats?.total_cases ?? 0, icon: Activity },
-    { label: 'Pacientes', value: stats?.total_patients ?? 0, icon: UserPlus },
+  const statItems = [
+    { label: 'Usuarios', value: stats?.total_users ?? 0 },
+    { label: 'Usuarios activos', value: stats?.active_users ?? 0 },
+    { label: 'Casos', value: stats?.total_cases ?? 0 },
+    { label: 'Pacientes', value: stats?.total_patients ?? 0 },
   ];
 
+  const tabClass = (active: boolean) =>
+    cn(
+      'inline-flex items-center gap-2 h-9 px-3 rounded-md text-sm transition-colors',
+      active ? 'bg-card text-foreground font-bold ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
+    );
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
-      <div>
-        <h2 className="text-lg font-bold text-foreground">Administración</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Usuarios, roles, auditoría y errores del servidor. Por mínimo privilegio, el administrador no accede a datos clínicos.
-        </p>
-      </div>
+    <div className={pageClass}>
+      <h1 className={pageTitle}>Administración</h1>
+      <p className={pageSubtitle}>
+        Usuarios, roles, auditoría y errores del servidor. Por mínimo privilegio, el administrador no accede a datos clínicos.
+      </p>
 
-      {error && <div className={errorBox}>{error}</div>}
+      <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {statCards.map(({ label, value, icon: Icon }) => (
-          <div key={label} className={`${cardClass} p-3`}>
-            <Icon className="w-4 h-4 text-primary mb-2" />
-            <p className="text-xl font-bold text-foreground">{value.toLocaleString('es-CL')}</p>
-            <p className="text-[10px] text-muted-foreground">{label}</p>
+      <dl className={cn(cardClass, 'mt-6 grid grid-cols-2 lg:grid-cols-4 divide-x divide-border')}>
+        {statItems.map(({ label, value }) => (
+          <div key={label} className="px-6 py-4">
+            <dd className="text-2xl font-extrabold tabular-nums">{value.toLocaleString('es-CL')}</dd>
+            <dt className="text-sm text-muted-foreground">{label}</dt>
           </div>
         ))}
-      </div>
+      </dl>
 
       {privacy && (
-        <div className={`${cardClass} p-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs`}>
-          <span className="font-semibold text-foreground">Solicitudes de titulares (Ley 21.719)</span>
-          <span className="text-muted-foreground">{privacy.open_total} abiertas</span>
-          <span className={privacy.overdue > 0 ? 'text-red-400 font-semibold' : 'text-muted-foreground'}>
-            {privacy.overdue} con el plazo de 30 días vencido
+        <div className={cn(cardClass, 'mt-4 px-6 py-4 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm')}>
+          <span className="font-bold">Solicitudes de titulares (Ley 21.719)</span>
+          <span><strong className="tabular-nums">{privacy.open_total}</strong> <span className="text-muted-foreground">abiertas</span></span>
+          <span className={privacy.overdue > 0 ? 'font-bold text-alta' : 'text-muted-foreground'}>
+            <span className="tabular-nums">{privacy.overdue}</span> con el plazo de 30 días vencido
           </span>
           <span className="text-muted-foreground">
-            {privacy.by_status.RESUELTA} resueltas · {privacy.by_status.RECHAZADA} rechazadas
+            <span className="tabular-nums">{privacy.by_status.RESUELTA}</span> resueltas, <span className="tabular-nums">{privacy.by_status.RECHAZADA}</span> rechazadas
           </span>
-          <span className="text-[10px] text-muted-foreground">
-            Las gestionan médicos y administrativos en «Privacidad».
-          </span>
+          <span className="text-xs text-muted-foreground">Las gestionan médicos y administrativos en «Privacidad».</span>
         </div>
       )}
 
-      <div className="flex gap-2">
-        <button className={tab === 'users' ? primaryButton : secondaryButton} onClick={() => setTab('users')}>
-          <Users className="w-3.5 h-3.5" /> Usuarios
-        </button>
-        <button className={tab === 'audit' ? primaryButton : secondaryButton} onClick={() => setTab('audit')}>
-          <ScrollText className="w-3.5 h-3.5" /> Auditoría
-        </button>
-        <button className={tab === 'errors' ? primaryButton : secondaryButton} onClick={() => setTab('errors')}>
-          <ServerCrash className="w-3.5 h-3.5" /> Errores
-        </button>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div role="group" aria-label="Sección" className="inline-flex p-1 rounded-lg bg-muted">
+          <button className={tabClass(tab === 'users')} aria-pressed={tab === 'users'} onClick={() => setTab('users')}>
+            <Users aria-hidden className="w-4 h-4" /> Usuarios
+          </button>
+          <button className={tabClass(tab === 'audit')} aria-pressed={tab === 'audit'} onClick={() => setTab('audit')}>
+            <ScrollText aria-hidden className="w-4 h-4" /> Auditoría
+          </button>
+          <button className={tabClass(tab === 'errors')} aria-pressed={tab === 'errors'} onClick={() => setTab('errors')}>
+            <ServerCrash aria-hidden className="w-4 h-4" /> Errores
+          </button>
+        </div>
+        {tab === 'users' && (
+          <button className={primaryButton} onClick={() => setShowForm(true)}>
+            <UserPlus aria-hidden className="w-4 h-4" /> Nuevo usuario
+          </button>
+        )}
       </div>
 
-      {tab === 'users' ? (
-        <div className={`${cardClass} p-4`}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-foreground">Usuarios y roles</h3>
-            {!showForm && (
-              <button className={primaryButton} onClick={() => setShowForm(true)}>
-                <UserPlus className="w-3.5 h-3.5" /> Nuevo usuario
-              </button>
-            )}
-          </div>
-          {showForm && (
-            <UserForm
-              onCancel={() => setShowForm(false)}
-              onCreated={() => {
-                setShowForm(false);
-                loadData();
-              }}
-            />
-          )}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-secondary/50 border-b border-border">
-                <tr>
-                  <th className={thClass}>Nombre</th>
-                  <th className={thClass}>RUT</th>
-                  <th className={thClass}>Email</th>
-                  <th className={thClass}>Rol</th>
-                  <th className={thClass}>Último acceso</th>
-                  <th className={thClass}>Estado</th>
-                  <th className={thClass}>Acceso</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {users.map((u) => (
-                  <Fragment key={u.id}>
+      <div className="mt-4">
+        {tab === 'users' ? (
+          <section aria-label="Usuarios y roles" className={cn(cardClass, 'overflow-hidden')}>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <caption className="sr-only">Usuarios y roles</caption>
+                <thead className="bg-muted/60">
                   <tr>
-                    <td className={`${tdClass} text-foreground font-medium`}>{u.full_name}</td>
-                    <td className={`${tdClass} text-muted-foreground`}>{u.rut}</td>
-                    <td className={`${tdClass} text-muted-foreground`}>{u.email}</td>
-                    <td className={tdClass}>
-                      <select
-                        className={`${inputClass} py-1`}
-                        value={u.role}
-                        onChange={(e) => updateUser(u, { role: e.target.value as Role })}
-                        aria-label={`Rol de ${u.full_name}`}
-                      >
-                        {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-                      </select>
-                    </td>
-                    <td className={`${tdClass} text-muted-foreground`}>{formatDateTime(u.last_login_at)}</td>
-                    <td className={tdClass}>
-                      <button
-                        onClick={() => updateUser(u, { is_active: !u.is_active })}
-                        className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                          u.is_active
-                            ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                            : 'bg-red-500/10 text-red-400 border-red-500/20'
-                        }`}
-                        title={u.is_active ? 'Clic para desactivar' : 'Clic para activar'}
-                      >
-                        {u.is_active ? 'Activo' : 'Inactivo'}
-                      </button>
-                    </td>
-                    <td className={tdClass}>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {isLocked(u) && (
-                          <button
-                            onClick={() => unlockUser(u)}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border bg-orange-500/10 text-orange-400 border-orange-500/20"
-                            title={`Bloqueado hasta ${formatDateTime(u.locked_until)} por intentos fallidos. Clic para desbloquear`}
-                          >
-                            <Unlock className="w-3 h-3" /> Bloqueado · desbloquear
-                          </button>
-                        )}
-                        {u.must_change_password && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold border bg-secondary text-muted-foreground border-border">
-                            Cambio de contraseña pendiente
-                          </span>
-                        )}
-                        <button
-                          onClick={() => setResetFor(resetFor === u.id ? null : u.id)}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent"
-                          title="Asignar una contraseña temporal"
-                        >
-                          <KeyRound className="w-3 h-3" /> Restablecer
-                        </button>
-                      </div>
-                    </td>
+                    <th scope="col" className={thClass}>Nombre</th>
+                    <th scope="col" className={thClass}>RUT</th>
+                    <th scope="col" className={thClass}>Correo</th>
+                    <th scope="col" className={thClass}>Rol</th>
+                    <th scope="col" className={thClass}>Último acceso</th>
+                    <th scope="col" className={thClass}>Estado</th>
+                    <th scope="col" className={thClass}>Acceso</th>
                   </tr>
-                  {resetFor === u.id && (
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <Fragment key={u.id}>
                     <tr>
-                      <td colSpan={7} className="px-3 py-2 bg-secondary/30">
-                        <ResetPasswordForm
-                          user={u}
-                          onDone={(err) => {
-                            setResetFor(null);
-                            if (err) setError(err);
-                            loadData();
-                          }}
-                        />
+                      <td className={cn(tdClass, 'font-semibold')}>{u.full_name}</td>
+                      <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{u.rut}</td>
+                      <td className={cn(tdClass, 'text-muted-foreground')}>{u.email}</td>
+                      <td className={tdClass}>
+                        <select
+                          className={cn(inputClass, 'h-9 w-44')}
+                          value={u.role}
+                          onChange={(e) => updateUser(u, { role: e.target.value as Role })}
+                          aria-label={`Rol de ${u.full_name}`}
+                        >
+                          {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                        </select>
+                      </td>
+                      <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{formatDateTime(u.last_login_at)}</td>
+                      <td className={tdClass}>
+                        <span className="inline-flex items-center gap-3">
+                          <span className="inline-flex items-center gap-1.5 text-sm">
+                            <span aria-hidden className={cn('w-2 h-2 rounded-full', u.is_active ? 'bg-baja' : 'bg-muted-foreground')} />
+                            {u.is_active ? 'Activo' : 'Inactivo'}
+                          </span>
+                          <button
+                            className={cn(secondaryButton, 'h-8 px-3 text-xs')}
+                            onClick={() => (u.is_active ? setConfirmUser(u) : updateUser(u, { is_active: true }))}
+                          >
+                            {u.is_active ? 'Desactivar' : 'Activar'}
+                          </button>
+                        </span>
+                      </td>
+                      <td className={tdClass}>
+                        <span className="flex flex-wrap items-center gap-2">
+                          {isLocked(u) && (
+                            <button
+                              onClick={() => unlockUser(u)}
+                              className={cn(secondaryButton, 'h-8 px-3 text-xs text-media border-media/40')}
+                              title={`Bloqueado hasta ${formatDateTime(u.locked_until)} por intentos fallidos`}
+                            >
+                              <Unlock aria-hidden className="w-3.5 h-3.5" /> Bloqueado: desbloquear
+                            </button>
+                          )}
+                          {u.must_change_password && (
+                            <span className="text-xs font-semibold text-muted-foreground">Cambio de contraseña pendiente</span>
+                          )}
+                          <button
+                            onClick={() => setResetFor(resetFor === u.id ? null : u.id)}
+                            aria-expanded={resetFor === u.id}
+                            className={cn(ghostButton, 'h-8 px-2 text-xs')}
+                          >
+                            <KeyRound aria-hidden className="w-3.5 h-3.5" /> Restablecer
+                          </button>
+                        </span>
                       </td>
                     </tr>
-                  )}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : tab === 'audit' ? (
-        <AuditViewer users={users} />
-      ) : (
-        <ErrorViewer users={users} />
-      )}
+                    {resetFor === u.id && (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-4 bg-muted border-b border-border">
+                          <ResetPasswordForm
+                            user={u}
+                            onDone={(err) => {
+                              setResetFor(null);
+                              if (err) setError(err);
+                              loadData();
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : tab === 'audit' ? (
+          <AuditViewer users={users} />
+        ) : (
+          <ErrorViewer users={users} />
+        )}
+      </div>
+
+      <Dialog open={showForm} onOpenChange={setShowForm} title="Nuevo usuario" description="La persona podrá ingresar con su RUT y esta contraseña.">
+        <UserForm
+          onCancel={() => setShowForm(false)}
+          onCreated={() => {
+            setShowForm(false);
+            loadData();
+          }}
+        />
+      </Dialog>
+
+      <Dialog
+        open={confirmUser !== null}
+        onOpenChange={(open) => !open && setConfirmUser(null)}
+        title={`¿Desactivar a ${confirmUser?.full_name ?? ''}?`}
+        description="No podrá iniciar sesión hasta que se vuelva a activar. Sus registros se conservan."
+        footer={
+          <>
+            <button className={secondaryButton} onClick={() => setConfirmUser(null)}>Cancelar</button>
+            <button
+              className={dangerButton}
+              onClick={() => {
+                if (confirmUser) updateUser(confirmUser, { is_active: false });
+                setConfirmUser(null);
+              }}
+            >
+              Desactivar
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted-foreground">Esta acción queda registrada en la bitácora de auditoría.</p>
+      </Dialog>
     </div>
   );
 }

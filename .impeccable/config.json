@@ -1,0 +1,35 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-11-03T03:50:49.391Z",
+        "reason": "model decided: canon card intentionally depicts the category-standard look; purple/black is the user-pinned brand palette"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-11-03T04:33:01.094Z",
+        "reason": "model decided: decision-round sketch, not shipped; uses the Google Fonts name of the same Atkinson Hyperlegible Next face that DESIGN.md declares as the self-hosted Variable build"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-11-03T04:33:01.619Z",
+        "reason": "model decided: decision-round sketch, not shipped; uses the Google Fonts name of the same Atkinson Hyperlegible Next face that DESIGN.md declares as the self-hosted Variable build"
+      }
+    ]
+  }
+}

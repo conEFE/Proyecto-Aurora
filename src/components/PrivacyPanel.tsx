@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Download, FileText, Loader2, Lock, Search, ShieldCheck, Unlock, UserX } from 'lucide-react';
 import { apiClient } from '../services/api';
+import { cn } from '../lib/cn';
 import type {
   ConsentEvent,
   ConsentText,
@@ -17,6 +18,10 @@ import {
   formatDate,
   formatDateTime,
   inputClass,
+  pageClass,
+  pageSubtitle,
+  pageTitle,
+  sectionTitle,
   labelClass,
   primaryButton,
   secondaryButton,
@@ -28,15 +33,15 @@ const REQUEST_TYPES = Object.keys(DATA_REQUEST_TYPE_LABELS) as DataRequestType[]
 const REQUEST_STATUSES = Object.keys(DATA_REQUEST_STATUS_LABELS) as DataRequestStatus[];
 
 const STATUS_STYLE: Record<DataRequestStatus, string> = {
-  RECIBIDA: 'bg-blue-500/10 text-blue-400',
-  EN_PROCESO: 'bg-yellow-500/10 text-yellow-400',
-  RESUELTA: 'bg-green-500/10 text-green-400',
+  RECIBIDA: 'bg-info/10 text-info',
+  EN_PROCESO: 'bg-media/10 text-media',
+  RESUELTA: 'bg-baja/10 text-baja',
   RECHAZADA: 'bg-secondary text-muted-foreground',
 };
 
 function StatusBadge({ status }: { status: DataRequestStatus }) {
   return (
-    <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${STATUS_STYLE[status]}`}>
+    <span className={`px-1.5 py-0.5 rounded text-xs font-semibold ${STATUS_STYLE[status]}`}>
       {DATA_REQUEST_STATUS_LABELS[status]}
     </span>
   );
@@ -59,7 +64,7 @@ function RequestActions({ req, onChanged }: { req: DataSubjectRequest; onChanged
   };
 
   if (!open) {
-    return <span className="text-[10px] text-muted-foreground whitespace-normal">{req.resolution}</span>;
+    return <span className="text-xs text-muted-foreground whitespace-normal">{req.resolution}</span>;
   }
   if (closing) {
     return (
@@ -135,7 +140,7 @@ function RequestsTable({
             <tr key={r.id}>
               <td className={`${tdClass} text-muted-foreground`}>{formatDate(r.received_at)}</td>
               <td className={tdClass}>
-                <span className={r.overdue ? 'text-red-400 font-semibold' : 'text-muted-foreground'}>
+                <span className={r.overdue ? 'text-alta font-semibold' : 'text-muted-foreground'}>
                   {formatDate(r.due_at)}
                   {r.overdue && ' · vencida'}
                 </span>
@@ -143,7 +148,7 @@ function RequestsTable({
               {showPatient && (
                 <td className={`${tdClass} text-foreground`}>
                   {r.patient_name}
-                  <span className="block text-[10px] text-muted-foreground">{r.patient_rut}</span>
+                  <span className="block text-xs text-muted-foreground">{r.patient_rut}</span>
                 </td>
               )}
               <td className={`${tdClass} text-foreground`}>{DATA_REQUEST_TYPE_LABELS[r.request_type]}</td>
@@ -177,7 +182,7 @@ function RequestsView() {
   }, [load]);
 
   return (
-    <div className={`${cardClass} p-4`}>
+    <div className={`${cardClass} p-6`}>
       <div className="flex flex-wrap items-end gap-3 mb-3">
         <div>
           <label className={labelClass} htmlFor="rq-status">Estado</label>
@@ -191,7 +196,7 @@ function RequestsView() {
           <input type="checkbox" checked={overdue} onChange={(e) => setOverdue(e.target.checked)} />
           Solo con el plazo vencido
         </label>
-        <p className="text-[10px] text-muted-foreground pb-2">
+        <p className="text-xs text-muted-foreground pb-2">
           Plazo legal: 30 días corridos desde la recepción. Para registrar una solicitud, busque al paciente.
         </p>
       </div>
@@ -293,24 +298,24 @@ function PatientPrivacy({ patient, me, onChanged }: { patient: Patient; me: Me; 
   };
 
   return (
-    <div className={`${cardClass} p-4 space-y-4`}>
+    <div className={`${cardClass} p-6 space-y-4`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">{patient.first_name} {patient.last_name}</h3>
-          <p className="text-[11px] text-muted-foreground">RUT {patient.rut}</p>
+          <h3 className={sectionTitle}>{patient.first_name} {patient.last_name}</h3>
+          <p className="text-xs text-muted-foreground">RUT {patient.rut}</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {patient.consent_given ? (
-            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-green-500/10 text-green-400">
+            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-baja/10 text-baja">
               Consentimiento vigente{patient.consent_text_version ? ` · ${patient.consent_text_version}` : ' · sin versión'}
             </span>
           ) : (
-            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-orange-500/10 text-orange-400">
+            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-media/10 text-media">
               Sin consentimiento vigente
             </span>
           )}
           {blocked && (
-            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/10 text-red-400" title={patient.block_reason ?? ''}>
+            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-alta/10 text-alta" title={patient.block_reason ?? ''}>
               Datos bloqueados desde {formatDate(patient.blocked_at)}
             </span>
           )}
@@ -319,10 +324,10 @@ function PatientPrivacy({ patient, me, onChanged }: { patient: Patient; me: Me; 
 
       {error && <div className={errorBox}>{error}</div>}
       {notice && (
-        <div className="p-2 bg-green-500/10 border border-green-500/20 text-green-400 rounded text-xs">{notice}</div>
+        <div className="p-2 bg-baja/10 border border-baja/20 text-baja rounded text-xs">{notice}</div>
       )}
       {outdatedConsent && (
-        <div className="p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 rounded text-xs flex gap-1.5">
+        <div className="p-2 bg-media/10 border border-media/20 text-media rounded text-xs flex gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
           El consentimiento se registró con otra versión del texto. Conviene mostrarle el texto vigente.
         </div>
@@ -380,7 +385,7 @@ function PatientPrivacy({ patient, me, onChanged }: { patient: Patient; me: Me; 
       {action === 'grant' && activeText && (
         <div className="p-3 border border-border rounded space-y-2">
           <p className="text-xs font-semibold text-foreground">Texto vigente · versión {activeText.version}</p>
-          <div className="max-h-48 overflow-y-auto whitespace-pre-line rounded border border-border bg-background p-2 text-[11px] leading-relaxed text-muted-foreground" tabIndex={0}>
+          <div className="max-h-48 overflow-y-auto whitespace-pre-line rounded border border-border bg-background p-2 text-xs leading-relaxed text-muted-foreground" tabIndex={0}>
             {activeText.body}
           </div>
           <label className="flex items-start gap-2 text-xs text-foreground">
@@ -459,7 +464,7 @@ function PatientPrivacy({ patient, me, onChanged }: { patient: Patient; me: Me; 
                 <tr key={e.id}>
                   <td className={`${tdClass} text-muted-foreground`}>{formatDateTime(e.occurred_at)}</td>
                   <td className={tdClass}>
-                    <span className={e.action === 'OTORGADO' ? 'text-green-400' : 'text-orange-400'}>
+                    <span className={e.action === 'OTORGADO' ? 'text-baja' : 'text-media'}>
                       {e.action === 'OTORGADO' ? 'Otorgado' : 'Retirado'}
                     </span>
                   </td>
@@ -497,7 +502,7 @@ function PatientView({ me }: { me: Me }) {
 
   return (
     <div className="space-y-4">
-      <form onSubmit={search} className={`${cardClass} p-4 flex gap-2`}>
+      <form onSubmit={search} className={`${cardClass} p-6 flex gap-2`}>
         <input className={inputClass} value={term} onChange={(e) => setTerm(e.target.value)}
           placeholder="Buscar paciente por RUT o nombre (incluye datos bloqueados)" aria-label="Buscar paciente" />
         <button type="submit" className={primaryButton}><Search className="w-3.5 h-3.5" /> Buscar</button>
@@ -510,7 +515,7 @@ function PatientView({ me }: { me: Me }) {
             <button key={p.id} onClick={() => setSelected(p)}
               className="w-full text-left px-4 py-2 hover:bg-accent flex items-center justify-between">
               <span className="text-xs text-foreground">{p.first_name} {p.last_name} · {p.rut}</span>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {p.blocked_at ? 'Bloqueado' : p.consent_given ? 'Con consentimiento' : 'Sin consentimiento'}
               </span>
             </button>
@@ -530,21 +535,28 @@ function PatientView({ me }: { me: Me }) {
 export default function PrivacyPanel({ me }: { me: Me }) {
   const [tab, setTab] = useState<'requests' | 'patient'>('requests');
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
+    <div className={cn(pageClass, "space-y-6")}>
       <div>
-        <h2 className="text-lg font-bold text-foreground">Privacidad y derechos de los titulares</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <h1 className={pageTitle}>Privacidad y derechos de los titulares</h1>
+        <p className={cn(pageSubtitle, "max-w-[80ch]")}>
           Consentimiento, bloqueo, copia de los datos y solicitudes de acceso, rectificación, supresión, oposición y
           portabilidad (Ley 19.628 y Ley 21.719). Todas las acciones quedan en la auditoría.
         </p>
       </div>
-      <div className="flex gap-2">
-        <button className={tab === 'requests' ? primaryButton : secondaryButton} onClick={() => setTab('requests')}>
-          <FileText className="w-3.5 h-3.5" /> Solicitudes
-        </button>
-        <button className={tab === 'patient' ? primaryButton : secondaryButton} onClick={() => setTab('patient')}>
-          <ShieldCheck className="w-3.5 h-3.5" /> Por paciente
-        </button>
+      <div role="group" aria-label="Vista" className="inline-flex p-1 rounded-lg bg-muted">
+        {([['requests', 'Solicitudes', FileText], ['patient', 'Por paciente', ShieldCheck]] as const).map(([id, label, Icon]) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            aria-pressed={tab === id}
+            className={cn(
+              'inline-flex items-center gap-2 h-9 px-3 rounded-md text-sm transition-colors',
+              tab === id ? 'bg-card text-foreground font-bold ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Icon aria-hidden className="w-4 h-4" /> {label}
+          </button>
+        ))}
       </div>
       {tab === 'requests' ? <RequestsView /> : <PatientView me={me} />}
     </div>

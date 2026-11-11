@@ -9,8 +9,8 @@ Plataforma web de apoyo a la **detección temprana y priorización (triage)** de
 - Sprints S1–S7 cerrados. S8: modelo de IA integrado como prototipo (opción B: PC con GPU vía Tailscale); quedan
   pruebas de carga y DICOM.
 - Commits en `main` con la autoría del equipo y **sin coautoría de Claude** (pedido del equipo).
-- El rediseño visual (modo claro/oscuro, manual de marca) **no está en el repositorio**: ver `docs/ESTADO_AWS.md`,
-  punto 4.
+- Rediseño visual «Orden de mamografía» (modo claro rosado/blanco y oscuro morado/negro) integrado: el sistema
+  visual está en **`DESIGN.md`** y el contexto de producto en **`PRODUCT.md`**. Toda pantalla nueva usa esos tokens.
 
 ## Documento rector
 La especificación completa está en **`docs/ESPEC_AGENTE_Aurora_alineacion_sprints.md`**. Léela entera antes de tocar código. Define el diagnóstico del código actual, el modelo de datos objetivo, la matriz de permisos, el módulo de triage y el plan por sprint (S1–S6) con su Definición de Hecho.

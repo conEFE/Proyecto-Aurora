@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, BarChart3, CheckCircle2, Clock, Gauge, Loader2, ServerCrash, Timer } from 'lucide-react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { AlertTriangle, CheckCircle2, Minus } from 'lucide-react';
 import { apiClient } from '../services/api';
 import type {
   AIVerdict,
@@ -10,106 +10,126 @@ import type {
   TriageLevel,
 } from '../types';
 import { AI_VERDICT_LABELS, CASE_STATUS_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
-import { cardClass, errorBox, inputClass, labelClass } from './ui';
+import { LEVEL_FILL, LEVEL_RING, LEVEL_TEXT } from '../constants';
+import { cn } from '../lib/cn';
+import { SimulatedBadge } from './Badges';
+import { ErrorMessage, Loading } from './Feedback';
+import { cardClass, ghostButton, inputClass, labelClass, pageClass, pageSubtitle, pageTitle, sectionTitle, tdClass, thClass } from './ui';
 
 const LEVELS: TriageLevel[] = ['ALTA', 'MEDIA', 'BAJA'];
-// Los niveles de triage son estados: color reservado + etiqueta de texto siempre visible
-const LEVEL_FILL: Record<TriageLevel, string> = { ALTA: '#ef4444', MEDIA: '#f59e0b', BAJA: '#22c55e' };
+
+const dec = (n: number, d = 1) => n.toFixed(d).replace('.', ',');
 
 function formatSeconds(s: number | null): string {
   if (s === null) return '—';
   if (s < 60) return `${s.toFixed(0)} s`;
-  if (s < 3600) return `${(s / 60).toFixed(1)} min`;
-  return `${(s / 3600).toFixed(1)} h`;
+  if (s < 3600) return `${dec(s / 60)} min`;
+  return `${dec(s / 3600)} h`;
 }
 
-function Kpi({
-  icon: Icon,
-  label,
-  value,
-  hint,
-  ok,
-}: {
-  icon: typeof Gauge;
-  label: string;
-  value: string;
-  hint?: string;
-  ok?: boolean | null;
-}) {
+function pct(v: number | null): string {
+  return v === null ? '—' : `${dec(v * 100)} %`;
+}
+
+function pctCi(v: number | null, ci: [number, number] | null): string {
+  if (v === null) return '—';
+  return ci ? `${pct(v)} (${(ci[0] * 100).toFixed(0)}–${(ci[1] * 100).toFixed(0)})` : pct(v);
+}
+
+function Status({ ok }: { ok: boolean | null }) {
+  if (ok === null)
+    return (
+      <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Minus aria-hidden className="w-4 h-4" /> Sin datos
+      </span>
+    );
+  return ok ? (
+    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-baja">
+      <CheckCircle2 aria-hidden className="w-4 h-4" /> Cumple
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-media">
+      <AlertTriangle aria-hidden className="w-4 h-4" /> Fuera de meta
+    </span>
+  );
+}
+
+function Panel({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <div className={`${cardClass} p-3`}>
-      <div className="flex items-center justify-between mb-1">
-        <Icon className="w-4 h-4 text-primary" />
-        {ok !== undefined && ok !== null && (
-          <span className={`text-[10px] font-semibold flex items-center gap-1 ${ok ? 'text-green-400' : 'text-orange-400'}`}>
-            {ok ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-            {ok ? 'Cumple' : 'Fuera de meta'}
-          </span>
-        )}
-      </div>
-      <p className="text-xl font-bold text-foreground">{value}</p>
-      <p className="text-[10px] text-muted-foreground">{label}</p>
-      {hint && <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>}
-    </div>
+    <section className={cn(cardClass, 'p-6', className)}>
+      <h2 className={cn(sectionTitle, 'mb-4')}>{title}</h2>
+      {children}
+    </section>
   );
 }
 
 function LevelBars({ data }: { data: Record<TriageLevel, number> }) {
   const max = Math.max(1, ...LEVELS.map((l) => data[l]));
   return (
-    <div className="space-y-2" role="img" aria-label={LEVELS.map((l) => `${l}: ${data[l]}`).join(', ')}>
+    <ul className="space-y-3">
       {LEVELS.map((l) => (
-        <div key={l} className="flex items-center gap-2 group" title={`${l}: ${data[l]} casos`}>
-          <span className="w-12 text-[10px] font-semibold text-muted-foreground">{l}</span>
-          <div className="flex-1 h-5 bg-secondary/40 rounded">
-            <div
-              className="h-5 rounded-r transition-all group-hover:opacity-80"
-              style={{ width: `${(data[l] / max) * 100}%`, background: LEVEL_FILL[l], minWidth: data[l] ? 4 : 0 }}
+        <li key={l} className="grid grid-cols-[5rem_1fr_3rem] items-center gap-3">
+          <span className={cn('inline-flex items-center gap-1.5 text-xs font-extrabold', LEVEL_TEXT[l])}>
+            <span aria-hidden className={cn('w-3 h-3 rounded-full border-current', LEVEL_RING[l])} />
+            {l}
+          </span>
+          <span aria-hidden className="h-3 rounded-full bg-muted overflow-hidden">
+            <span
+              className={cn('block h-full rounded-full', LEVEL_FILL[l])}
+              style={{ width: `${(data[l] / max) * 100}%`, minWidth: data[l] ? 6 : 0 }}
             />
-          </div>
-          <span className="w-8 text-right text-xs text-foreground">{data[l]}</span>
-        </div>
+          </span>
+          <span className="text-right font-bold tabular-nums">{data[l]}</span>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
 function WeeklyLine({ points }: { points: Array<{ week_start: string; cases: number }> }) {
   const [hover, setHover] = useState<number | null>(null);
-  if (points.length === 0) return <p className="text-xs text-muted-foreground">Sin casos en el período.</p>;
-  const W = 520;
-  const H = 160;
-  const pad = { l: 28, r: 12, t: 12, b: 24 };
+  if (points.length === 0) return <p className="text-sm text-muted-foreground">Sin casos en el período.</p>;
+  const W = 560;
+  const H = 180;
+  const pad = { l: 32, r: 12, t: 14, b: 26 };
   const max = Math.max(1, ...points.map((p) => p.cases));
   const x = (i: number) => pad.l + (points.length === 1 ? (W - pad.l - pad.r) / 2 : (i * (W - pad.l - pad.r)) / (points.length - 1));
   const y = (v: number) => pad.t + (H - pad.t - pad.b) * (1 - v / max);
   const path = points.map((p, i) => `${i ? 'L' : 'M'}${x(i)},${y(p.cases)}`).join(' ');
+  const area = `${path} L${x(points.length - 1)},${H - pad.b} L${x(0)},${H - pad.b} Z`;
   const ticks = [0, Math.ceil(max / 2), max];
   const fmt = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' });
 
   return (
     <div className="relative">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-40" onMouseLeave={() => setHover(null)}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full h-44"
+        role="img"
+        aria-label={`Casos creados por semana: ${points.map((p) => `semana del ${fmt(p.week_start)}, ${p.cases}`).join('; ')}`}
+        onMouseLeave={() => setHover(null)}
+      >
         {ticks.map((t) => (
           <g key={t}>
             <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="hsl(var(--border))" strokeWidth={1} />
-            <text x={pad.l - 6} y={y(t) + 3} textAnchor="end" fontSize={9} fill="hsl(var(--muted-foreground))">{t}</text>
+            <text x={pad.l - 8} y={y(t) + 4} textAnchor="end" fontSize={11} fill="hsl(var(--muted-foreground))">{t}</text>
           </g>
         ))}
-        <path d={path} fill="none" stroke="hsl(var(--primary))" strokeWidth={2} strokeLinejoin="round" />
+        <path d={area} fill="hsl(var(--brand) / 0.08)" />
+        <path d={path} fill="none" stroke="hsl(var(--brand))" strokeWidth={2.25} strokeLinejoin="round" strokeLinecap="round" />
         {points.map((p, i) => (
           <g key={p.week_start}>
             <rect
-              x={x(i) - (W / points.length) / 2}
+              x={x(i) - W / points.length / 2}
               y={pad.t}
               width={W / points.length}
               height={H - pad.t - pad.b}
               fill="transparent"
               onMouseEnter={() => setHover(i)}
             />
-            <circle cx={x(i)} cy={y(p.cases)} r={hover === i ? 5 : 4} fill="hsl(var(--primary))" stroke="hsl(var(--card))" strokeWidth={2} />
+            <circle cx={x(i)} cy={y(p.cases)} r={hover === i ? 5 : 3.5} fill="hsl(var(--brand))" stroke="hsl(var(--card))" strokeWidth={2} />
             {(i === 0 || i === points.length - 1 || points.length <= 6) && (
-              <text x={x(i)} y={H - 6} textAnchor="middle" fontSize={9} fill="hsl(var(--muted-foreground))">{fmt(p.week_start)}</text>
+              <text x={x(i)} y={H - 6} textAnchor={points.length > 1 && i === 0 ? "start" : points.length > 1 && i === points.length - 1 ? "end" : "middle"} fontSize={11} fill="hsl(var(--muted-foreground))">{fmt(p.week_start)}</text>
             )}
           </g>
         ))}
@@ -119,83 +139,84 @@ function WeeklyLine({ points }: { points: Array<{ week_start: string; cases: num
       </svg>
       {hover !== null && (
         <div
-          className="absolute top-0 px-2 py-1 bg-card border border-border rounded text-[10px] text-foreground pointer-events-none"
+          className="absolute top-0 px-2.5 py-1.5 bg-popover border border-border rounded-lg shadow-overlay text-sm pointer-events-none whitespace-nowrap"
           style={{ left: `${(x(hover) / W) * 100}%`, transform: 'translateX(-50%)' }}
         >
-          Semana del {fmt(points[hover].week_start)}: <strong>{points[hover].cases}</strong> casos
+          Semana del {fmt(points[hover].week_start)}: <strong className="tabular-nums">{points[hover].cases}</strong> casos
         </div>
       )}
     </div>
   );
 }
 
-function pct(v: number | null): string {
-  return v === null ? '—' : `${(v * 100).toFixed(1)}%`;
-}
-
-function pctCi(v: number | null, ci: [number, number] | null): string {
-  if (v === null) return '—';
-  return ci ? `${pct(v)} (${(ci[0] * 100).toFixed(0)}–${(ci[1] * 100).toFixed(0)})` : pct(v);
+/** Conteos en una fila con reglas finas, sin tarjetas. */
+function CountRow({ items }: { items: Array<{ label: string; value: ReactNode }> }) {
+  return (
+    <dl className="grid divide-x divide-border border-t border-border" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
+      {items.map((it) => (
+        <div key={it.label} className="pt-3 px-3 first:pl-0">
+          <dd className="text-lg font-extrabold tabular-nums">{it.value}</dd>
+          <dt className="text-xs text-muted-foreground">{it.label}</dt>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
 /** Desempeño del modelo por versión, con la validación del médico como referencia (KPI K5). */
 function ModelPerformanceTable({ report }: { report: ModelPerformanceReport }) {
   return (
-    <div className={`${cardClass} p-4`}>
-      <h3 className="text-sm font-semibold text-foreground mb-1">Desempeño del modelo por versión</h3>
-      <p className="text-[10px] text-muted-foreground mb-3">
-        Referencia: {report.reference_standard.toLowerCase()}. Entre paréntesis, intervalo de confianza de 95 %. El KPI
-        K5 (exactitud ≥ {(report.k5_target * 100).toFixed(0)} %) se evalúa solo con resultados reales y al menos{' '}
-        {report.min_sample} imágenes evaluables.
-      </p>
+    <section className={cn(cardClass, 'overflow-hidden')}>
+      <div className="p-6 pb-4">
+        <h2 className={sectionTitle}>Desempeño del modelo por versión</h2>
+        <p className="mt-1 text-sm text-muted-foreground max-w-[75ch]">
+          Referencia: {report.reference_standard.toLowerCase()}. Entre paréntesis, intervalo de confianza de 95 %. El KPI
+          K5 (exactitud ≥ {(report.k5_target * 100).toFixed(0)} %) se evalúa solo con resultados reales y al menos{' '}
+          {report.min_sample} imágenes evaluables.
+        </p>
+      </div>
       {report.versions.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Aún no hay validaciones médicas de resultados de IA.</p>
+        <p className="px-6 pb-6 text-sm text-muted-foreground">Aún no hay validaciones médicas de resultados de IA.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-left text-[10px] uppercase text-muted-foreground">
-                <th className="py-1 pr-3">Versión</th>
-                <th className="py-1 pr-3 text-right">Evaluables</th>
-                <th className="py-1 pr-3 text-right">VP / VN / FP / FN</th>
-                <th className="py-1 pr-3 text-right">Exactitud</th>
-                <th className="py-1 pr-3 text-right">Sensibilidad</th>
-                <th className="py-1 pr-3 text-right">Especificidad</th>
-                <th className="py-1 pr-3 text-right">VPP / VPN</th>
-                <th className="py-1">K5</th>
+          <table className="w-full">
+            <thead className="bg-muted/60">
+              <tr>
+                <th scope="col" className={thClass}>Versión</th>
+                <th scope="col" className={cn(thClass, 'text-right')}>Evaluables</th>
+                <th scope="col" className={cn(thClass, 'text-right')}>VP / VN / FP / FN</th>
+                <th scope="col" className={cn(thClass, 'text-right')}>Exactitud</th>
+                <th scope="col" className={cn(thClass, 'text-right')}>Sensibilidad</th>
+                <th scope="col" className={cn(thClass, 'text-right')}>Especificidad</th>
+                <th scope="col" className={cn(thClass, 'text-right')}>VPP / VPN</th>
+                <th scope="col" className={thClass}>K5</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border tabular-nums">
+            <tbody className="tabular-nums">
               {report.versions.map((v) => (
                 <tr key={`${v.model_version}-${v.is_simulated}`}>
-                  <td className="py-1.5 pr-3 font-mono text-foreground">
-                    {v.model_version}
-                    {v.is_simulated && (
-                      <span className="ml-1.5 px-1 rounded bg-amber-500/15 text-amber-300 font-sans text-[9px] font-semibold">
-                        IA SIMULADA
-                      </span>
-                    )}
+                  <td className={tdClass}>
+                    <span className="inline-flex items-center gap-2 font-semibold">
+                      {v.model_version}
+                      {v.is_simulated && <SimulatedBadge />}
+                    </span>
                   </td>
-                  <td className="py-1.5 pr-3 text-right text-foreground">
+                  <td className={cn(tdClass, 'text-right')}>
                     {v.evaluable}
                     {v.not_evaluable > 0 && <span className="text-muted-foreground"> (+{v.not_evaluable} no eval.)</span>}
                   </td>
-                  <td className="py-1.5 pr-3 text-right text-foreground">
+                  <td className={cn(tdClass, 'text-right')}>
                     {v.true_positives} / {v.true_negatives} / {v.false_positives} / {v.false_negatives}
                   </td>
-                  <td className="py-1.5 pr-3 text-right text-foreground">{pctCi(v.accuracy, v.accuracy_ci95)}</td>
-                  <td className="py-1.5 pr-3 text-right text-foreground">{pctCi(v.sensitivity, v.sensitivity_ci95)}</td>
-                  <td className="py-1.5 pr-3 text-right text-foreground">{pctCi(v.specificity, v.specificity_ci95)}</td>
-                  <td className="py-1.5 pr-3 text-right text-foreground">
-                    {pct(v.ppv)} / {pct(v.npv)}
-                  </td>
-                  <td className="py-1.5">
+                  <td className={cn(tdClass, 'text-right')}>{pctCi(v.accuracy, v.accuracy_ci95)}</td>
+                  <td className={cn(tdClass, 'text-right')}>{pctCi(v.sensitivity, v.sensitivity_ci95)}</td>
+                  <td className={cn(tdClass, 'text-right')}>{pctCi(v.specificity, v.specificity_ci95)}</td>
+                  <td className={cn(tdClass, 'text-right')}>{pct(v.ppv)} / {pct(v.npv)}</td>
+                  <td className={tdClass}>
                     {v.meets_k5 === null ? (
-                      <span className="text-[10px] text-muted-foreground">{v.is_simulated ? 'No aplica' : 'Muestra insuficiente'}</span>
-                    ) : v.meets_k5 ? (
-                      <span className="text-[10px] font-semibold text-green-400">Cumple</span>
+                      <span className="text-sm text-muted-foreground">{v.is_simulated ? 'No aplica' : 'Muestra insuficiente'}</span>
                     ) : (
-                      <span className="text-[10px] font-semibold text-orange-400">Fuera de meta</span>
+                      <Status ok={v.meets_k5} />
                     )}
                   </td>
                 </tr>
@@ -204,7 +225,7 @@ function ModelPerformanceTable({ report }: { report: ModelPerformanceReport }) {
           </table>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -226,7 +247,7 @@ export default function Dashboard() {
     if (r.data) {
       setData(r.data);
       setError(null);
-    } else setError(r.error || 'Error al cargar métricas');
+    } else setError(r.error || 'No se pudieron cargar las métricas.');
     // Solo MEDICO y ADMIN ven el desempeño del modelo; para el resto la sección no se muestra
     setModel(m.data ?? null);
   }, [from, to, hours]);
@@ -236,186 +257,226 @@ export default function Dashboard() {
   }, [load]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
-      <div>
-        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-primary" /> Dashboard
-        </h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">Métricas agregadas, sin datos identificables de pacientes.</p>
+    <div className={pageClass}>
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <h1 className={pageTitle}>Dashboard</h1>
+          <p className={pageSubtitle}>Métricas agregadas, sin datos identificables de pacientes.</p>
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className={labelClass} htmlFor="d-from">Desde</label>
+            <input id="d-from" type="date" className={cn(inputClass, 'w-44')} value={from} onChange={(e) => setFrom(e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="d-to">Hasta</label>
+            <input id="d-to" type="date" className={cn(inputClass, 'w-44')} value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="d-hours">Alerta ALTA tras (h)</label>
+            <input id="d-hours" type="number" min={1} className={cn(inputClass, 'w-28')} value={hours}
+              onChange={(e) => setHours(Math.max(1, Number(e.target.value) || 1))} />
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <label className={labelClass} htmlFor="d-from">Desde</label>
-          <input id="d-from" type="date" className={inputClass} value={from} onChange={(e) => setFrom(e.target.value)} />
-        </div>
-        <div>
-          <label className={labelClass} htmlFor="d-to">Hasta</label>
-          <input id="d-to" type="date" className={inputClass} value={to} onChange={(e) => setTo(e.target.value)} />
-        </div>
-        <div>
-          <label className={labelClass} htmlFor="d-hours">ALTA pendiente más de (h)</label>
-          <input id="d-hours" type="number" min={1} className={`${inputClass} w-24`} value={hours}
-            onChange={(e) => setHours(Math.max(1, Number(e.target.value) || 1))} />
-        </div>
-      </div>
-
-      {error && <div className={errorBox}>{error}</div>}
+      <ErrorMessage className="mt-4">{error}</ErrorMessage>
       {!data ? (
-        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+        <Loading label="Cargando métricas…" />
       ) : (
-        <>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            <Kpi icon={BarChart3} label="Casos en el período" value={data.total_cases.toLocaleString('es-CL')} />
-            <Kpi
-              icon={Timer}
-              label="Creación → triage (promedio)"
-              value={formatSeconds(data.avg_creation_to_triage_seconds)}
-              hint="Meta ≤ 5 min"
-              ok={data.avg_creation_to_triage_seconds === null ? null : data.avg_creation_to_triage_seconds <= data.kpi_creation_to_triage_target_seconds}
-            />
-            <Kpi
-              icon={AlertTriangle}
-              label={`Casos ALTA pendientes > ${data.alta_pending_threshold_hours} h`}
-              value={String(data.alta_pending_over_hours)}
-              ok={data.alta_pending_over_hours === 0}
-            />
-            <Kpi
-              icon={Gauge}
-              label={`p95 tiempo de respuesta API (${data.api_requests} requests)`}
-              value={data.api_p95_ms === null ? '—' : `${data.api_p95_ms.toFixed(0)} ms`}
-              hint="Meta < 3 s"
-              ok={data.api_p95_ms === null ? null : data.api_p95_ms < data.kpi_api_p95_target_ms}
-            />
-            <Kpi
-              icon={ServerCrash}
-              label="Errores del servidor (5xx)"
-              value={
-                data.server_error_rate === null
-                  ? String(data.server_errors)
-                  : `${data.server_errors} (${(data.server_error_rate * 100).toLocaleString('es-CL', { maximumFractionDigits: 2 })} %)`
-              }
-              hint="Proporción sobre las requests medidas (K9)"
-            />
-          </div>
+        <div className="mt-6 space-y-6">
+          <section className={cn(cardClass, 'overflow-hidden')}>
+            <table className="w-full">
+              <caption className="sr-only">Indicadores y metas</caption>
+              <thead className="bg-muted/60">
+                <tr>
+                  <th scope="col" className={thClass}>Indicador</th>
+                  <th scope="col" className={cn(thClass, 'text-right')}>Valor</th>
+                  <th scope="col" className={thClass}>Meta</th>
+                  <th scope="col" className={thClass}>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row" className={cn(tdClass, 'text-left font-normal')}>Casos en el período</th>
+                  <td className={cn(tdClass, 'text-right text-lg font-extrabold tabular-nums')}>{data.total_cases.toLocaleString('es-CL')}</td>
+                  <td className={cn(tdClass, 'text-muted-foreground')}>—</td>
+                  <td className={tdClass}><Status ok={null} /></td>
+                </tr>
+                <tr>
+                  <th scope="row" className={cn(tdClass, 'text-left font-normal')}>Creación → triage (promedio)</th>
+                  <td className={cn(tdClass, 'text-right text-lg font-extrabold tabular-nums')}>{formatSeconds(data.avg_creation_to_triage_seconds)}</td>
+                  <td className={cn(tdClass, 'text-muted-foreground')}>≤ 5 min</td>
+                  <td className={tdClass}>
+                    <Status ok={data.avg_creation_to_triage_seconds === null ? null : data.avg_creation_to_triage_seconds <= data.kpi_creation_to_triage_target_seconds} />
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" className={cn(tdClass, 'text-left font-normal')}>Casos ALTA pendientes más de {data.alta_pending_threshold_hours} h</th>
+                  <td className={cn(tdClass, 'text-right text-lg font-extrabold tabular-nums', data.alta_pending_over_hours > 0 && 'text-alta')}>
+                    {data.alta_pending_over_hours}
+                  </td>
+                  <td className={cn(tdClass, 'text-muted-foreground')}>0</td>
+                  <td className={tdClass}><Status ok={data.alta_pending_over_hours === 0} /></td>
+                </tr>
+                <tr>
+                  <th scope="row" className={cn(tdClass, 'text-left font-normal')}>
+                    Tiempo de respuesta de la API, p95 <span className="text-muted-foreground">({data.api_requests} solicitudes)</span>
+                  </th>
+                  <td className={cn(tdClass, 'text-right text-lg font-extrabold tabular-nums')}>{data.api_p95_ms === null ? '—' : `${data.api_p95_ms.toFixed(0)} ms`}</td>
+                  <td className={cn(tdClass, 'text-muted-foreground')}>&lt; 3 s</td>
+                  <td className={tdClass}><Status ok={data.api_p95_ms === null ? null : data.api_p95_ms < data.kpi_api_p95_target_ms} /></td>
+                </tr>
+                <tr>
+                  <th scope="row" className={cn(tdClass, 'text-left font-normal')}>
+                    Errores del servidor (5xx) <span className="text-muted-foreground">(K9)</span>
+                  </th>
+                  <td className={cn(tdClass, 'text-right text-lg font-extrabold tabular-nums', data.server_errors > 0 && 'text-alta')}>
+                    {data.server_errors}
+                    {data.server_error_rate !== null && (
+                      <span className="ml-1 text-sm font-normal text-muted-foreground">
+                        ({(data.server_error_rate * 100).toLocaleString('es-CL', { maximumFractionDigits: 2 })} %)
+                      </span>
+                    )}
+                  </td>
+                  <td className={cn(tdClass, 'text-muted-foreground')}>Proporción sobre las solicitudes medidas</td>
+                  <td className={tdClass}><Status ok={null} /></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
-          <div className="grid lg:grid-cols-2 gap-4">
-            <div className={`${cardClass} p-4`}>
-              <h3 className="text-sm font-semibold text-foreground mb-3">Casos por nivel de triage vigente</h3>
+          <div className="grid xl:grid-cols-2 gap-6">
+            <Panel title="Casos por nivel de triage vigente">
               <LevelBars data={data.cases_by_level} />
-              <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-                {(Object.keys(data.cases_by_status) as CaseStatus[]).map((s) => (
-                  <div key={s} className="p-2 bg-secondary/40 rounded">
-                    <p className="text-sm font-bold text-foreground">{data.cases_by_status[s]}</p>
-                    <p className="text-[10px] text-muted-foreground">{CASE_STATUS_LABELS[s]}</p>
-                  </div>
-                ))}
+              <div className="mt-5">
+                <CountRow
+                  items={(Object.keys(data.cases_by_status) as CaseStatus[]).map((s) => ({
+                    label: CASE_STATUS_LABELS[s],
+                    value: data.cases_by_status[s],
+                  }))}
+                />
               </div>
-            </div>
-            <div className={`${cardClass} p-4`}>
-              <h3 className="text-sm font-semibold text-foreground mb-3">Casos creados por semana</h3>
+            </Panel>
+            <Panel title="Casos creados por semana">
               <WeeklyLine points={data.cases_per_week} />
-            </div>
+            </Panel>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-4">
-            <div className={`${cardClass} p-4`}>
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-primary" /> Triage → revisión médica (promedio)
-              </h3>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                {LEVELS.map((l) => (
-                  <div key={l} className="p-2 bg-secondary/40 rounded">
-                    <p className="text-sm font-bold text-foreground">
-                      {data.avg_triage_to_review_hours_by_level[l] === null ? '—' : `${data.avg_triage_to_review_hours_by_level[l]!.toFixed(1)} h`}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">{l}</p>
-                  </div>
-                ))}
-              </div>
+          <section className={cn(cardClass, 'overflow-hidden')}>
+            <div className="px-6 pt-6 pb-3">
+              <h2 className={sectionTitle}>Calidad de las decisiones</h2>
             </div>
-            <div className={`${cardClass} p-4`}>
-              <h3 className="text-sm font-semibold text-foreground mb-3">Overrides médicos</h3>
-              <p className="text-2xl font-bold text-foreground">
-                {data.override_ratio === null ? '—' : `${(data.override_ratio * 100).toFixed(1)}%`}
-              </p>
-              <p className="text-[10px] text-muted-foreground">
-                {data.triage_overrides} de {data.triage_total} cálculos de triage fueron ajustados por un médico.
-                Una proporción alta sugiere revisar los parámetros.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-4">
-            <div className={`${cardClass} p-4`}>
-              <h3 className="text-sm font-semibold text-foreground mb-1">Concordancia IA – médico</h3>
-              <p className="text-2xl font-bold text-foreground">
-                {data.ai_agreement_rate === null ? '—' : `${(data.ai_agreement_rate * 100).toFixed(1)}%`}
-              </p>
-              <p className="text-[10px] text-muted-foreground mb-2">
-                Resultados de IA validados como concordantes sobre los evaluables ({data.ai_validations_total} validaciones).
-              </p>
-              <div className="grid grid-cols-4 gap-2 text-center">
-                {(Object.keys(AI_VERDICT_LABELS) as AIVerdict[]).map((v) => (
-                  <div key={v} className="p-2 bg-secondary/40 rounded">
-                    <p className="text-sm font-bold text-foreground">{data.ai_validations_by_verdict[v] ?? 0}</p>
-                    <p className="text-[10px] text-muted-foreground">{AI_VERDICT_LABELS[v]}</p>
-                  </div>
-                ))}
-              </div>
-              {data.ai_validations_simulated > 0 && (
-                <p className="mt-2 text-[10px] text-amber-300">
-                  {data.ai_validations_simulated} de {data.ai_validations_total} validaciones son sobre IA SIMULADA: esta
-                  concordancia no mide un modelo real.
-                </p>
-              )}
-            </div>
-            <div className={`${cardClass} p-4`}>
-              <h3 className="text-sm font-semibold text-foreground mb-1">Aprobación del triage</h3>
-              <p className="text-2xl font-bold text-foreground">
-                {data.triage_agreement_rate === null ? '—' : `${(data.triage_agreement_rate * 100).toFixed(1)}%`}
-              </p>
-              <p className="text-[10px] text-muted-foreground mb-2">
-                Revisiones en que el médico evaluó el nivel de triage como apropiado ({data.triage_assessments_total} evaluaciones).
-              </p>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                {(Object.keys(TRIAGE_ASSESSMENT_LABELS) as TriageAssessment[]).map((a) => (
-                  <div key={a} className="p-2 bg-secondary/40 rounded">
-                    <p className="text-sm font-bold text-foreground">{data.triage_assessments_by_value[a] ?? 0}</p>
-                    <p className="text-[10px] text-muted-foreground">{TRIAGE_ASSESSMENT_LABELS[a].split(' (')[0]}</p>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-2 text-[10px] text-muted-foreground">
-                Muchos subestimados sugieren bajar umbrales o subir pesos; muchos sobreestimados, lo contrario.
-              </p>
-            </div>
-          </div>
+            <table className="w-full">
+              <caption className="sr-only">Indicadores de calidad del triage y de la IA</caption>
+              <thead className="bg-muted/60">
+                <tr>
+                  <th scope="col" className={thClass}>Indicador</th>
+                  <th scope="col" className={cn(thClass, 'text-right')}>Valor</th>
+                  <th scope="col" className={thClass}>Desglose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row" className={cn(tdClass, 'text-left font-normal align-top')}>Triage → revisión médica (promedio)</th>
+                  <td className={cn(tdClass, 'text-right text-muted-foreground align-top')}>por nivel</td>
+                  <td className={cn(tdClass, 'whitespace-normal')}>
+                    <span className="flex flex-wrap gap-x-6 gap-y-1">
+                      {LEVELS.map((l) => {
+                        const h = data.avg_triage_to_review_hours_by_level[l];
+                        return (
+                          <span key={l} className="inline-flex items-center gap-2">
+                            <span className={cn('inline-flex items-center gap-1.5 text-xs font-extrabold', LEVEL_TEXT[l])}>
+                              <span aria-hidden className={cn('w-3 h-3 rounded-full border-current', LEVEL_RING[l])} />
+                              {l}
+                            </span>
+                            <strong className="tabular-nums">{h === null ? '—' : `${dec(h)} h`}</strong>
+                          </span>
+                        );
+                      })}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" className={cn(tdClass, 'text-left font-normal')}>Ajustes médicos del nivel</th>
+                  <td className={cn(tdClass, 'text-right text-lg font-extrabold tabular-nums')}>{pct(data.override_ratio)}</td>
+                  <td className={cn(tdClass, 'whitespace-normal text-muted-foreground')}>
+                    {data.triage_overrides} de {data.triage_total} cálculos ajustados. Una proporción alta sugiere revisar los parámetros.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" className={cn(tdClass, 'text-left font-normal align-top')}>
+                    Concordancia IA – médico
+                    <span className="block text-xs text-muted-foreground">{data.ai_validations_total} validaciones</span>
+                  </th>
+                  <td className={cn(tdClass, 'text-right text-lg font-extrabold tabular-nums align-top')}>{pct(data.ai_agreement_rate)}</td>
+                  <td className={cn(tdClass, 'whitespace-normal')}>
+                    <span className="flex flex-wrap gap-x-5 gap-y-1">
+                      {(Object.keys(AI_VERDICT_LABELS) as AIVerdict[]).map((v) => (
+                        <span key={v}>
+                          <strong className="tabular-nums">{data.ai_validations_by_verdict[v] ?? 0}</strong>{' '}
+                          <span className="text-muted-foreground">{AI_VERDICT_LABELS[v].toLowerCase()}</span>
+                        </span>
+                      ))}
+                    </span>
+                    {data.ai_validations_simulated > 0 && (
+                      <span className="mt-2 flex items-center gap-2 text-sm">
+                        <SimulatedBadge />
+                        {data.ai_validations_simulated} de {data.ai_validations_total} son sobre IA simulada: no mide un modelo real.
+                      </span>
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" className={cn(tdClass, 'text-left font-normal align-top')}>
+                    Aprobación del triage
+                    <span className="block text-xs text-muted-foreground">{data.triage_assessments_total} evaluaciones</span>
+                  </th>
+                  <td className={cn(tdClass, 'text-right text-lg font-extrabold tabular-nums align-top')}>{pct(data.triage_agreement_rate)}</td>
+                  <td className={cn(tdClass, 'whitespace-normal')}>
+                    <span className="flex flex-wrap gap-x-5 gap-y-1">
+                      {(Object.keys(TRIAGE_ASSESSMENT_LABELS) as TriageAssessment[]).map((x) => (
+                        <span key={x}>
+                          <strong className="tabular-nums">{data.triage_assessments_by_value[x] ?? 0}</strong>{' '}
+                          <span className="text-muted-foreground">{TRIAGE_ASSESSMENT_LABELS[x].split(' (')[0].toLowerCase()}</span>
+                        </span>
+                      ))}
+                    </span>
+                    <span className="mt-1 block text-sm text-muted-foreground">
+                      Muchos subestimados sugieren bajar umbrales o subir pesos; muchos sobreestimados, lo contrario.
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
           {model && <ModelPerformanceTable report={model} />}
 
-          <button className="text-xs text-primary" onClick={() => setShowTable((v) => !v)}>
-            {showTable ? 'Ocultar' : 'Ver'} datos en tabla
-          </button>
-          {showTable && (
-            <table className="w-full text-xs">
-              <tbody className="divide-y divide-border">
-                {data.cases_per_week.map((p) => (
-                  <tr key={p.week_start}>
-                    <td className="py-1 text-muted-foreground">Semana del {p.week_start}</td>
-                    <td className="text-right text-foreground">{p.cases} casos</td>
-                  </tr>
-                ))}
-                {LEVELS.map((l) => (
-                  <tr key={l}>
-                    <td className="py-1 text-muted-foreground">Nivel {l}</td>
-                    <td className="text-right text-foreground">{data.cases_by_level[l]} casos</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </>
+          <div>
+            <button className={ghostButton} onClick={() => setShowTable((v) => !v)} aria-expanded={showTable}>
+              {showTable ? 'Ocultar' : 'Ver'} los datos de los gráficos en tabla
+            </button>
+            {showTable && (
+              <table className="mt-2 w-full max-w-xl">
+                <tbody>
+                  {data.cases_per_week.map((p) => (
+                    <tr key={p.week_start}>
+                      <td className={cn(tdClass, 'text-muted-foreground')}>Semana del {p.week_start}</td>
+                      <td className={cn(tdClass, 'text-right tabular-nums')}>{p.cases} casos</td>
+                    </tr>
+                  ))}
+                  {LEVELS.map((l) => (
+                    <tr key={l}>
+                      <td className={cn(tdClass, 'text-muted-foreground')}>Nivel {l}</td>
+                      <td className={cn(tdClass, 'text-right tabular-nums')}>{data.cases_by_level[l]} casos</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

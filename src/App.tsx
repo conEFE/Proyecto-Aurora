@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Header, { type Section } from './components/Header';
 import Home from './components/Home';
 import ImageUpload from './components/ImageUpload';
@@ -6,10 +6,10 @@ import CaseManagement from './components/CaseManagement';
 import Dashboard from './components/Dashboard';
 import AdminPanel from './components/AdminPanel';
 import Login from './components/Login';
-import Footer from './components/Footer';
-import ChangePassword from './components/ChangePassword';
 import TriageQueue from './components/TriageQueue';
 import TriageConfigPanel from './components/TriageConfigPanel';
+import { Loading } from './components/Feedback';
+import ChangePassword from './components/ChangePassword';
 import PrivacyPanel from './components/PrivacyPanel';
 import { apiClient } from './services/api';
 import type { Me } from './types';
@@ -20,6 +20,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [openCaseId, setOpenCaseId] = useState<number | null>(null);
   const [openCaseNonce, setOpenCaseNonce] = useState(0);
+  const mainRef = useRef<HTMLElement>(null);
+  const firstRender = useRef(true);
 
   const openCase = (caseId: number) => {
     setOpenCaseId(caseId);
@@ -47,13 +49,19 @@ function App() {
     }
   }, []);
 
+  // Al cambiar de sección, el foco pasa al contenido para que el lector de pantalla lo anuncie.
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    mainRef.current?.focus();
+  }, [currentSection]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground text-sm">Cargando...</p>
-        </div>
+        <Loading label="Cargando Aurora…" />
       </div>
     );
   }
@@ -64,17 +72,17 @@ function App() {
 
   if (me.must_change_password) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 py-10">
         <ChangePassword forced onDone={loadMe} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background lg:flex">
       <Header currentSection={currentSection} onSectionChange={setCurrentSection} onOpenCase={openCase} me={me} />
-      <main className="flex-grow">
-        {currentSection === 'home' && <Home onGetStarted={() => setCurrentSection('queue')} />}
+      <main ref={mainRef} tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">
+        {currentSection === 'home' && <Home me={me} onGetStarted={() => setCurrentSection('queue')} />}
         {currentSection === 'queue' && <TriageQueue me={me} onOpenCase={openCase} />}
         {currentSection === 'config' && <TriageConfigPanel me={me} />}
         {currentSection === 'upload' && <ImageUpload me={me} />}
@@ -85,7 +93,6 @@ function App() {
         {currentSection === 'privacy' && me.role !== 'ADMIN' && <PrivacyPanel me={me} />}
         {currentSection === 'panel' && me.role === 'ADMIN' && <AdminPanel />}
       </main>
-      <Footer />
     </div>
   );
 }

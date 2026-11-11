@@ -1,9 +1,29 @@
 import type { TriageLevel } from './types';
 
-export const LEVEL_STYLES: Record<TriageLevel, string> = {
-  ALTA: 'bg-red-500/15 text-red-400 border-red-500/30',
-  MEDIA: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
-  BAJA: 'bg-green-500/15 text-green-400 border-green-500/30',
+/** Color del timbre de cada nivel (texto y anillo). Una sola escala en toda la app. */
+export const LEVEL_TEXT: Record<TriageLevel, string> = {
+  ALTA: 'text-alta',
+  MEDIA: 'text-media',
+  BAJA: 'text-baja',
+};
+
+/** Grosor del anillo del timbre: más grueso cuanto más urgente. */
+export const LEVEL_RING: Record<TriageLevel, string> = {
+  ALTA: 'border-[3.5px]',
+  MEDIA: 'border-[2.5px]',
+  BAJA: 'border-[1.5px]',
+};
+
+export const LEVEL_FILL: Record<TriageLevel, string> = {
+  ALTA: 'bg-alta',
+  MEDIA: 'bg-media',
+  BAJA: 'bg-baja',
+};
+
+export const LEVEL_LABELS: Record<TriageLevel, string> = {
+  ALTA: 'Alta',
+  MEDIA: 'Media',
+  BAJA: 'Baja',
 };
 
 export const BIRADS_LABELS: Record<number, string> = {

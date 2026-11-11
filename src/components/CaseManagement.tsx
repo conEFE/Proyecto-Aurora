@@ -1,19 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Eye, FolderOpen, Loader2, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FolderOpen, Loader2, Plus, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type { CaseStatus, CaseSymptoms, ClinicalCase, Me, Page, Patient } from '../types';
 import { CASE_STATUS_LABELS } from '../types';
+import { cn } from '../lib/cn';
 import { LevelBadge, StatusBadge } from './Badges';
 import CaseDetail from './CaseDetail';
+import { EmptyState, ErrorMessage, Loading } from './Feedback';
 import PatientModal from './PatientModal';
 import SymptomsForm from './SymptomsForm';
 import {
   cardClass,
-  errorBox,
   formatDate,
+  iconButton,
   inputClass,
+  pageClass,
+  pageSubtitle,
+  pageTitle,
   primaryButton,
   secondaryButton,
+  sectionTitle,
   tdClass,
   thClass,
 } from './ui';
@@ -37,40 +44,45 @@ function NewCaseForm({ onCreated, onCancel }: { onCreated: (c: ClinicalCase) => 
     setSaving(true);
     const r = await apiClient.createCase({ patient_id: patient.id, ...symptoms });
     setSaving(false);
-    if (r.data) onCreated(r.data);
-    else setError(r.error || 'No se pudo crear el caso');
+    if (r.data) {
+      toast.success(`Caso ${r.data.code} creado`);
+      onCreated(r.data);
+    } else setError(r.error || 'No se pudo crear el caso. Revise los datos e intente de nuevo.');
   };
 
   return (
-    <div className={`${cardClass} p-4 space-y-3`}>
+    <section aria-labelledby="new-case-title" className={cn(cardClass, 'p-6 space-y-5')}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">Nuevo caso</h3>
-        <button onClick={onCancel} aria-label="Cerrar" className="text-muted-foreground hover:text-foreground">
-          <X className="w-4 h-4" />
+        <h2 id="new-case-title" className={sectionTitle}>Nuevo caso</h2>
+        <button onClick={onCancel} aria-label="Cancelar nuevo caso" className={iconButton}>
+          <X className="w-5 h-5" />
         </button>
       </div>
-      {error && <div className={errorBox}>{error}</div>}
+      <ErrorMessage>{error}</ErrorMessage>
       <div>
+        <p className="text-sm font-medium mb-1.5">Paciente</p>
         {patient ? (
-          <div className="p-2 bg-primary/10 border border-primary/20 rounded text-xs flex justify-between items-center">
-            <span>
-              <strong>{patient.first_name} {patient.last_name}</strong> · RUT {patient.rut}
-              {!patient.consent_given && <span className="ml-2 text-orange-400">(sin consentimiento)</span>}
-            </span>
-            <button className="text-[10px] text-primary" onClick={() => setShowModal(true)}>Cambiar</button>
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-muted border border-border">
+            <div className="text-sm">
+              <p className="font-bold">{patient.first_name} {patient.last_name}</p>
+              <p className="text-muted-foreground tabular-nums">RUT {patient.rut}</p>
+              {!patient.consent_given && <p className="text-media font-semibold">Sin consentimiento registrado</p>}
+            </div>
+            <button className={secondaryButton} onClick={() => setShowModal(true)}>Cambiar</button>
           </div>
         ) : (
           <button className={secondaryButton} onClick={() => setShowModal(true)}>
-            Seleccionar o registrar paciente
+            Buscar o registrar paciente
           </button>
         )}
       </div>
       <SymptomsForm value={symptoms} onChange={setSymptoms} />
-      <button className={`${primaryButton} w-full`} disabled={!patient || saving} onClick={submit}>
-        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear caso'}
+      <button className={cn(primaryButton, 'w-full')} disabled={!patient || saving} onClick={submit}>
+        {saving && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
+        {saving ? 'Creando…' : 'Crear caso'}
       </button>
       <PatientModal isOpen={showModal} onClose={() => setShowModal(false)} onSelectPatient={setPatient} />
-    </div>
+    </section>
   );
 }
 
@@ -95,7 +107,7 @@ export default function CaseManagement({ me, initialCaseId = null }: CaseManagem
     if (r.data) {
       setData(r.data);
       setError(null);
-    } else setError(r.error || 'Error al cargar casos');
+    } else setError(r.error || 'No se pudieron cargar los casos.');
     setLoading(false);
   }, [statusFilter, page]);
 
@@ -105,106 +117,111 @@ export default function CaseManagement({ me, initialCaseId = null }: CaseManagem
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / size)) : 1;
 
+  // El siguiente caso de la cola queda a una acción de distancia al terminar una revisión
+  const openNextCase = async () => {
+    const r = await apiClient.getQueue(false);
+    const next = r.data?.find((q) => q.case_id && q.case_id !== selectedId);
+    if (next?.case_id) setSelectedId(next.case_id);
+    else toast('No quedan casos pendientes en la cola.');
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-      <div className="mb-4 flex items-center justify-between">
+    <div className={pageClass}>
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-foreground">Casos clínicos</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Registro de casos, síntomas y BI-RADS. Cada caso queda identificado por un código anónimo.
-          </p>
+          <h1 className={pageTitle}>Casos</h1>
+          <p className={pageSubtitle}>Cada caso se identifica por un código anónimo. Seleccione uno para ver su detalle.</p>
         </div>
         <button className={primaryButton} onClick={() => setCreating(true)}>
-          <Plus className="w-3.5 h-3.5" /> Nuevo caso
+          <Plus aria-hidden className="w-4 h-4" /> Nuevo caso
         </button>
       </div>
 
-      {error && <div className={`${errorBox} mb-3`}>{error}</div>}
+      <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
-      <div className="grid lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-3">
-          <div className={`${cardClass} overflow-hidden`}>
-            <div className="p-3 border-b border-border flex items-center gap-2">
-              <label className="text-xs text-muted-foreground" htmlFor="status-filter">Estado</label>
-              <select
-                id="status-filter"
-                className={`${inputClass} max-w-[180px] py-1`}
-                value={statusFilter}
-                onChange={(e) => {
-                  setPage(1);
-                  setStatusFilter(e.target.value as CaseStatus | '');
-                }}
-              >
-                <option value="">Todos</option>
-                {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map((s) => (
-                  <option key={s} value={s}>{CASE_STATUS_LABELS[s]}</option>
-                ))}
-              </select>
-              {data && <span className="ml-auto text-[10px] text-muted-foreground">{data.total} casos</span>}
-            </div>
-            {loading ? (
-              <div className="text-center py-8">
-                <Loader2 className="w-6 h-6 mx-auto text-primary animate-spin" />
-              </div>
-            ) : !data || data.items.length === 0 ? (
-              <div className="text-center py-8">
-                <FolderOpen className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">No hay casos registrados</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-secondary/50 border-b border-border">
-                    <tr>
-                      <th className={thClass}>Código</th>
-                      <th className={thClass}>Paciente</th>
-                      <th className={thClass}>Fecha</th>
-                      <th className={thClass}>Estado</th>
-                      <th className={thClass}>Triage</th>
-                      <th className={thClass}>Imágenes</th>
-                      <th className={thClass}></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {data.items.map((c) => (
-                      <tr
-                        key={c.id}
-                        className={`hover:bg-secondary/30 transition-colors ${selectedId === c.id ? 'bg-primary/5' : ''}`}
-                      >
-                        <td className={`${tdClass} font-mono text-foreground`}>{c.code}</td>
-                        <td className={`${tdClass} text-muted-foreground`}>
-                          {c.patient ? `${c.patient.first_name} ${c.patient.last_name}` : '—'}
-                        </td>
-                        <td className={`${tdClass} text-muted-foreground`}>{formatDate(c.created_at)}</td>
-                        <td className={tdClass}><StatusBadge status={c.status} /></td>
-                        <td className={tdClass}><LevelBadge level={c.triage_level} /></td>
-                        <td className={`${tdClass} text-muted-foreground`}>{c.image_count}</td>
+      <div className="mt-6 grid xl:grid-cols-[minmax(0,31rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)] gap-6 items-start">
+        <div className={cn(cardClass, 'overflow-hidden')}>
+          <div className="px-4 py-3 border-b border-border flex items-center gap-3">
+            <label className="text-sm text-muted-foreground" htmlFor="status-filter">Estado</label>
+            <select
+              id="status-filter"
+              className={cn(inputClass, 'h-9 w-48')}
+              value={statusFilter}
+              onChange={(e) => {
+                setPage(1);
+                setStatusFilter(e.target.value as CaseStatus | '');
+              }}
+            >
+              <option value="">Todos</option>
+              {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map((s) => (
+                <option key={s} value={s}>{CASE_STATUS_LABELS[s]}</option>
+              ))}
+            </select>
+            {data && <span className="ml-auto text-sm text-muted-foreground tabular-nums">{data.total} casos</span>}
+          </div>
+          {loading ? (
+            <Loading label="Cargando casos…" />
+          ) : !data || data.items.length === 0 ? (
+            <EmptyState title="No hay casos" icon={<FolderOpen aria-hidden className="w-8 h-8" />}>
+              {statusFilter ? 'No hay casos en este estado.' : 'Cree el primer caso con «Nuevo caso».'}
+            </EmptyState>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <caption className="sr-only">Lista de casos</caption>
+                <thead className="bg-muted/60">
+                  <tr>
+                    <th scope="col" className={thClass}>Código</th>
+                    <th scope="col" className={thClass}>Paciente</th>
+                    <th scope="col" className={cn(thClass, "hidden 2xl:table-cell")}>Fecha</th>
+                    <th scope="col" className={thClass}>Estado</th>
+                    <th scope="col" className={thClass}>Triage</th>
+                    <th scope="col" className={cn(thClass, "hidden 2xl:table-cell text-right")}>Imág.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.items.map((c) => {
+                    const selected = selectedId === c.id && !creating;
+                    return (
+                      <tr key={c.id} className={cn('transition-colors', selected ? 'bg-accent' : 'hover:bg-accent/60')}>
                         <td className={tdClass}>
                           <button
                             onClick={() => {
                               setCreating(false);
                               setSelectedId(c.id);
                             }}
-                            className="flex items-center gap-1 text-primary hover:text-primary/80 font-medium text-xs"
+                            aria-current={selected ? 'true' : undefined}
+                            className={cn('font-bold tabular-nums hover:text-brand hover:underline', selected && 'text-brand')}
                           >
-                            <Eye className="w-3.5 h-3.5" /> Ver
+                            {c.code}
                           </button>
                         </td>
+                        <td className={cn(tdClass, "text-muted-foreground max-w-[9rem] truncate")}>
+                          {c.patient ? `${c.patient.first_name} ${c.patient.last_name}` : '—'}
+                        </td>
+                        <td className={cn(tdClass, "hidden 2xl:table-cell text-muted-foreground tabular-nums")}>{formatDate(c.created_at)}</td>
+                        <td className={tdClass}><StatusBadge status={c.status} /></td>
+                        <td className={tdClass}><LevelBadge level={c.triage_level} /></td>
+                        <td className={cn(tdClass, "hidden 2xl:table-cell text-right tabular-nums text-muted-foreground")}>{c.image_count}</td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            <div className="px-3 py-2 border-t border-border flex items-center justify-between">
-              <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Anterior</button>
-              <span className="text-xs text-muted-foreground">Página {page} de {totalPages}</span>
-              <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Siguiente</button>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
+          )}
+          <div className="px-4 py-3 border-t border-border flex items-center justify-between">
+            <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              <ChevronLeft aria-hidden className="w-4 h-4" /> Anterior
+            </button>
+            <span className="text-sm text-muted-foreground tabular-nums">Página {page} de {totalPages}</span>
+            <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              Siguiente <ChevronRight aria-hidden className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        <div className="lg:col-span-2">
+        <div className="min-w-0">
           {creating ? (
             <NewCaseForm
               onCancel={() => setCreating(false)}
@@ -215,11 +232,16 @@ export default function CaseManagement({ me, initialCaseId = null }: CaseManagem
               }}
             />
           ) : selectedId ? (
-            <CaseDetail key={selectedId} caseId={selectedId} me={me} onChanged={loadCases} />
+            <CaseDetail
+              key={selectedId}
+              caseId={selectedId}
+              me={me}
+              onChanged={loadCases}
+              onNextCase={me.role === 'MEDICO' ? openNextCase : undefined}
+            />
           ) : (
-            <div className={`${cardClass} p-4 text-center py-12`}>
-              <Eye className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Selecciona un caso para ver su detalle</p>
+            <div className={cn(cardClass, 'border-dashed')}>
+              <EmptyState title="Ningún caso seleccionado">Elija un caso de la lista para ver su detalle.</EmptyState>
             </div>
           )}
         </div>

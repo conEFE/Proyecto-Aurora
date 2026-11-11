@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ClipboardCheck, FileDown, Loader2, PenLine, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { ArrowRight, FileDown, Loader2, PenLine, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type {
   ClinicalCase,
@@ -13,21 +14,35 @@ import type {
   TriageResult,
 } from '../types';
 import { RECOMMENDATION_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
-import { LevelBadge } from './Badges';
 import { BIRADS_LABELS } from '../constants';
-import { generateAndRegisterReport } from '../utils/generatePdf';
-import { cardClass, errorBox, formatDateTime, inputClass, labelClass, primaryButton } from './ui';
+import { cn } from '../lib/cn';
+import { LevelBadge } from './Badges';
+import { ErrorMessage, SuccessMessage } from './Feedback';
+import {
+  cardClass,
+  formatDateTime,
+  inputClass,
+  labelClass,
+  primaryButton,
+  secondaryButton,
+  sectionTitle,
+  textareaClass,
+} from './ui';
 
 interface ReviewPanelProps {
   caseData: ClinicalCase;
   me: Me;
   validationKey?: number;
   onChanged: () => void;
+  onNextCase?: () => void;
+  embedded?: boolean;
 }
 
 const ASSESSMENTS: TriageAssessment[] = ['APROPIADO', 'SOBREESTIMADO', 'SUBESTIMADO'];
 
-export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged }: ReviewPanelProps) {
+const legendClass = 'px-1 text-sm font-bold text-foreground';
+
+export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged, onNextCase, embedded = false }: ReviewPanelProps) {
   const [review, setReview] = useState<ClinicalReview | null>(null);
   const [reports, setReports] = useState<ReportRecord[]>([]);
   const [signature, setSignature] = useState<ReportSignature | null>(null);
@@ -87,7 +102,8 @@ export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged
   const take = () =>
     run(async () => {
       const r = await apiClient.takeCase(caseData.id);
-      if (!r.data) return r.error || 'No se pudo tomar el caso';
+      if (!r.data) return r.error || 'No se pudo tomar el caso.';
+      toast.success(`Caso ${caseData.code} en revisión`);
       onChanged();
       return null;
     });
@@ -99,8 +115,9 @@ export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged
         findings: form.findings.trim(),
         triage_comment: form.triage_comment?.trim() || null,
       });
-      if (!r.data) return r.error || 'No se pudo registrar la revisión';
+      if (!r.data) return r.error || 'No se pudo registrar la revisión.';
       setReview(r.data);
+      toast.success(`Revisión registrada. Caso ${caseData.code} cerrado.`);
       onChanged();
       return null;
     });
@@ -109,7 +126,7 @@ export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged
     run(async () => {
       const r = await apiClient.signReport(caseData.id, password);
       setPassword('');
-      if (!r.data) return r.error || 'No se pudo firmar el reporte';
+      if (!r.data) return r.error || 'No se pudo firmar el reporte.';
       setSignature(r.data);
       setInfo(`Reporte firmado. Código de verificación ${r.data.verification_code}.`);
       return null;
@@ -117,8 +134,10 @@ export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged
 
   const generate = () =>
     run(async () => {
-      if (!review) return 'El caso no tiene revisión';
+      if (!review) return 'El caso no tiene revisión.';
       const medicoName = review.medico_id === me.id ? me.full_name : `Médico #${review.medico_id}`;
+      // jsPDF se carga solo al generar el reporte, no en la carga inicial
+      const { generateAndRegisterReport } = await import('../utils/generatePdf');
       const result = await generateAndRegisterReport(caseData, review, medicoName);
       if (result.error) return result.error;
       setInfo(`Reporte registrado (SHA-256 ${result.report!.content_hash.slice(0, 12)}…).`);
@@ -128,166 +147,198 @@ export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged
     });
 
   return (
-    <div className={`${cardClass} p-4 space-y-3`}>
-      <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-        <ClipboardCheck className="w-3.5 h-3.5 text-primary" /> Revisión médica
-      </h4>
-      {error && <div className={errorBox}>{error}</div>}
-      {info && <div className="p-2 bg-green-500/10 border border-green-500/20 text-green-300 rounded text-xs">{info}</div>}
+    <section aria-labelledby={`review-${caseData.id}`} className={cn(embedded ? 'space-y-4' : cn(cardClass, 'p-6'), 'space-y-4')}>
+      <h3 id={`review-${caseData.id}`} className={sectionTitle}>Revisión médica</h3>
+      <ErrorMessage>{error}</ErrorMessage>
+      <SuccessMessage>{info}</SuccessMessage>
 
       {caseData.status === 'ABIERTO' && (
-        <p className="text-[10px] text-muted-foreground">El caso espera su triage antes de poder tomarse.</p>
+        <p className="text-sm text-muted-foreground">El caso espera su triage antes de poder tomarse.</p>
       )}
 
       {caseData.status === 'PRIORIZADO' && (
-        <button className={primaryButton} onClick={take} disabled={busy}>
-          {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Tomar caso para revisión'}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button className={primaryButton} onClick={take} disabled={busy}>
+            {busy && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
+            Tomar caso para revisión
+          </button>
+          <p className="text-sm text-muted-foreground">Queda asignado a usted y sale de la cola de otros médicos.</p>
+        </div>
       )}
 
       {caseData.status === 'EN_REVISION' && (
-        <div className="space-y-2">
-          <div>
-            <label className={labelClass} htmlFor="rv-birads">BI-RADS final</label>
-            <select id="rv-birads" className={inputClass} value={form.birads_final}
-              onChange={(e) => setForm({ ...form, birads_final: Number(e.target.value) })}>
-              {Object.entries(BIRADS_LABELS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-            </select>
+        <div className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass} htmlFor="rv-birads">BI-RADS final</label>
+              <select id="rv-birads" className={inputClass} value={form.birads_final}
+                onChange={(e) => setForm({ ...form, birads_final: Number(e.target.value) })}>
+                {Object.entries(BIRADS_LABELS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="rv-rec">Recomendación</label>
+              <select id="rv-rec" className={inputClass} value={form.recommendation}
+                onChange={(e) => setForm({ ...form, recommendation: e.target.value as Recommendation })}>
+                {(Object.keys(RECOMMENDATION_LABELS) as Recommendation[]).map((r) => (
+                  <option key={r} value={r}>{RECOMMENDATION_LABELS[r]}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div>
             <label className={labelClass} htmlFor="rv-findings">Hallazgos</label>
-            <textarea id="rv-findings" rows={3} className={inputClass} value={form.findings}
+            <textarea id="rv-findings" rows={4} className={textareaClass} value={form.findings}
+              aria-describedby="rv-findings-hint"
               onChange={(e) => setForm({ ...form, findings: e.target.value })} />
+            <p id="rv-findings-hint" className="mt-1 text-xs text-muted-foreground">Obligatorio (mínimo 5 caracteres).</p>
           </div>
-          <div>
-            <label className={labelClass} htmlFor="rv-rec">Recomendación</label>
-            <select id="rv-rec" className={inputClass} value={form.recommendation}
-              onChange={(e) => setForm({ ...form, recommendation: e.target.value as Recommendation })}>
-              {(Object.keys(RECOMMENDATION_LABELS) as Recommendation[]).map((r) => (
-                <option key={r} value={r}>{RECOMMENDATION_LABELS[r]}</option>
-              ))}
-            </select>
-          </div>
-          <fieldset className="p-2 border border-border rounded space-y-1.5">
-            <legend className="px-1 text-[10px] font-semibold text-muted-foreground uppercase">
-              Evaluación del triage
-            </legend>
+          <fieldset className="px-4 pb-4 pt-2 rounded-lg border border-border space-y-2.5">
+            <legend className={legendClass}>Evaluación del triage</legend>
             {triage && (
-              <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-                Nivel vigente <LevelBadge level={triage.final_level} /> · puntaje {triage.score.toFixed(2)} ·
-                configuración v{triage.config_version}
+              <p className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
+                Nivel vigente <LevelBadge level={triage.final_level} /> · puntaje{' '}
+                <span className="tabular-nums">{triage.score.toFixed(1).replace('.', ',')}</span> · configuración v{triage.config_version}
               </p>
             )}
-            {ASSESSMENTS.map((a) => (
-              <label key={a} className="flex items-center gap-2 text-xs text-foreground">
-                <input
-                  type="radio"
-                  name="triage-assessment"
-                  checked={form.triage_assessment === a}
-                  onChange={() => setForm({ ...form, triage_assessment: a })}
-                />
-                {TRIAGE_ASSESSMENT_LABELS[a]}
-              </label>
-            ))}
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              {ASSESSMENTS.map((a) => (
+                <label key={a} className="inline-flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name={`triage-assessment-${caseData.id}`}
+                    checked={form.triage_assessment === a}
+                    onChange={() => setForm({ ...form, triage_assessment: a })}
+                  />
+                  {TRIAGE_ASSESSMENT_LABELS[a]}
+                </label>
+              ))}
+            </div>
+            <label htmlFor="rv-triage-comment" className="sr-only">Comentario sobre el triage</label>
             <input
+              id="rv-triage-comment"
               className={inputClass}
               placeholder="Comentario sobre el triage (opcional)"
               value={form.triage_comment ?? ''}
               onChange={(e) => setForm({ ...form, triage_comment: e.target.value })}
-              aria-label="Comentario sobre el triage"
             />
           </fieldset>
           {pendingValidations > 0 && (
-            <p className="text-[10px] text-orange-400">
-              Falta validar el resultado de IA de {pendingValidations} imagen(es) (sección Imágenes) antes de cerrar.
+            <p role="status" className="text-sm font-semibold text-media">
+              Falta validar el resultado de IA de {pendingValidations} {pendingValidations === 1 ? 'imagen' : 'imágenes'} antes de
+              cerrar. Hágalo en la sección Imágenes.
             </p>
           )}
-          <button
-            className={primaryButton}
-            onClick={submitReview}
-            disabled={busy || form.findings.trim().length < 5 || pendingValidations > 0}
-          >
-            {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Registrar revisión y cerrar caso'}
-          </button>
-          <p className="text-[10px] text-muted-foreground">Al cerrar, el caso queda en solo lectura.</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              className={primaryButton}
+              onClick={submitReview}
+              disabled={busy || form.findings.trim().length < 5 || pendingValidations > 0}
+            >
+              {busy && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
+              Registrar revisión y cerrar caso
+            </button>
+            <p className="text-xs text-muted-foreground">Al cerrar, el caso queda en solo lectura.</p>
+          </div>
         </div>
       )}
 
       {caseData.status === 'CERRADO' && review && (
-        <div className="space-y-2 text-xs">
-          <p><span className="text-muted-foreground">BI-RADS final:</span> <strong>{review.birads_final}</strong></p>
-          <p><span className="text-muted-foreground">Hallazgos:</span> {review.findings}</p>
-          <p><span className="text-muted-foreground">Recomendación:</span> {RECOMMENDATION_LABELS[review.recommendation]}</p>
-          <p>
-            <span className="text-muted-foreground">Evaluación del triage:</span>{' '}
-            {review.triage_assessment ? TRIAGE_ASSESSMENT_LABELS[review.triage_assessment] : 'no registrada'}
-            {review.triage_level_at_review && (
-              <span className="text-muted-foreground"> (nivel evaluado {review.triage_level_at_review}, v{review.triage_config_version_at_review})</span>
-            )}
-            {review.triage_comment && <span className="text-muted-foreground"> · {review.triage_comment}</span>}
-          </p>
-          <p className="text-[10px] text-muted-foreground">Registrada el {formatDateTime(review.created_at)}</p>
+        <div className="space-y-4 text-sm">
+          <dl className="grid grid-cols-[10rem_1fr] gap-x-4 gap-y-2">
+            <dt className="text-muted-foreground">BI-RADS final</dt>
+            <dd className="font-bold">{BIRADS_LABELS[review.birads_final] ?? review.birads_final}</dd>
+            <dt className="text-muted-foreground">Hallazgos</dt>
+            <dd>{review.findings}</dd>
+            <dt className="text-muted-foreground">Recomendación</dt>
+            <dd>{RECOMMENDATION_LABELS[review.recommendation]}</dd>
+            <dt className="text-muted-foreground">Evaluación del triage</dt>
+            <dd>
+              {review.triage_assessment ? TRIAGE_ASSESSMENT_LABELS[review.triage_assessment] : 'No registrada'}
+              {review.triage_level_at_review && (
+                <span className="text-muted-foreground"> (nivel evaluado {review.triage_level_at_review}, v{review.triage_config_version_at_review})</span>
+              )}
+              {review.triage_comment && <span className="block text-muted-foreground">{review.triage_comment}</span>}
+            </dd>
+            <dt className="text-muted-foreground">Registrada</dt>
+            <dd className="tabular-nums">{formatDateTime(review.created_at)}</dd>
+          </dl>
 
-          <fieldset className="p-2 border border-border rounded space-y-1.5">
-            <legend className="px-1 text-[10px] font-semibold text-muted-foreground uppercase">Firma del médico</legend>
+          <fieldset className="px-4 pb-4 pt-2 rounded-lg border border-border space-y-3">
+            <legend className={legendClass}>Firma del médico</legend>
             {signature ? (
-              <p className={`text-[11px] flex items-start gap-1.5 ${signature.valid ? 'text-green-300' : 'text-red-400'}`}>
-                {signature.valid ? <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> : <ShieldAlert className="w-3.5 h-3.5 shrink-0" />}
+              <p className={cn('flex items-start gap-2', signature.valid ? 'text-foreground' : 'text-destructive')}>
+                {signature.valid ? (
+                  <ShieldCheck aria-hidden className="w-5 h-5 shrink-0 text-baja" />
+                ) : (
+                  <ShieldAlert aria-hidden className="w-5 h-5 shrink-0" />
+                )}
                 <span>
-                  Firmado por {signature.medico_name} el {formatDateTime(signature.signed_at)} · código{' '}
-                  <span className="font-mono">{signature.verification_code}</span>
-                  {signature.valid ? ' · verificada' : ' · el contenido cambió después de la firma'}
+                  Firmado por <strong>{signature.medico_name}</strong> el {formatDateTime(signature.signed_at)}. Código{' '}
+                  <strong className="tabular-nums">{signature.verification_code}</strong>
+                  {signature.valid ? ' · firma verificada.' : ' · el contenido cambió después de la firma.'}
                 </span>
               </p>
             ) : review.medico_id === me.id ? (
               <form
-                className="space-y-1.5"
+                className="space-y-3"
                 onSubmit={(e) => {
                   e.preventDefault();
                   sign();
                 }}
               >
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-muted-foreground">
                   Declaro mi conformidad con el contenido de este reporte, incluida la validación del resultado de IA de
                   cada imagen. Confirme con su contraseña.
                 </p>
-                <input
-                  id="rv-sign-password"
-                  type="password"
-                  autoComplete="current-password"
-                  className={inputClass}
-                  placeholder="Contraseña"
-                  aria-label="Contraseña para firmar"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <button type="submit" className={primaryButton} disabled={busy || !password}>
-                  {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenLine className="w-3.5 h-3.5" />}
-                  Firmar reporte
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <label htmlFor={`rv-sign-${caseData.id}`} className="sr-only">Contraseña para firmar</label>
+                  <input
+                    id={`rv-sign-${caseData.id}`}
+                    type="password"
+                    autoComplete="current-password"
+                    className={cn(inputClass, 'w-64')}
+                    placeholder="Contraseña"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button type="submit" className={primaryButton} disabled={busy || !password}>
+                    {busy ? <Loader2 aria-hidden className="w-4 h-4 animate-spin" /> : <PenLine aria-hidden className="w-4 h-4" />}
+                    Firmar reporte
+                  </button>
+                </div>
               </form>
             ) : (
-              <p className="text-[10px] text-orange-400">Pendiente de firma por el médico que registró la revisión.</p>
+              <p className="font-semibold text-media">Pendiente de firma por el médico que registró la revisión.</p>
             )}
           </fieldset>
 
-          <button className={primaryButton} onClick={generate} disabled={busy || !signature}>
-            {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
-            Generar reporte PDF
-          </button>
-          {!signature && <p className="text-[10px] text-muted-foreground">El PDF se emite una vez firmado el reporte.</p>}
+          <div className="flex flex-wrap items-center gap-3">
+            <button className={primaryButton} onClick={generate} disabled={busy || !signature}>
+              {busy ? <Loader2 aria-hidden className="w-4 h-4 animate-spin" /> : <FileDown aria-hidden className="w-4 h-4" />}
+              Generar reporte PDF
+            </button>
+            {onNextCase && (
+              <button className={secondaryButton} onClick={onNextCase}>
+                Siguiente caso de la cola <ArrowRight aria-hidden className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          {!signature && <p className="text-xs text-muted-foreground">El PDF se emite una vez firmado el reporte.</p>}
           {reports.length > 0 && (
-            <div className="pt-1">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase">Reportes generados</p>
-              {reports.map((r) => (
-                <p key={r.id} className="text-[10px] text-muted-foreground font-mono">
-                  {formatDateTime(r.generated_at)} · {r.content_hash.slice(0, 16)}…
-                </p>
-              ))}
+            <div>
+              <h4 className="text-sm font-semibold text-muted-foreground">Reportes generados</h4>
+              <ul className="mt-1">
+                {reports.map((r) => (
+                  <li key={r.id} className="text-sm text-muted-foreground tabular-nums">
+                    {formatDateTime(r.generated_at)} · SHA-256 {r.content_hash.slice(0, 16)}…
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
       )}
-    </div>
+    </section>
   );
 }

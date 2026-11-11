@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Save, User } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react';
+import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type { CaseSymptoms, ClinicalCase, Me } from '../types';
+import { cn } from '../lib/cn';
 import { LevelBadge, StatusBadge } from './Badges';
 import CaseImages from './CaseImages';
+import { ErrorMessage, Loading } from './Feedback';
 import SymptomsForm from './SymptomsForm';
 import ReviewPanel from './ReviewPanel';
 import TriageDetail from './TriageDetail';
-import { cardClass, errorBox, formatDate, formatDateTime, primaryButton } from './ui';
+import { cardClass, formatDate, formatDateTime, primaryButton, sectionTitle } from './ui';
 
 interface CaseDetailProps {
   caseId: number;
   me: Me;
   onChanged: () => void;
+  onNextCase?: () => void;
 }
 
 function ageFrom(birthDate: string): number {
@@ -33,7 +37,7 @@ function symptomsOf(c: ClinicalCase): CaseSymptoms {
   };
 }
 
-export default function CaseDetail({ caseId, me, onChanged }: CaseDetailProps) {
+export default function CaseDetail({ caseId, me, onChanged, onNextCase }: CaseDetailProps) {
   const [data, setData] = useState<ClinicalCase | null>(null);
   const [symptoms, setSymptoms] = useState<CaseSymptoms | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,18 +64,18 @@ export default function CaseDetail({ caseId, me, onChanged }: CaseDetailProps) {
         setData(r.data);
         setSymptoms(symptomsOf(r.data));
         setError(null);
-      } else setError(r.error || 'Error al cargar el caso');
+      } else setError(r.error || 'No se pudo cargar el caso.');
     });
     return () => {
       cancelled = true;
     };
   }, [caseId]);
 
-  if (error && !data) return <div className={errorBox}>{error}</div>;
+  if (error && !data) return <ErrorMessage>{error}</ErrorMessage>;
   if (!data || !symptoms) {
     return (
-      <div className={`${cardClass} p-8 flex justify-center`}>
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className={cardClass}>
+        <Loading label="Cargando el caso…" />
       </div>
     );
   }
@@ -88,72 +92,89 @@ export default function CaseDetail({ caseId, me, onChanged }: CaseDetailProps) {
       setSymptoms(symptomsOf(r.data));
       setError(null);
       setTriageKey((k) => k + 1);
+      toast.success('Antecedentes guardados. El triage se recalculó.');
       onChanged();
-    } else setError(r.error || 'No se pudo guardar');
+    } else setError(r.error || 'No se pudieron guardar los antecedentes.');
   };
 
+  const p = data.patient;
+
   return (
-    <div className="space-y-3">
-      <div className={`${cardClass} p-4 space-y-3`}>
-        <div className="flex items-center justify-between">
+    <div className="space-y-5">
+      <section aria-labelledby={`case-${data.id}`} className={cn(cardClass, 'p-6')}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="text-sm font-bold text-foreground">{data.code}</h3>
-            <p className="text-[10px] text-muted-foreground">Creado el {formatDateTime(data.created_at)}</p>
+            <h2 id={`case-${data.id}`} className="text-3xl font-extrabold tabular-nums tracking-tight">{data.code}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Creado el {formatDateTime(data.created_at)}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <LevelBadge level={data.triage_level} />
+          <div className="flex flex-col items-end gap-2">
+            <LevelBadge level={data.triage_level} size="lg" />
             <StatusBadge status={data.status} />
           </div>
         </div>
 
-        {data.patient && (
-          <div className="p-2 bg-secondary/40 rounded flex items-start gap-2">
-            <User className="w-4 h-4 text-primary mt-0.5" />
-            <div className="text-xs">
-              <p className="font-semibold text-foreground">
-                {data.patient.first_name} {data.patient.last_name}
-              </p>
-              <p className="text-[10px] text-muted-foreground">
-                RUT {data.patient.rut} · {ageFrom(data.patient.birth_date)} años (nac. {formatDate(data.patient.birth_date)})
-              </p>
-              <p className="text-[10px] text-muted-foreground">
-                Antecedente familiar 1er grado: {data.patient.family_history_first_degree ? 'Sí' : 'No'} · Cáncer de
-                mama previo: {data.patient.previous_breast_cancer ? 'Sí' : 'No'}
-              </p>
+        {p && (
+          <dl className="mt-5 grid sm:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)_minmax(0,1.2fr)] gap-x-6 gap-y-3 py-4 border-y border-border text-sm">
+            <div>
+              <dt className="text-xs text-muted-foreground">Paciente</dt>
+              <dd className="font-semibold">{p.first_name} {p.last_name}</dd>
+              <dd className="text-muted-foreground tabular-nums">RUT {p.rut}</dd>
             </div>
-          </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Edad</dt>
+              <dd className="font-semibold tabular-nums">{ageFrom(p.birth_date)} años</dd>
+              <dd className="text-muted-foreground tabular-nums">{formatDate(p.birth_date)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Antecedentes</dt>
+              <dd>Familiar 1er grado: <strong>{p.family_history_first_degree ? 'Sí' : 'No'}</strong></dd>
+              <dd>Cáncer previo: <strong>{p.previous_breast_cancer ? 'Sí' : 'No'}</strong></dd>
+            </div>
+          </dl>
         )}
 
-        {error && <div className={errorBox}>{error}</div>}
+        <div className="mt-6">
+          <h3 id={`images-${data.id}`} className="sr-only">Imágenes por lado</h3>
+          <CaseImages
+            caseId={data.id}
+            me={me}
+            readOnly={closed}
+            onValidationChange={() => setValidationKey((k) => k + 1)}
+            afterPlate={
+              me.role === 'MEDICO' ? (
+                <div className="space-y-8 pt-6 border-t border-border">
+                  <ReviewPanel
+                    key={`rv-${data.status}`}
+                    caseData={data}
+                    me={me}
+                    validationKey={validationKey}
+                    onChanged={reload}
+                    onNextCase={onNextCase}
+                    embedded
+                  />
+                  <div className="pt-6 border-t border-border">
+                    <TriageDetail key={triageKey} caseId={data.id} closed={closed} onChanged={reload} embedded />
+                  </div>
+                </div>
+              ) : undefined
+            }
+          />
+        </div>
+      </section>
 
+      <section aria-labelledby={`symptoms-${data.id}`} className={cn(cardClass, 'p-6 space-y-4')}>
+        <h3 id={`symptoms-${data.id}`} className={sectionTitle}>Síntomas y BI-RADS informado</h3>
+        <ErrorMessage>{error}</ErrorMessage>
         <SymptomsForm value={symptoms} onChange={setSymptoms} disabled={closed} />
         {closed ? (
-          <p className="text-[10px] text-muted-foreground">Caso cerrado el {formatDateTime(data.closed_at)}: solo lectura.</p>
+          <p className="text-sm text-muted-foreground">Caso cerrado el {formatDateTime(data.closed_at)}: solo lectura.</p>
         ) : (
           <button className={primaryButton} disabled={!dirty || saving} onClick={save}>
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            Guardar antecedentes
+            {saving ? <Loader2 aria-hidden className="w-4 h-4 animate-spin" /> : <Save aria-hidden className="w-4 h-4" />}
+            Guardar y recalcular triage
           </button>
         )}
-
-      </div>
-
-      {me.role === 'MEDICO' && (
-        <>
-          <ReviewPanel key={`rv-${data.status}`} caseData={data} me={me} validationKey={validationKey} onChanged={reload} />
-          <TriageDetail key={triageKey} caseId={data.id} closed={closed} onChanged={reload} />
-        </>
-      )}
-
-      <div className={`${cardClass} p-4`}>
-        <h4 className="text-xs font-semibold text-foreground mb-2">Imágenes ({data.image_count})</h4>
-        <CaseImages
-          caseId={data.id}
-          me={me}
-          readOnly={closed}
-          onValidationChange={() => setValidationKey((k) => k + 1)}
-        />
-      </div>
+      </section>
     </div>
   );
 }
