@@ -1,12 +1,21 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.9.1** (reportes PDF con el diseño de la interfaz) sobre la **2.9.0** («Aurora Care»: landing, sección Pacientes, un caso
-por examen con varias imágenes, eliminar pacientes sin casos e informe de gestión en PDF), imágenes `sha-85318b7…` de
-`main`. Sin migraciones nuevas desde la 2.6.0.
+Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.9.2** («Aurora Care»), imágenes `sha-702bf84…` de `main`.
+Sin migraciones nuevas desde la 2.6.0. Lo que trajo cada versión está en `docs/CHANGELOG_SPRINTS.md`:
+
+- **2.8.0:** eliminar pacientes sin casos (con casos, bloqueo por la Ley 20.584), informe de gestión en PDF y
+  `scripts/seed_demo.py`.
+- **2.9.0:** nombre «Aurora Care», landing pública con acceso al login, sección Pacientes y un caso por examen con
+  varias imágenes («Nuevo caso» con imágenes y «Agregar imágenes» en el caso; se quitó «Cargar imágenes»).
+- **2.9.1:** reportes PDF con el diseño de la interfaz (tipografía Atkinson incrustada, paleta y timbres de nivel).
+- **2.9.2:** informe de gestión con relato (resumen, hallazgos, gráficos, lectura por sección y recomendaciones).
+- **`702bf84`:** el `Dockerfile` del sitio compila el frontend sin emulación (`--platform=$BUILDPLATFORM`): con QEMU,
+  `npm ci` para arm64 tardaba más de 40 minutos y la publicación quedaba colgada.
 
 **Datos de demostración en producción (11-11-2026):** `python -m scripts.seed_demo` cargó 120 pacientes ficticios (RUT
-desde 40.000.000) y 134 casos en 10 semanas, a nombre del médico de prueba. Respaldo previo:
-`backups/aurora-20261111T145234Z.sql.gz` (restaurarlo para quitarlos; la auditoría no permite borrar).
+desde 40.000.000) y 134 casos en 10 semanas, a nombre del médico de prueba (`11111111-1`). Respaldo previo:
+`backups/aurora-20261111T145234Z.sql.gz` (restaurarlo para quitarlos; la auditoría no permite borrar). Para la demo,
+entrar como el médico de prueba: es quien ve el informe completo, incluido el desempeño del modelo.
 
 ## 1. Qué está funcionando
 
@@ -35,6 +44,15 @@ desde 40.000.000) y 134 casos en 10 semanas, a nombre del médico de prueba. Res
 
 ## 2. Plan para continuar
 
+### Próxima presentación (CRUD + informe de gestión)
+- **Guion sugerido:** landing → Ingresar → Pacientes: crear, editar y eliminar un paciente sin casos (con casos aparece
+  el aviso de la Ley 20.584) → «Nuevo caso» desde el paciente con varias imágenes (el lado se deduce del nombre:
+  `R_CC`, `LMLO`…) → Administración: crear un usuario (contraseña temporal; cambio obligatorio en el primer ingreso)
+  y desactivarlo → Dashboard → «Exportar informe PDF».
+- **Pendiente de Felipe:** nombres y roles del equipo para tarjetas en «Quiénes somos» de la landing (hoy el texto es
+  genérico, sin nombres inventados).
+- **Opcional:** enlace de invitación para cuentas nuevas (no existe; hoy es contraseña temporal + cambio obligatorio).
+
 ### Prioridad alta
 1. **Actividad de RDS (+USD 20):** iniciarla desde *Earn AWS credits*. Usar **RDS PostgreSQL** (no Aurora),
    capa gratuita, `db.t4g.micro`, una zona, 20 GB sin autoescalado y sin acceso público. Cuando aparezca completada,
@@ -42,21 +60,16 @@ desde 40.000.000) y 134 casos en 10 semanas, a nombre del médico de prueba. Res
 2. **Probar la restauración de un respaldo** (antes de la defensa): descargar uno de `backups/`, cargarlo en una base
    vacía temporal dentro del servidor y comprobar que tenga los datos. No se debe tocar la base real.
 3. **Cambiar el email del ADMIN** por uno real en Administración → Usuarios.
-4. ~~Diseño visual~~: **hecho y desplegado (2.7.0, 11-11-2026).** Modo claro rosado/blanco y oscuro morado/negro;
-   sistema en `DESIGN.md`. Verificado en producción: `/theme-init.js` responde 200, el tema elegido se mantiene al
-   recargar, la fuente Atkinson se sirve desde el propio sitio y la consola no muestra errores de CSP. Al publicarlo se
-   corrigió el `Dockerfile` del sitio, que no copiaba `public/`. En el servidor quedó `deploy/.env.antes-2.7.0`, una
-   copia de la configuración previa (con permisos 600): se puede borrar.
+4. **Limpiar en el servidor:** `deploy/.env.antes-2.7.0` y `deploy/.env.dominio-anterior` (copias con permisos 600 de
+   configuraciones previas). Borrarlas cuando no se necesite volver atrás.
 
 ### Modelo de IA (opción B, `docs/inferencia_remota.md`)
-5. **Guía paso a paso para Juan: `docs/guia_modelo_juan.md`** (incluye al final la parte de Felipe). Estado: guía
-   entregada; **nada configurado todavía** (ni Tailscale ni el servicio en el PC de Juan).
-6. **Hecho (11-11-2026):** red de Tailscale creada y servidor unido como `aurora-ec2` (`100.83.18.31`). Falta:
-   desactivar la expiración de su llave (*Machines → ⋯ → Disable key expiry*), invitar a Juan y enviarle el token.
-   Pasos originales: **Felipe:** crear la red de Tailscale (login.tailscale.com, con su Google o GitHub), **invitar a Juan**
-   (*Users → Invite users*), unir el servidor (`curl -fsSL https://tailscale.com/install.sh | sh` y
-   `sudo tailscale up --hostname aurora-ec2`) y enviarle a Juan el token por mensaje directo
-   (`sudo grep '^INFERENCE_API_TOKEN=' /opt/aurora/deploy/.env | cut -d= -f2-`).
+5. **Guía paso a paso para Juan: `docs/guia_modelo_juan.md`** (incluye al final la parte de Felipe). Estado: el
+   servidor ya está en Tailscale; **falta todo lo del PC de Juan**.
+6. **Hecho (11-11-2026):** red de Tailscale creada y servidor unido como `aurora-ec2` (`100.83.18.31`). **Falta (Felipe):**
+   desactivar la expiración de la llave de `aurora-ec2` (*Machines → ⋯ → Disable key expiry*), invitar a Juan
+   (*Users → Invite users*) y enviarle el token **por mensaje directo**, leyéndolo en una sesión interactiva de Session
+   Manager (no por `SendCommand`): `sudo grep '^INFERENCE_API_TOKEN=' /opt/aurora/deploy/.env | cut -d= -f2-`.
    **Cuando Juan avise:** en `deploy/.env`, `INFERENCE_PROVIDER=http` e `INFERENCE_URL=http://<IP 100.x de Juan>:8080`
    (la IP, no el nombre: dentro de los contenedores el nombre puede no resolverse), y `dc up -d`. Probar con
    `curl -H "Authorization: Bearer <token>" http://<IP>:8080/health` y subiendo una imagen ficticia.
@@ -75,11 +88,11 @@ desde 40.000.000) y 134 casos en 10 semanas, a nombre del médico de prueba. Res
 12. Borrar la rama `claude/bold-maxwell-13fkwp` en GitHub (su contenido ya está en `main`):
     `git push origin --delete claude/bold-maxwell-13fkwp`.
 13. Tags de versión desde un PC (desde las sesiones en la nube no se pueden subir tags):
-    `git tag v2.6.0 9175cfe && git tag v2.7.0 2f5bbdc && git tag v2.8.0 43e0d1c && git tag v2.9.0 3bdaeb9 && git tag v2.9.1 85318b7 && git push origin v2.6.0 v2.7.0 v2.8.0 v2.9.0 v2.9.1`. Las imágenes ya se publicaron
+    `git tag v2.6.0 9175cfe && git tag v2.7.0 2f5bbdc && git tag v2.8.0 43e0d1c && git tag v2.9.0 3bdaeb9 && git tag v2.9.1 85318b7 && git tag v2.9.2 d986618 && git push origin v2.6.0 v2.7.0 v2.8.0 v2.9.0 v2.9.1 v2.9.2`. Las imágenes ya se publicaron
     con `workflow_dispatch`.
 14. Sacar del repositorio los pesos del modelo (≈63 MB) y llevarlos a un almacenamiento de artefactos.
 
-### Dominio propio: `auroracare.cl` (en curso; antes se pensó en `aurorahealth.cl`)
+### Dominio propio: `auroracare.cl` (listo; antes se pensó en `aurorahealth.cl`)
 15. ~~Inscripción en NIC Chile~~: **hecha (11-11-2026), vence el 11-11-2027** (renovar en NIC antes de esa fecha).
     Servidores DNS: `ns-1350.awsdns-40.org`, `ns-862.awsdns-43.net`, `ns-73.awsdns-09.com`, `ns-1730.awsdns-24.co.uk`.
 16. ~~Zona en Route 53~~: **hecha (11-11-2026).** Zona pública `auroracare.cl`, ID `Z0628464DNWEOT5ICYNC`
@@ -127,7 +140,8 @@ alias dc='docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml
 | Apagar para ahorrar | Detener la instancia en la consola (siguen cobrándose el disco y la IP, ≈ USD 4 al mes) |
 
 **Publicar imágenes nuevas:** en GitHub, *Actions → Publicar imágenes → Run workflow* (rama `main`), o un tag
-`vX.Y.Z` subido desde un PC.
+`vX.Y.Z` subido desde un PC. Tarda unos 3 a 5 minutos; si la imagen `web` pasa de 15 minutos, algo está mal (antes de
+`702bf84` el frontend se compilaba emulado y podía colgarse).
 
 **Si el CI falla en «Imágenes Docker y prueba de humo» con `context deadline exceeded` al descargar `postgres`:** es
 una falla pasajera del registro `public.ecr.aws`, no del código. Se resuelve con *Re-run jobs*.
@@ -147,6 +161,14 @@ una falla pasajera del registro `public.ecr.aws`, no del código. Se resuelve co
 - **Imágenes Docker:** se bajan desde `public.ecr.aws` (Docker Hub limita las descargas). Para construirlas en el
   entorno en la nube hay que agregar el CA del proxy en una copia temporal del Dockerfile (ver `/root/.ccr/README.md`),
   nunca en el Dockerfile del repositorio.
+- **Desplegar una versión (patrón usado el 11-11-2026):** commit en `main` → *Publicar imágenes* con
+  `workflow_dispatch` (herramienta de GitHub `actions_run_trigger`) → respaldo (`./deploy/backup_db.sh`) si hay
+  cambios de datos → por SSM, como `ec2-user`: esperar con `docker manifest inspect` a que existan
+  `$AURORA_IMAGE_PREFIX-web:sha-…` y `-backend:sha-…`, `git pull --ff-only`, cambiar `AURORA_VERSION`,
+  `dc pull backend web && dc up -d backend web`, y probar `https://demo.auroracare.cl/api/health` y el `<title>`.
+  Un despliegue a producción necesita la confirmación explícita de Felipe en el chat (el modo automático lo bloquea).
+- **El estado de SSM puede decir `Success` aunque el script falle:** el último comando (`rm -f`) define el estado.
+  Leer siempre `StandardOutputContent` y `StandardErrorContent` (p. ej., `manifest unknown` = imagen aún no publicada).
 - **Nivel de ayuda en AWS:** el usuario eligió **alto** (explicar cada paso, proponer alternativas y buenas
   prácticas).
 
@@ -155,6 +177,6 @@ una falla pasajera del registro `public.ecr.aws`, no del código. Se resuelve co
 - `docs/despliegue_aws.md`: guía completa (este despliegue sigue esa guía, opción de costo mínimo).
 - `docs/inferencia_remota.md`: modelo en el PC de Juan con Tailscale y cómo moverlo a AWS.
 - `docs/guia_modelo_juan.md`: pasos para Juan (y para Felipe) para conectar el modelo.
-- `DESIGN.md` y `PRODUCT.md`: sistema visual de la 2.7.0 y contexto de producto.
+- `DESIGN.md` y `PRODUCT.md`: sistema visual (también lo usan los PDF, vía `src/utils/pdfTheme.ts`) y contexto de producto.
 - `docs/cumplimiento_legal.md` y `docs/seguridad_owasp.md`: cumplimiento y seguridad.
 - `docs/CHANGELOG_SPRINTS.md`: qué se hizo en cada versión.
