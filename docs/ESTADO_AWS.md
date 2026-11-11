@@ -21,6 +21,7 @@ Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.7.0** (rediseño visua
 | Respaldo | `deploy/backup_db.sh` diario a las **03:15 hora de Chile** (crontab de `ec2-user`), verificado (13,5 KB) |
 | Logs | CloudWatch `/aurora/prod` (backend, db, web), retención 30 días |
 | DNS | Route 53, zona `auroracare.cl` (`Z0628464DNWEOT5ICYNC`), registro `demo` → Elastic IP. Pendiente la delegación en NIC |
+| Tailscale | Instalado en el servidor (11-11-2026): `aurora-ec2`, IP `100.83.18.31`, `--accept-dns=false`, servicio `tailscaled` habilitado al arrancar. Falta Juan (`aurora-modelo`) |
 | Presupuesto | `aurora-mensual`: USD 15 al mes, alertas al 85 %, 100 % y pronóstico |
 | Modelo de IA | `INFERENCE_PROVIDER=simulated` por ahora. El token del modelo ya está en `deploy/.env` |
 | Usuarios | ADMIN (Felipe, con email provisorio `admin@aurora-demo.cl`) y médico de prueba `11111111-1` (ficticio) |
@@ -45,7 +46,9 @@ Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.7.0** (rediseño visua
 ### Modelo de IA (opción B, `docs/inferencia_remota.md`)
 5. **Guía paso a paso para Juan: `docs/guia_modelo_juan.md`** (incluye al final la parte de Felipe). Estado: guía
    entregada; **nada configurado todavía** (ni Tailscale ni el servicio en el PC de Juan).
-6. **Felipe:** crear la red de Tailscale (login.tailscale.com, con su Google o GitHub), **invitar a Juan**
+6. **Hecho (11-11-2026):** red de Tailscale creada y servidor unido como `aurora-ec2` (`100.83.18.31`). Falta:
+   desactivar la expiración de su llave (*Machines → ⋯ → Disable key expiry*), invitar a Juan y enviarle el token.
+   Pasos originales: **Felipe:** crear la red de Tailscale (login.tailscale.com, con su Google o GitHub), **invitar a Juan**
    (*Users → Invite users*), unir el servidor (`curl -fsSL https://tailscale.com/install.sh | sh` y
    `sudo tailscale up --hostname aurora-ec2`) y enviarle a Juan el token por mensaje directo
    (`sudo grep '^INFERENCE_API_TOKEN=' /opt/aurora/deploy/.env | cut -d= -f2-`).
