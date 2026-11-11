@@ -707,6 +707,18 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## 2.9.2 — Informe de gestión con relato
+
+- El informe de gestión cuenta lo que muestran los datos: resumen ejecutivo, cuatro cifras principales, hallazgos clave
+  con etiqueta de estado (BIEN, ATENCIÓN, ALERTA, NOTA: texto y color, nunca solo color), y una lectura en prosa de cada
+  sección (volumen y tendencia, priorización y tiempos por nivel, calidad de las decisiones, modelo de IA y rendimiento).
+- Gráficos dibujados en el PDF: casos por semana (columnas de una serie, rótulos solo en el máximo y la última semana) y
+  barras por nivel (casos y tiempo a revisión) rotuladas con el timbre del nivel.
+- Recomendaciones generadas con reglas fijas y explicadas en «Cómo leer este informe» (ALTA atrasados, ajustes sobre
+  10 %, triage subestimado, modelo simulado, rendimiento). Con IA simulada, la meta K5 figura como «No aplica».
+
+---
+
 ## 2.9.1 — Reportes PDF con el diseño de la interfaz
 
 - El reporte de caso y el informe de gestión usan el sistema visual de `DESIGN.md`: tipografía Atkinson Hyperlegible
