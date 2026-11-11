@@ -707,7 +707,7 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
-## Sin publicar (próxima versión, junto con el modelo real)
+## Sin número de versión — desplegado el 11-11-2026 (`9a3a942`), con el modelo real conectado
 
 - **Textos de la IA alineados con el modelo** (CNN + YOLO): «Sospecha de malignidad» / «Baja probabilidad de
   malignidad» en vez de «Hallazgo» / «Sin hallazgos», «probabilidad de malignidad X %» en vez de «confianza», y en las

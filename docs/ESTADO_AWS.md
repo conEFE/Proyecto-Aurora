@@ -1,6 +1,7 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.9.2** («Aurora Care»), imágenes `sha-702bf84…` de `main`.
+Actualizado: 11-11-2026 (noche). Desplegado: **2.9.2 + `9a3a942`** (Mi perfil, historia del paciente y textos de la IA),
+imágenes `sha-9a3a942…` de `main`. **Modelo real conectado** (PC de Juan por Tailscale).
 Sin migraciones nuevas desde la 2.6.0. Lo que trajo cada versión está en `docs/CHANGELOG_SPRINTS.md`:
 
 - **2.8.0:** eliminar pacientes sin casos (con casos, bloqueo por la Ley 20.584), informe de gestión en PDF y
@@ -11,14 +12,16 @@ Sin migraciones nuevas desde la 2.6.0. Lo que trajo cada versión está en `docs
 - **2.9.2:** informe de gestión con relato (resumen, hallazgos, gráficos, lectura por sección y recomendaciones).
 - **`702bf84`:** el `Dockerfile` del sitio compila el frontend sin emulación (`--platform=$BUILDPLATFORM`): con QEMU,
   `npm ci` para arm64 tardaba más de 40 minutos y la publicación quedaba colgada.
+- **`d082d4b` + `9a3a942` (sin número de versión aún):** textos de la IA alineados con el modelo (probabilidad de
+  malignidad de la CNN, confianza de detección de YOLO), **Mi perfil** e **historia del paciente**. Respaldo previo:
+  `backups/aurora-20261111T193250Z.sql.gz`.
 
 **Datos de demostración en producción (11-11-2026):** `python -m scripts.seed_demo` cargó 120 pacientes ficticios (RUT
 desde 40.000.000) y 134 casos en 10 semanas, a nombre del médico de prueba (`11111111-1`). Respaldo previo:
 `backups/aurora-20261111T145234Z.sql.gz` (restaurarlo para quitarlos; la auditoría no permite borrar). Para la demo,
 entrar como el médico de prueba: es quien ve el informe completo, incluido el desempeño del modelo.
-**En el próximo despliegue** (trae la historia del paciente): correr una vez `python -m scripts.seed_demo
---fix-history` en el contenedor del backend, para que el registro y el consentimiento de esos pacientes queden antes
-de sus casos (hoy aparecen con fecha 11-11-2026, después de casos de semanas anteriores). Solo toca pacientes con RUT
+**Hecho (11-11-2026, con `9a3a942`):** `python -m scripts.seed_demo --fix-history` dejó el registro y el
+consentimiento de los 120 pacientes antes de sus casos, y los ajustes de nivel antes de la revisión. Solo toca RUT
 desde 40.000.000 y se puede repetir sin efecto.
 
 ## 1. Qué está funcionando
@@ -41,7 +44,7 @@ desde 40.000.000 y se puede repetir sin efecto.
 | DNS | Route 53, zona `auroracare.cl` (`Z0628464DNWEOT5ICYNC`), registro `demo` → Elastic IP. Delegado en NIC Chile (inscrito el 11-11-2026, vence el 11-11-2027) |
 | Tailscale | Instalado en el servidor (11-11-2026): `aurora-ec2`, IP `100.83.18.31`, `--accept-dns=false`, servicio `tailscaled` habilitado al arrancar. Falta Juan (`aurora-modelo`) |
 | Presupuesto | `aurora-mensual`: USD 15 al mes, alertas al 85 %, 100 % y pronóstico |
-| Modelo de IA | `INFERENCE_PROVIDER=simulated` por ahora. El token del modelo ya está en `deploy/.env` |
+| Modelo de IA | `INFERENCE_PROVIDER=http`, `INFERENCE_URL=http://100.114.99.23:8080` (PC de Juan, `aurora-modelo`, GPU `cuda:0`). Si no responde, se usa la IA simulada con su badge (`INFERENCE_FALLBACK_SIMULATED=true`) |
 | Usuarios | ADMIN (Felipe, con email provisorio `admin@aurora-demo.cl`) y médico de prueba `11111111-1` (ficticio) |
 
 **Costo estimado:** ≈ USD 11 al mes, descontados de los créditos (alcanza para todo el plan gratuito).
@@ -69,14 +72,14 @@ desde 40.000.000 y se puede repetir sin efecto.
 
 ### Modelo de IA (opción B, `docs/inferencia_remota.md`)
 5. **Guía paso a paso para Juan: `docs/guia_modelo_juan.md`** (incluye al final la parte de Felipe). Estado: el
-   servidor ya está en Tailscale; **falta todo lo del PC de Juan**.
-6. **Hecho (11-11-2026):** red de Tailscale creada y servidor unido como `aurora-ec2` (`100.83.18.31`). **Falta (Felipe):**
-   desactivar la expiración de la llave de `aurora-ec2` (*Machines → ⋯ → Disable key expiry*), invitar a Juan
-   (*Users → Invite users*) y enviarle el token **por mensaje directo**, leyéndolo en una sesión interactiva de Session
-   Manager (no por `SendCommand`): `sudo grep '^INFERENCE_API_TOKEN=' /opt/aurora/deploy/.env | cut -d= -f2-`.
-   **Cuando Juan avise:** en `deploy/.env`, `INFERENCE_PROVIDER=http` e `INFERENCE_URL=http://<IP 100.x de Juan>:8080`
-   (la IP, no el nombre: dentro de los contenedores el nombre puede no resolverse), y `dc up -d`. Probar con
-   `curl -H "Authorization: Bearer <token>" http://<IP>:8080/health` y subiendo una imagen ficticia.
+   servidor ya está en Tailscale. **Conectado el 11-11-2026:** PC de Juan `aurora-modelo` (`100.114.99.23`).
+6. **Hecho (11-11-2026):** Tailscale con `aurora-ec2` (`100.83.18.31`) y `aurora-modelo` (`100.114.99.23`, Windows).
+   `/health` responde 200 desde el host y desde el contenedor del backend (sin token, `/predict` da 401). Prueba de punta
+   a punta con `HttpInferenceProvider` e imagen sintética (sin escribir en la base): `is_simulated=False`, una caja,
+   **15 s** para 1,3 MB. La conexión va por relay DERP (São Paulo, ~190 ms), no directa: probablemente el firewall o
+   el router de Juan bloquean UDP. Funciona; si se quiere más rapidez, revisar UDP 41641 en el PC de Juan.
+   **Pendiente (Felipe):** confirmar que *Disable key expiry* quedó activo en `aurora-ec2` (y en `aurora-modelo`).
+   **El día de la defensa:** PC de Juan encendido, sin suspensión, con Tailscale y el servicio arriba (ver la guía).
 7. Si se quiere **todo en AWS:** `t4g.medium` + perfil `inference` (≈ USD 28 al mes), o Lambda. Detalle en la
    sección 5 de `docs/inferencia_remota.md`.
 
