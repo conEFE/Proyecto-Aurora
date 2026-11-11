@@ -1,7 +1,7 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 10-11-2026. Versión desplegada: **2.6.0** (imágenes `sha-9175cfe…` de `main`) + corrección del respaldo
-(`33b21cf`).
+Actualizado: 11-11-2026. Versión desplegada: **2.7.0** (rediseño visual «Orden de mamografía»), imágenes
+`sha-2f5bbdc…` de `main`. El backend no cambió respecto de la 2.6.0.
 
 ## 1. Qué está funcionando
 
@@ -35,10 +35,11 @@ Actualizado: 10-11-2026. Versión desplegada: **2.6.0** (imágenes `sha-9175cfe�
 2. **Probar la restauración de un respaldo** (antes de la defensa): descargar uno de `backups/`, cargarlo en una base
    vacía temporal dentro del servidor y comprobar que tenga los datos. No se debe tocar la base real.
 3. **Cambiar el email del ADMIN** por uno real en Administración → Usuarios.
-4. **Diseño visual (modo claro/oscuro y manual de marca, trabajado con «impeccable»):** **no está en el repositorio**
-   ni en el sitio. Buscarlo en el PC donde se hizo (`git status`, `git log`) y subirlo, o implementarlo desde el
-   manual de marca (artifact de la sesión «Mockup vistas Proyecto Aurora») y los mockups de `Proyecto-AudioVisual`.
-   Al publicar: nueva versión → imágenes → actualizar el servidor (sección 3).
+4. ~~Diseño visual~~: **hecho y desplegado (2.7.0, 11-11-2026).** Modo claro rosado/blanco y oscuro morado/negro;
+   sistema en `DESIGN.md`. Verificado en producción: `/theme-init.js` responde 200, el tema elegido se mantiene al
+   recargar, la fuente Atkinson se sirve desde el propio sitio y la consola no muestra errores de CSP. Al publicarlo se
+   corrigió el `Dockerfile` del sitio, que no copiaba `public/`. En el servidor quedó `deploy/.env.antes-2.7.0`, una
+   copia de la configuración previa (con permisos 600): se puede borrar.
 
 ### Modelo de IA (opción B, `docs/inferencia_remota.md`)
 5. Juan instala **Tailscale** en su PC (nombre `aurora-modelo`) y levanta el servicio con
@@ -86,6 +87,9 @@ alias dc='docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml
 
 **Publicar imágenes nuevas:** en GitHub, *Actions → Publicar imágenes → Run workflow* (rama `main`), o un tag
 `vX.Y.Z` subido desde un PC.
+
+**Si el CI falla en «Imágenes Docker y prueba de humo» con `context deadline exceeded` al descargar `postgres`:** es
+una falla pasajera del registro `public.ecr.aws`, no del código. Se resuelve con *Re-run jobs*.
 
 ## 4. Dónde está la documentación
 
