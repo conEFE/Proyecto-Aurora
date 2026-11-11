@@ -1,5 +1,7 @@
 # Frontend de Proyecto Aurora: build con Vite y servicio con Caddy (HTTPS automático y proxy de /api).
-FROM public.ecr.aws/docker/library/node:22-alpine AS build
+# La compilación corre en la arquitectura del runner ($BUILDPLATFORM): el resultado (HTML/JS/CSS) no depende de la
+# arquitectura, y emular arm64 con QEMU hacía que npm ci tardara más de 40 minutos. Solo la imagen final es multi-arch.
+FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/node:22-alpine AS build
 WORKDIR /src
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
