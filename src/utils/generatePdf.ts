@@ -67,10 +67,10 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
   // Metadatos tipo DICOM (SC-02) incrustados en las propiedades del documento
   doc.setProperties({
     title: `Reporte ${caseData.code}`,
-    subject: 'Proyecto Aurora - apoyo a la priorización',
+    subject: 'Aurora Care - apoyo a la priorización',
     author: medicoName,
     keywords: JSON.stringify(metadata),
-    creator: 'Proyecto Aurora',
+    creator: 'Aurora Care',
   });
 
   doc.setFillColor(...PRIMARY);
@@ -78,7 +78,7 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('Reporte de caso — Proyecto Aurora', margin, 15);
+  doc.text('Reporte de caso — Aurora Care', margin, 15);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text('Plataforma de apoyo a la detección temprana y priorización. No reemplaza el criterio médico.', margin, 23);

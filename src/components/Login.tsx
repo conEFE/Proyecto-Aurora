@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { Loader2, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, Loader2, Moon, Sun } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useTheme } from '../lib/theme';
 import BrandMark from './BrandMark';
 import { ErrorMessage } from './Feedback';
-import { iconButton, inputClass, labelClass, primaryButton } from './ui';
+import { ghostButton, iconButton, inputClass, labelClass, primaryButton } from './ui';
 
 interface LoginProps {
   onLogin: () => void;
+  /** Vuelve a la página de presentación */
+  onBack?: () => void;
 }
 
-export default function Login({ onLogin }: LoginProps) {
+export default function Login({ onLogin, onBack }: LoginProps) {
   const [rut, setRut] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +40,14 @@ export default function Login({ onLogin }: LoginProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <BrandMark />
-            <span className="text-base font-extrabold">Aurora</span>
+            <span className="text-base font-extrabold">Aurora Care</span>
           </div>
+          <div className="flex items-center gap-1">
+          {onBack && (
+            <button onClick={onBack} className={ghostButton}>
+              <ArrowLeft aria-hidden className="w-4 h-4" /> Volver al inicio
+            </button>
+          )}
           <button
             onClick={toggleTheme}
             className={iconButton}
@@ -47,6 +55,7 @@ export default function Login({ onLogin }: LoginProps) {
           >
             {theme === 'dark' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
           </button>
+          </div>
         </div>
 
         <div className="flex-1 flex items-center">
@@ -104,8 +113,8 @@ export default function Login({ onLogin }: LoginProps) {
 
       <div className="hidden lg:flex items-center justify-center bg-sidebar border-l border-border px-14 py-12">
         <div className="max-w-sm text-center">
-          <BrandMark alt="Proyecto Aurora" size="lg" className="w-72 h-48 mx-auto" />
-          <p className="mt-6 text-3xl font-extrabold tracking-tight">Proyecto Aurora</p>
+          <BrandMark alt="Aurora Care" size="lg" className="w-72 h-48 mx-auto" />
+          <p className="mt-6 text-3xl font-extrabold tracking-tight">Aurora Care</p>
           <p className="mt-3 text-sm text-muted-foreground">
             Priorización de casos sospechosos de cáncer de mama. La plataforma apoya, no reemplaza, el criterio médico.
           </p>

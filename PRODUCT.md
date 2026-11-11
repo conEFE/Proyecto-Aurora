@@ -43,7 +43,7 @@ Triage transparente y corregible, con la IA siempre subordinada al médico: un p
 
 ## Brand Commitments
 
-- Nombre: **Proyecto Aurora**. Logo en `src/assets/logo-aurora.png`.
+- Nombre: **Aurora Care** (antes «Proyecto Aurora»; dominio `auroracare.cl`). Logo en `src/assets/logo-aurora.png`.
 - Mensajes fijos: «La plataforma apoya, no reemplaza, el criterio médico» y el badge «IA SIMULADA».
 
 ## Evidence on Hand

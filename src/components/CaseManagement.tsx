@@ -8,6 +8,8 @@ import { cn } from '../lib/cn';
 import { LevelBadge, StatusBadge } from './Badges';
 import CaseDetail from './CaseDetail';
 import { EmptyState, ErrorMessage, Loading } from './Feedback';
+import ImageBatchPicker from './ImageBatchPicker';
+import { uploadBatch, type PendingImage } from '../utils/imageBatch';
 import PatientModal from './PatientModal';
 import SymptomsForm from './SymptomsForm';
 import {
@@ -32,22 +34,47 @@ const EMPTY_SYMPTOMS: CaseSymptoms = {
   birads_reported: null,
 };
 
-function NewCaseForm({ onCreated, onCancel }: { onCreated: (c: ClinicalCase) => void; onCancel: () => void }) {
-  const [patient, setPatient] = useState<Patient | null>(null);
+function NewCaseForm({
+  onCreated,
+  onCancel,
+  initialPatient = null,
+}: {
+  onCreated: (c: ClinicalCase) => void;
+  onCancel: () => void;
+  initialPatient?: Patient | null;
+}) {
+  const [patient, setPatient] = useState<Patient | null>(initialPatient);
   const [symptoms, setSymptoms] = useState<CaseSymptoms>(EMPTY_SYMPTOMS);
+  const [images, setImages] = useState<PendingImage[]>([]);
+  const [progress, setProgress] = useState<{ index: number; percent: number } | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Crea el caso y, si se eligieron imágenes, las sube al mismo caso (un examen = un caso con varias imágenes)
   const submit = async () => {
     if (!patient) return;
     setSaving(true);
+    setError(null);
     const r = await apiClient.createCase({ patient_id: patient.id, ...symptoms });
+    if (!r.data) {
+      setSaving(false);
+      setError(r.error || 'No se pudo crear el caso. Revise los datos e intente de nuevo.');
+      return;
+    }
+    let failed: string[] = [];
+    if (images.length > 0) {
+      setProgress({ index: 0, percent: 0 });
+      failed = await uploadBatch(r.data.id, images, (index, percent) => setProgress({ index, percent }));
+      setProgress(null);
+    }
     setSaving(false);
-    if (r.data) {
-      toast.success(`Caso ${r.data.code} creado`);
-      onCreated(r.data);
-    } else setError(r.error || 'No se pudo crear el caso. Revise los datos e intente de nuevo.');
+    const uploaded = images.length - failed.length;
+    if (failed.length > 0) toast.error(`No se pudieron subir ${failed.length} imagen(es): ${failed.join('; ')}`);
+    toast.success(
+      `Caso ${r.data.code} creado${uploaded > 0 ? ` con ${uploaded} ${uploaded === 1 ? 'imagen' : 'imágenes'}` : ''}.`,
+    );
+    onCreated(r.data);
   };
 
   return (
@@ -76,10 +103,26 @@ function NewCaseForm({ onCreated, onCancel }: { onCreated: (c: ClinicalCase) => 
           </button>
         )}
       </div>
-      <SymptomsForm value={symptoms} onChange={setSymptoms} />
+      <SymptomsForm value={symptoms} onChange={setSymptoms} disabled={saving} />
+      <div>
+        <p className="text-sm font-medium mb-1.5">Imágenes del examen <span className="text-muted-foreground font-normal">(opcional; también se pueden agregar después)</span></p>
+        <ImageBatchPicker
+          items={images}
+          onChange={setImages}
+          onRejected={(msgs) => setError(msgs.length ? `Imágenes no agregadas: ${msgs.join('; ')}` : null)}
+          disabled={saving}
+          progress={progress}
+        />
+      </div>
       <button className={cn(primaryButton, 'w-full')} disabled={!patient || saving} onClick={submit}>
         {saving && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
-        {saving ? 'Creando…' : 'Crear caso'}
+        {saving
+          ? progress
+            ? `Subiendo imagen ${progress.index + 1} de ${images.length}…`
+            : 'Creando…'
+          : images.length > 0
+            ? `Crear caso y subir ${images.length} ${images.length === 1 ? 'imagen' : 'imágenes'}`
+            : 'Crear caso'}
       </button>
       <PatientModal isOpen={showModal} onClose={() => setShowModal(false)} onSelectPatient={setPatient} />
     </section>
@@ -89,14 +132,16 @@ function NewCaseForm({ onCreated, onCancel }: { onCreated: (c: ClinicalCase) => 
 interface CaseManagementProps {
   me: Me;
   initialCaseId?: number | null;
+  /** Si viene, se abre «Nuevo caso» con este paciente ya elegido (desde Pacientes) */
+  newCasePatient?: Patient | null;
 }
 
-export default function CaseManagement({ me, initialCaseId = null }: CaseManagementProps) {
+export default function CaseManagement({ me, initialCaseId = null, newCasePatient = null }: CaseManagementProps) {
   const [data, setData] = useState<Page<ClinicalCase> | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(initialCaseId);
   const [statusFilter, setStatusFilter] = useState<CaseStatus | ''>('');
   const [page, setPage] = useState(1);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(newCasePatient !== null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const size = 15;
@@ -224,6 +269,7 @@ export default function CaseManagement({ me, initialCaseId = null }: CaseManagem
         <div className="min-w-0">
           {creating ? (
             <NewCaseForm
+              initialPatient={newCasePatient}
               onCancel={() => setCreating(false)}
               onCreated={(c) => {
                 setCreating(false);

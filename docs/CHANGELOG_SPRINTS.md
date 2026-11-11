@@ -707,6 +707,24 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## 2.9.0 — Aurora Care: landing, sección Pacientes y un caso por examen con varias imágenes
+
+Solo frontend (más el título de la API): no cambia la base de datos ni los endpoints.
+
+- **Nombre «Aurora Care»** en el título de la página, la barra lateral, el inicio de sesión, los PDF (reporte de caso e
+  informe de gestión) y el título de la API. Se mantiene «Proyecto Aurora» en `StudyDescription` de los metadatos del
+  reporte, porque forma parte del contenido firmado y cambiarlo invalidaría las firmas existentes.
+- **Landing page pública** (portada, el problema, cómo funciona, principios, quiénes somos) con acceso al inicio de
+  sesión («Ingresar», o el enlace `/#ingresar`), en tema claro y oscuro y adaptada a celular. Sin cifras ni testimonios
+  inventados; la cola de ejemplo usa códigos ficticios y se rotula como tal.
+- **Sección «Pacientes»**: lista (incluye bloqueados), búsqueda, registro con consentimiento, edición de datos y
+  antecedentes, casos del paciente, «Nuevo caso» con el paciente ya elegido y eliminación solo sin casos (Ley 20.584).
+- **Un caso por examen con varias imágenes**: «Nuevo caso» incluye las imágenes (varias a la vez, con lado y tipo por
+  imagen; el lado se deduce del nombre, p. ej. `R_CC`, `LMLO`, `der`, `izq`) y el detalle del caso tiene «Agregar
+  imágenes». Se quitó la sección «Cargar imágenes», que obligaba a crear el caso en otra pantalla.
+
+---
+
 ## 2.8.0 — Eliminar pacientes sin casos, informe de gestión en PDF y datos de demostración
 
 - **Eliminar paciente** (`DELETE /patients/{id}`, ADMINISTRATIVO y MEDICO): solo si **no tiene casos** (registrado

@@ -13,6 +13,10 @@ interface PatientModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectPatient: (patient: Patient) => void;
+  /** Abre directamente en «Registrar nueva» (desde Pacientes) */
+  initialMode?: 'select' | 'create';
+  /** Oculta la búsqueda: solo registrar */
+  createOnly?: boolean;
 }
 
 const EMPTY_FORM: PatientInput = {
@@ -27,8 +31,14 @@ const EMPTY_FORM: PatientInput = {
   consent_given: false,
 };
 
-export default function PatientModal({ isOpen, onClose, onSelectPatient }: PatientModalProps) {
-  const [mode, setMode] = useState<'select' | 'create'>('select');
+export default function PatientModal({
+  isOpen,
+  onClose,
+  onSelectPatient,
+  initialMode = 'select',
+  createOnly = false,
+}: PatientModalProps) {
+  const [mode, setMode] = useState<'select' | 'create'>(createOnly ? 'create' : initialMode);
   const [searchTerm, setSearchTerm] = useState('');
   const [searched, setSearched] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -105,6 +115,7 @@ export default function PatientModal({ isOpen, onClose, onSelectPatient }: Patie
       description={mode === 'select' ? 'Busque por RUT o nombre y selecciónela.' : 'Los campos marcados con * son obligatorios.'}
       size="lg"
     >
+      {!createOnly && (
       <div role="group" aria-label="Modo" className="inline-flex p-1 rounded-lg bg-muted mb-5">
         <button onClick={() => setMode('select')} aria-pressed={mode === 'select'} className={tabClass(mode === 'select')}>
           <Search aria-hidden className="w-4 h-4" /> Buscar existente
@@ -113,6 +124,7 @@ export default function PatientModal({ isOpen, onClose, onSelectPatient }: Patie
           <UserPlus aria-hidden className="w-4 h-4" /> Registrar nueva
         </button>
       </div>
+      )}
 
       <ErrorMessage className="mb-4">{error}</ErrorMessage>
 

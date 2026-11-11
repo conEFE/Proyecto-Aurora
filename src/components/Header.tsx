@@ -10,8 +10,8 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sun,
-  Upload,
   type LucideIcon,
+  Users,
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { apiClient } from '../services/api';
@@ -26,7 +26,7 @@ import ChangePassword from './ChangePassword';
 import Dialog from './Dialog';
 import { iconButton } from './ui';
 
-export type Section = 'home' | 'queue' | 'upload' | 'cases' | 'dashboard' | 'config' | 'privacy' | 'panel';
+export type Section = 'home' | 'queue' | 'patients' | 'cases' | 'dashboard' | 'config' | 'privacy' | 'panel';
 
 interface HeaderProps {
   currentSection: Section;
@@ -48,8 +48,8 @@ const CLINICAL: Role[] = ['MEDICO', 'ADMINISTRATIVO'];
 export const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Inicio', icon: Activity, roles: CLINICAL },
   { id: 'queue', label: 'Cola de triage', icon: ListOrdered, roles: CLINICAL },
+  { id: 'patients', label: 'Pacientes', icon: Users, roles: CLINICAL },
   { id: 'cases', label: 'Casos', icon: FolderOpen, roles: CLINICAL },
-  { id: 'upload', label: 'Cargar imágenes', icon: Upload, roles: CLINICAL },
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3, roles: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'] },
   { id: 'config', label: 'Parámetros', icon: SlidersHorizontal, roles: ['MEDICO', 'ADMIN'] },
   { id: 'privacy', label: 'Privacidad', icon: ShieldCheck, roles: CLINICAL },
@@ -76,7 +76,7 @@ export default function Header({ currentSection, onSectionChange, onOpenCase, me
         <div className="flex items-center gap-2.5">
           <BrandMark />
           <div className="leading-tight">
-            <p className="text-base font-extrabold text-foreground">Aurora</p>
+            <p className="text-base font-extrabold text-foreground">Aurora Care</p>
             <p className="text-xs text-muted-foreground">Triage de cáncer de mama</p>
           </div>
         </div>

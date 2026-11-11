@@ -44,7 +44,7 @@ export function buildManagementReport({ data, model, generatedBy }: ManagementRe
   doc.setTextColor(255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('Proyecto Aurora · Informe de gestión', 14, 12);
+  doc.text('Aurora Care · Informe de gestión', 14, 12);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   const period =

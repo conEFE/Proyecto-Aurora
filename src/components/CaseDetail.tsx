@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Save } from 'lucide-react';
+import { ImagePlus, Loader2, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type { CaseSymptoms, ClinicalCase, Me } from '../types';
@@ -7,10 +7,12 @@ import { cn } from '../lib/cn';
 import { LevelBadge, StatusBadge } from './Badges';
 import CaseImages from './CaseImages';
 import { ErrorMessage, Loading } from './Feedback';
+import ImageBatchPicker from './ImageBatchPicker';
+import { uploadBatch, type PendingImage } from '../utils/imageBatch';
 import SymptomsForm from './SymptomsForm';
 import ReviewPanel from './ReviewPanel';
 import TriageDetail from './TriageDetail';
-import { cardClass, formatDate, formatDateTime, primaryButton, sectionTitle } from './ui';
+import { cardClass, formatDate, formatDateTime, iconButton, primaryButton, secondaryButton, sectionTitle } from './ui';
 
 interface CaseDetailProps {
   caseId: number;
@@ -37,6 +39,62 @@ function symptomsOf(c: ClinicalCase): CaseSymptoms {
   };
 }
 
+/** Agrega imágenes a un caso abierto (p. ej., una vista o una ecografía que llegó después). */
+function AddImages({ caseId, onUploaded }: { caseId: number; onUploaded: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<PendingImage[]>([]);
+  const [progress, setProgress] = useState<{ index: number; percent: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const busy = progress !== null;
+
+  const submit = async () => {
+    setError(null);
+    setProgress({ index: 0, percent: 0 });
+    const failed = await uploadBatch(caseId, items, (index, percent) => setProgress({ index, percent }));
+    setProgress(null);
+    const uploaded = items.length - failed.length;
+    if (uploaded > 0) toast.success(`${uploaded} ${uploaded === 1 ? 'imagen' : 'imágenes'} agregada${uploaded === 1 ? '' : 's'}. El análisis corre en segundo plano.`);
+    if (failed.length > 0) setError(`No se pudieron subir: ${failed.join('; ')}`);
+    else {
+      setItems([]);
+      setOpen(false);
+    }
+    onUploaded();
+  };
+
+  if (!open) {
+    return (
+      <button className={secondaryButton} onClick={() => setOpen(true)}>
+        <ImagePlus aria-hidden className="w-4 h-4" /> Agregar imágenes
+      </button>
+    );
+  }
+  return (
+    <div className="space-y-3 p-4 rounded-xl border border-border">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold">Agregar imágenes al caso</p>
+        <button className={iconButton} aria-label="Cerrar" disabled={busy} onClick={() => setOpen(false)}>
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <ErrorMessage>{error}</ErrorMessage>
+      <ImageBatchPicker
+        items={items}
+        onChange={setItems}
+        onRejected={(msgs) => setError(msgs.length ? `Imágenes no agregadas: ${msgs.join('; ')}` : null)}
+        disabled={busy}
+        progress={progress}
+      />
+      <button className={primaryButton} disabled={items.length === 0 || busy} onClick={submit}>
+        {busy && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
+        {busy
+          ? `Subiendo ${(progress?.index ?? 0) + 1} de ${items.length}…`
+          : `Subir y analizar${items.length ? ` (${items.length})` : ''}`}
+      </button>
+    </div>
+  );
+}
+
 export default function CaseDetail({ caseId, me, onChanged, onNextCase }: CaseDetailProps) {
   const [data, setData] = useState<ClinicalCase | null>(null);
   const [symptoms, setSymptoms] = useState<CaseSymptoms | null>(null);
@@ -44,6 +102,7 @@ export default function CaseDetail({ caseId, me, onChanged, onNextCase }: CaseDe
   const [saving, setSaving] = useState(false);
   const [triageKey, setTriageKey] = useState(0);
   const [validationKey, setValidationKey] = useState(0);
+  const [imagesKey, setImagesKey] = useState(0);
 
   const reload = () => {
     apiClient.getCase(caseId).then((r) => {
@@ -135,9 +194,21 @@ export default function CaseDetail({ caseId, me, onChanged, onNextCase }: CaseDe
 
         <div className="mt-6">
           <h3 id={`images-${data.id}`} className="sr-only">Imágenes por lado</h3>
+          {!closed && (
+            <div className="mb-5">
+              <AddImages
+                caseId={data.id}
+                onUploaded={() => {
+                  setImagesKey((k) => k + 1);
+                  reload();
+                }}
+              />
+            </div>
+          )}
           <CaseImages
             caseId={data.id}
             me={me}
+            refreshKey={imagesKey}
             readOnly={closed}
             onValidationChange={() => setValidationKey((k) => k + 1)}
             afterPlate={

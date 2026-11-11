@@ -398,7 +398,7 @@ export default function CaseImages({ caseId, me, refreshKey = 0, readOnly = fals
           </div>
         )}
         {images.length === 0 && (
-          <p className="mt-4 text-sm text-muted-foreground text-center">El caso aún no tiene imágenes. Cárguelas en «Cargar imágenes».</p>
+          <p className="mt-4 text-sm text-muted-foreground text-center">El caso aún no tiene imágenes. Agréguelas con «Agregar imágenes».</p>
         )}
       </div>
 

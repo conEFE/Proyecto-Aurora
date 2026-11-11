@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 _docs = settings.ENABLE_API_DOCS
 app = FastAPI(
-    title="Proyecto Aurora API",
+    title="Aurora Care API",
     version="2.6.0",
     docs_url="/docs" if _docs else None,
     redoc_url="/redoc" if _docs else None,

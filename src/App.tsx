@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import Header, { type Section } from './components/Header';
 import Home from './components/Home';
-import ImageUpload from './components/ImageUpload';
+import PatientsPanel from './components/PatientsPanel';
 import CaseManagement from './components/CaseManagement';
 import Dashboard from './components/Dashboard';
 import AdminPanel from './components/AdminPanel';
+import Landing from './components/Landing';
 import Login from './components/Login';
 import TriageQueue from './components/TriageQueue';
 import TriageConfigPanel from './components/TriageConfigPanel';
@@ -12,7 +13,7 @@ import { Loading } from './components/Feedback';
 import ChangePassword from './components/ChangePassword';
 import PrivacyPanel from './components/PrivacyPanel';
 import { apiClient } from './services/api';
-import type { Me } from './types';
+import type { Me, Patient } from './types';
 
 function App() {
   const [currentSection, setCurrentSection] = useState<Section>('home');
@@ -23,8 +24,21 @@ function App() {
   const mainRef = useRef<HTMLElement>(null);
   const firstRender = useRef(true);
 
+  const [newCasePatient, setNewCasePatient] = useState<Patient | null>(null);
+  // Sin sesión: landing pública; «Ingresar» (o el enlace /#ingresar) abre el inicio de sesión
+  const [showLogin, setShowLogin] = useState(() => window.location.hash === '#ingresar');
+
   const openCase = (caseId: number) => {
     setOpenCaseId(caseId);
+    setNewCasePatient(null);
+    setOpenCaseNonce((n) => n + 1);
+    setCurrentSection('cases');
+  };
+
+  // Desde Pacientes: abre «Nuevo caso» con el paciente ya elegido
+  const newCaseFor = (patient: Patient) => {
+    setOpenCaseId(null);
+    setNewCasePatient(patient);
     setOpenCaseNonce((n) => n + 1);
     setCurrentSection('cases');
   };
@@ -61,13 +75,23 @@ function App() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loading label="Cargando Aurora…" />
+        <Loading label="Cargando Aurora Care…" />
       </div>
     );
   }
 
   if (!me) {
-    return <Login onLogin={loadMe} />;
+    if (!showLogin) {
+      return (
+        <Landing
+          onLogin={() => {
+            setShowLogin(true);
+            window.scrollTo(0, 0);
+          }}
+        />
+      );
+    }
+    return <Login onLogin={loadMe} onBack={() => setShowLogin(false)} />;
   }
 
   if (me.must_change_password) {
@@ -80,14 +104,19 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background lg:flex">
-      <Header currentSection={currentSection} onSectionChange={setCurrentSection} onOpenCase={openCase} me={me} />
+      <Header
+        currentSection={currentSection}
+        onSectionChange={(section) => {
+          setNewCasePatient(null);
+          setCurrentSection(section);
+        }} onOpenCase={openCase} me={me} />
       <main ref={mainRef} tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">
         {currentSection === 'home' && <Home me={me} onGetStarted={() => setCurrentSection('queue')} />}
         {currentSection === 'queue' && <TriageQueue me={me} onOpenCase={openCase} />}
         {currentSection === 'config' && <TriageConfigPanel me={me} />}
-        {currentSection === 'upload' && <ImageUpload me={me} />}
+        {currentSection === 'patients' && <PatientsPanel onOpenCase={openCase} onNewCase={newCaseFor} />}
         {currentSection === 'cases' && (
-          <CaseManagement key={openCaseNonce} me={me} initialCaseId={openCaseId} />
+          <CaseManagement key={openCaseNonce} me={me} initialCaseId={openCaseId} newCasePatient={newCasePatient} />
         )}
         {currentSection === 'dashboard' && <Dashboard me={me} />}
         {currentSection === 'privacy' && me.role !== 'ADMIN' && <PrivacyPanel me={me} />}
