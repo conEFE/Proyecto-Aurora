@@ -51,9 +51,9 @@ export function InferenceCard({ result }: { result: InferenceResult }) {
           <CheckCircle2 aria-hidden className="w-4 h-4 text-baja" />
         )}
         <span className="font-bold">
-          {result.detected ? 'Hallazgo informado por la IA' : 'Sin hallazgos según la IA'}
+          {result.detected ? 'Sospecha de malignidad según la IA' : 'Baja probabilidad de malignidad según la IA'}
         </span>
-        <span className="tabular-nums text-muted-foreground">confianza {result.confidence.toFixed(1).replace('.', ',')} %</span>
+        <span className="tabular-nums text-muted-foreground">probabilidad de malignidad {result.confidence.toFixed(1).replace('.', ',')} %</span>
         <AiOriginBadge isSimulated={result.is_simulated} clinicallyValidated={result.clinically_validated} />
       </div>
       <p className="text-muted-foreground">{result.message}</p>
@@ -228,7 +228,7 @@ function PlateColumn({
       </p>
       {finding && (
         <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold text-media">
-          <AlertTriangle aria-hidden className="w-3.5 h-3.5" /> Hallazgo IA en este lado
+          <AlertTriangle aria-hidden className="w-3.5 h-3.5" /> Sospecha IA en este lado
         </p>
       )}
       {images.length > 0 && (
@@ -286,7 +286,7 @@ function Viewer({
                       key={i}
                       className="absolute border-2 border-[hsl(38_91%_55%)] rounded"
                       style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%`, width: `${d.width * 100}%`, height: `${d.height * 100}%` }}
-                      title={`${d.class_name} ${(d.confidence * 100).toFixed(0)} %${image.inference?.is_simulated ? ' (simulado)' : ''}`}
+                      title={`Masa · confianza de detección ${(d.confidence * 100).toFixed(0)} %${image.inference?.is_simulated ? ' (simulado)' : ''}`}
                     />
                   ))}
               </div>

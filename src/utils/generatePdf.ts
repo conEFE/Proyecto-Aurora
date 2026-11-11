@@ -29,7 +29,7 @@ import {
 } from './pdfTheme';
 
 const FACTOR_LABELS: Record<string, string> = {
-  ai: 'IA (máx. confianza con hallazgo)',
+  ai: 'IA (máx. probabilidad de malignidad sobre el umbral)',
   age: 'Edad',
   family_history: 'Antecedente familiar 1er grado',
   previous_cancer: 'Cáncer de mama previo',
@@ -207,7 +207,7 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
     body: [
       ...validated.map((img) => [
         `${EXAM_TYPE_LABELS[img.exam_type]}${img.laterality ? ` · ${img.laterality === 'L' ? 'Izquierda' : 'Derecha'}` : ''}`,
-        `${img.inference!.detected ? 'Hallazgo' : 'Sin hallazgos'} · ${img.inference!.confidence.toFixed(1).replace('.', ',')} %` +
+        `${img.inference!.detected ? 'Sospecha' : 'Baja probabilidad'} · ${img.inference!.confidence.toFixed(1).replace('.', ',')} %` +
           (img.inference!.is_simulated ? ' · IA SIMULADA' : img.inference!.clinically_validated ? '' : ' · PROTOTIPO'),
         img.validation
           ? AI_VERDICT_LABELS[img.validation.verdict] + (img.validation.comment ? ` — ${img.validation.comment}` : '')

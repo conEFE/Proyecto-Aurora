@@ -9,7 +9,7 @@ import { ErrorMessage } from './Feedback';
 import { cardClass, formatDateTime, ghostButton, inputClass, labelClass, primaryButton, secondaryButton, sectionTitle, textareaClass } from './ui';
 
 const FACTOR_LABELS: Record<keyof Omit<TriageBreakdown, 'escalation_rule' | 'ai_is_simulated' | 'ai_is_prototype' | 'images_analyzed'>, string> = {
-  ai: 'IA (máx. confianza con hallazgo)',
+  ai: 'IA (máx. probabilidad de malignidad sobre el umbral)',
   age: 'Edad',
   family_history: 'Antecedente familiar 1er grado',
   previous_cancer: 'Cáncer de mama previo',

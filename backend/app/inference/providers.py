@@ -66,9 +66,9 @@ class SimulatedProvider(InferenceProvider):
                     }
                 )
         message = (
-            f"[IA SIMULADA] Hallazgo simulado con {confidence:.1f}% de confianza"
+            f"[IA SIMULADA] Sospecha simulada: probabilidad de malignidad {confidence:.1f}%"
             if detected
-            else f"[IA SIMULADA] Sin hallazgos simulados ({confidence:.1f}% de confianza)"
+            else f"[IA SIMULADA] Baja probabilidad simulada: probabilidad de malignidad {confidence:.1f}%"
         )
         return InferenceOutput(
             detected=detected,

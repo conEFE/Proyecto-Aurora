@@ -225,6 +225,8 @@ export interface Detection {
   height: number;
   confidence: number;
   class_name: string;
+  /** Área de la caja sobre el área de la imagen (0 a 1). Solo en resultados del modelo real. */
+  relative_area?: number;
 }
 
 export interface InferenceResult {
