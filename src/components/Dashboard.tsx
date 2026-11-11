@@ -13,7 +13,6 @@ import type {
 import { AI_VERDICT_LABELS, CASE_STATUS_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
 import { LEVEL_FILL, LEVEL_RING, LEVEL_TEXT } from '../constants';
 import { cn } from '../lib/cn';
-import { buildManagementReport } from '../utils/generateManagementReport';
 import { SimulatedBadge } from './Badges';
 import { ErrorMessage, Loading } from './Feedback';
 import { cardClass, ghostButton, secondaryButton, inputClass, labelClass, pageClass, pageSubtitle, pageTitle, sectionTitle, tdClass, thClass } from './ui';
@@ -258,10 +257,19 @@ export default function Dashboard({ me }: { me: Me }) {
     load();
   }, [load]);
 
-  const exportPdf = () => {
+  // jsPDF y la tipografía se cargan solo al exportar
+  const exportPdf = async () => {
     if (!data) return;
-    const doc = buildManagementReport({ data, model, generatedBy: me.full_name });
-    doc.save(`informe-gestion-aurora-${new Date().toISOString().slice(0, 10)}.pdf`);
+    try {
+      const [{ buildManagementReport }, { loadPdfAssets }] = await Promise.all([
+        import('../utils/generateManagementReport'),
+        import('../utils/pdfTheme'),
+      ]);
+      const doc = buildManagementReport({ data, model, generatedBy: me.full_name, assets: await loadPdfAssets() });
+      doc.save(`informe-gestion-aurora-care-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch {
+      setError('No se pudo generar el informe PDF. Intente de nuevo.');
+    }
   };
 
   return (

@@ -3,8 +3,20 @@ import autoTable from 'jspdf-autotable';
 import type { AIVerdict, CaseStatus, DashboardMetrics, ModelPerformanceReport, TriageAssessment } from '../types';
 import { AI_VERDICT_LABELS, CASE_STATUS_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
 
-type RGB = [number, number, number];
-const PRIMARY: RGB = [124, 58, 237];
+import {
+  C,
+  MARGIN,
+  applyAssets,
+  drawBrandHeader,
+  drawFooter,
+  drawNotice,
+  lastY,
+  loadPdfAssets,
+  sectionTitle,
+  tableStyle,
+  text,
+} from './pdfTheme';
+
 const LEVELS = ['ALTA', 'MEDIA', 'BAJA'] as const;
 
 const dec = (n: number, d = 1) => n.toFixed(d).replace('.', ',');
@@ -22,42 +34,47 @@ function day(iso: string | null): string {
   return iso ? new Date(iso).toLocaleDateString('es-CL') : '';
 }
 
-function lastY(doc: jsPDF): number {
-  return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
-}
-
 interface ManagementReportInput {
   data: DashboardMetrics;
   model: ModelPerformanceReport | null;
   generatedBy: string;
+  assets: Awaited<ReturnType<typeof loadPdfAssets>>;
 }
 
 /** Informe de gestión breve (1–2 páginas) con las métricas agregadas del Dashboard. Sin datos de pacientes. */
-export function buildManagementReport({ data, model, generatedBy }: ManagementReportInput): jsPDF {
+export function buildManagementReport({ data, model, generatedBy, assets }: ManagementReportInput): jsPDF {
   const doc = new jsPDF();
+  applyAssets(doc, assets);
   const width = doc.internal.pageSize.getWidth();
-  const head = { fillColor: PRIMARY, textColor: 255 as const, fontStyle: 'bold' as const };
-  const table = { theme: 'grid' as const, headStyles: head, styles: { fontSize: 9, cellPadding: 2 }, margin: { left: 14, right: 14 } };
+  const table = tableStyle(0);
+  const generatedAt = new Date();
 
-  doc.setFillColor(...PRIMARY);
-  doc.rect(0, 0, width, 26, 'F');
-  doc.setTextColor(255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text('Aurora Care · Informe de gestión', 14, 12);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  let y = drawBrandHeader(doc, assets, 'Informe de gestión', `Generado el ${generatedAt.toLocaleString('es-CL')}`);
+  text(doc, C.ink, 22, 'extrabold');
+  doc.text('Informe de gestión', MARGIN, y + 6);
+  text(doc, C.muted, 9);
   const period =
     data.date_from || data.date_to
       ? `Período: ${day(data.date_from) || 'inicio'} – ${day(data.date_to) || 'hoy'}`
       : 'Período: todos los registros';
-  doc.text(`${period} · Generado el ${new Date().toLocaleString('es-CL')} por ${generatedBy}`, 14, 20);
-  doc.setTextColor(0);
+  doc.text(`${period} · Métricas agregadas, sin datos identificables de pacientes`, MARGIN, y + 12);
+  y += 19;
+  if (data.ai_validations_simulated > 0 || model?.versions.some((v) => v.is_simulated))
+    y = drawNotice(doc, y, 'IA SIMULADA', 'Incluye resultados de IA simulada: no son resultados clínicos.', C.sim, C.simBg);
+  y = sectionTitle(doc, y + 2, 'Indicadores y metas');
 
   autoTable(doc, {
     ...table,
-    startY: 32,
+    startY: y + 1,
     head: [['Indicador', 'Valor', 'Meta', 'Estado']],
+    columnStyles: { 1: { halign: 'right', fontStyle: 'bold' }, 2: { textColor: C.muted } },
+    didParseCell: (cell) => {
+      if (cell.section === 'body' && cell.column.index === 3) {
+        const raw = String(cell.cell.raw);
+        if (raw === 'Cumple') cell.cell.styles.textColor = C.level.BAJA;
+        if (raw === 'No cumple') cell.cell.styles.textColor = C.level.ALTA;
+      }
+    },
     body: [
       ['Casos en el período', data.total_cases.toLocaleString('es-CL'), '—', '—'],
       [
@@ -86,42 +103,54 @@ export function buildManagementReport({ data, model, generatedBy }: ManagementRe
     ],
   });
 
-  const half = (width - 28 - 6) / 2;
-  const y = lastY(doc) + 8;
+  const half = (width - 2 * MARGIN - 8) / 2;
+  y = sectionTitle(doc, lastY(doc) + 10, 'Casos por nivel y estado');
+  const top = y + 1;
   autoTable(doc, {
     ...table,
-    startY: y,
-    margin: { left: 14, right: width - 14 - half },
+    startY: top,
+    margin: { left: MARGIN, right: width - MARGIN - half },
     head: [['Nivel de triage', 'Casos', 'Triage a revisión']],
     body: LEVELS.map((l) => {
       const h = data.avg_triage_to_review_hours_by_level[l];
       return [l, String(data.cases_by_level[l] ?? 0), h === null ? '—' : `${dec(h)} h`];
     }),
+    columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
+    didParseCell: (cell) => {
+      if (cell.section === 'body' && cell.column.index === 0) {
+        cell.cell.styles.textColor = C.level[String(cell.cell.raw)] ?? C.ink;
+        cell.cell.styles.fontStyle = 'bold';
+      }
+    },
   });
   const leftEnd = lastY(doc);
   autoTable(doc, {
     ...table,
-    startY: y,
-    margin: { left: 14 + half + 6, right: 14 },
+    startY: top,
+    margin: { left: MARGIN + half + 8, right: MARGIN },
     head: [['Estado del caso', 'Casos']],
     body: (Object.keys(data.cases_by_status) as CaseStatus[]).map((s) => [
       CASE_STATUS_LABELS[s],
       String(data.cases_by_status[s]),
     ]),
-  });
-  const weeks = data.cases_per_week.slice(-12);
-  autoTable(doc, {
-    ...table,
-    startY: Math.max(leftEnd, lastY(doc)) + 8,
-    head: [['Semana del', ...weeks.map((w) => day(w.week_start).slice(0, 5))]],
-    body: [['Casos', ...weeks.map((w) => String(w.cases))]],
-    styles: { fontSize: 8, cellPadding: 1.5, halign: 'center' },
+    columnStyles: { 1: { halign: 'right' } },
   });
 
+  const weeks = data.cases_per_week.slice(-12);
+  y = sectionTitle(doc, Math.max(leftEnd, lastY(doc)) + 10, 'Casos creados por semana');
   autoTable(doc, {
     ...table,
-    startY: lastY(doc) + 8,
-    head: [['Calidad de las decisiones', 'Valor', 'Desglose']],
+    startY: y + 1,
+    head: [['Semana del', ...weeks.map((w) => day(w.week_start).slice(0, 5))]],
+    body: [['Casos', ...weeks.map((w) => String(w.cases))]],
+    styles: { ...table.styles, fontSize: 8, cellPadding: 1.8, halign: 'center' },
+  });
+
+  y = sectionTitle(doc, lastY(doc) + 10, 'Calidad de las decisiones');
+  autoTable(doc, {
+    ...table,
+    startY: y + 1,
+    head: [['Indicador', 'Valor', 'Desglose']],
     body: [
       [
         'Ajustes médicos del nivel',
@@ -143,16 +172,23 @@ export function buildManagementReport({ data, model, generatedBy }: ManagementRe
           .join(' · '),
       ],
     ],
-    columnStyles: { 2: { cellWidth: 80 } },
+    columnStyles: { 1: { halign: 'right', fontStyle: 'bold' }, 2: { cellWidth: 78, textColor: C.muted } },
   });
 
   if (model && model.versions.length > 0) {
+    // El título no queda solo al pie: si no cabe el bloque, pasa a la página siguiente
+    y = lastY(doc) + 10;
+    if (y + 12 + model.versions.length * 9 > doc.internal.pageSize.getHeight() - 22) {
+      doc.addPage();
+      y = 40;
+    }
+    y = sectionTitle(doc, y, 'Desempeño del modelo por versión');
     autoTable(doc, {
       ...table,
-      startY: lastY(doc) + 8,
+      startY: y + 1,
       head: [['Modelo', 'Evaluables', 'Exactitud', 'Sensibilidad', 'Especificidad', `Meta K5 (${pct(model.k5_target)})`]],
       body: model.versions.map((v) => [
-        `${v.model_version}${v.is_simulated ? ' (IA SIMULADA)' : ''}`,
+        `${v.model_version}${v.is_simulated ? ' · IA SIMULADA' : ''}`,
         String(v.evaluable),
         pct(v.accuracy),
         pct(v.sensitivity),
@@ -162,21 +198,10 @@ export function buildManagementReport({ data, model, generatedBy }: ManagementRe
     });
   }
 
-  const pages = doc.getNumberOfPages();
-  for (let i = 1; i <= pages; i++) {
-    doc.setPage(i);
-    doc.setFontSize(7.5);
-    doc.setTextColor(110);
-    const note =
-      data.ai_validations_simulated > 0 || model?.versions.some((v) => v.is_simulated)
-        ? 'Incluye resultados de IA SIMULADA: no son resultados clínicos. '
-        : '';
-    const footer = doc.splitTextToSize(
-      `${note}Métricas agregadas, sin datos identificables de pacientes. La plataforma apoya, no reemplaza, el criterio médico.`,
-      width - 28 - 14,
-    );
-    doc.text(footer, 14, doc.internal.pageSize.getHeight() - 12);
-    doc.text(`${i}/${pages}`, width - 14, doc.internal.pageSize.getHeight() - 12, { align: 'right' });
-  }
+  drawFooter(doc, `Informe de gestión · Generado el ${generatedAt.toLocaleString('es-CL')} por ${generatedBy}`, {
+    assets,
+    kind: 'Informe de gestión',
+    detail: period.replace('Período: ', ''),
+  });
   return doc;
 }

@@ -707,6 +707,19 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## 2.9.1 — Reportes PDF con el diseño de la interfaz
+
+- El reporte de caso y el informe de gestión usan el sistema visual de `DESIGN.md`: tipografía Atkinson Hyperlegible
+  Next incrustada (pesos 400/700/800 en `src/assets/fonts/`, licencia OFL), símbolo y nombre «Aurora Care» como en la
+  barra lateral, paleta del tema claro, reglas finas de 1 px, encabezados de tabla sobre rubor, timbre de nivel con
+  anillo, aviso «IA SIMULADA» en ocre y bloque de firma con el código de verificación destacado.
+- El reporte de caso abre con el código del caso como titular, el nivel y el estado, y una barra de puntaje del triage.
+- Encabezado repetido y pie en todas las páginas; las tablas respetan esos márgenes.
+- jsPDF y la tipografía vuelven a cargarse solo al generar un PDF (el informe de gestión lo cargaba al iniciar).
+- No cambia el contenido firmado: el código de verificación y el SHA-256 de los reportes existentes siguen válidos.
+
+---
+
 ## 2.9.0 — Aurora Care: landing, sección Pacientes y un caso por examen con varias imágenes
 
 Solo frontend (más el título de la API): no cambia la base de datos ni los endpoints.

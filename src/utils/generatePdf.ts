@@ -11,12 +11,22 @@ import type {
   TriageResult,
 } from '../types';
 import { AI_VERDICT_LABELS, EXAM_TYPE_LABELS, RECOMMENDATION_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
-
-type RGB = [number, number, number];
-const PRIMARY: RGB = [124, 58, 237];
-const AMBER: RGB = [217, 119, 6];
-const FUCHSIA: RGB = [192, 38, 211];
-const LEVEL_COLOR: Record<string, RGB> = { ALTA: [220, 38, 38], MEDIA: [217, 119, 6], BAJA: [22, 163, 74] };
+import {
+  C,
+  MARGIN,
+  applyAssets,
+  drawBrandHeader,
+  drawFooter,
+  drawLevelStamp,
+  drawNotice,
+  kvStyle,
+  lastY,
+  loadPdfAssets,
+  rule,
+  sectionTitle,
+  tableStyle,
+  text,
+} from './pdfTheme';
 
 const FACTOR_LABELS: Record<string, string> = {
   ai: 'IA (máx. confianza con hallazgo)',
@@ -41,10 +51,6 @@ function ageFrom(birthDate: string): number {
   return age;
 }
 
-function lastY(doc: jsPDF): number {
-  return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
-}
-
 interface ReportInput {
   caseData: ClinicalCase;
   triage: TriageResult | null;
@@ -52,17 +58,27 @@ interface ReportInput {
   metadata: DicomMetadata;
   medicoName: string;
   images?: CaseImage[];
+  assets: Awaited<ReturnType<typeof loadPdfAssets>>;
 }
 
-/** Construye el PDF. Identifica el caso solo por su código anónimo (sin nombre ni RUT). */
-export function buildCaseReport({ caseData, triage, review, metadata, medicoName, images = [] }: ReportInput): jsPDF {
+const STATUS_LABEL: Record<string, string> = {
+  ABIERTO: 'Abierto',
+  PRIORIZADO: 'Priorizado',
+  EN_REVISION: 'En revisión',
+  CERRADO: 'Cerrado',
+};
+
+/** Construye el PDF con el sistema visual de la interfaz. Identifica el caso solo por su código anónimo. */
+export function buildCaseReport({ caseData, triage, review, metadata, medicoName, images = [], assets }: ReportInput): jsPDF {
   const doc = new jsPDF();
+  applyAssets(doc, assets);
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 18;
+  const contentWidth = pageWidth - 2 * MARGIN;
   const generatedAt = new Date();
   const simulated = metadata.AIIsSimulated === true;
   const prototype = metadata.AIIsPrototype === true;
+  const fmt = (v?: string | null) => (v ? new Date(v).toLocaleString('es-CL') : '—');
 
   // Metadatos tipo DICOM (SC-02) incrustados en las propiedades del documento
   doc.setProperties({
@@ -73,142 +89,126 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
     creator: 'Aurora Care',
   });
 
-  doc.setFillColor(...PRIMARY);
-  doc.rect(0, 0, pageWidth, 32, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text('Reporte de caso — Aurora Care', margin, 15);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text('Plataforma de apoyo a la detección temprana y priorización. No reemplaza el criterio médico.', margin, 23);
-  doc.setTextColor(0, 0, 0);
+  let y = drawBrandHeader(doc, assets, 'Reporte de caso', `Generado el ${generatedAt.toLocaleString('es-CL')}`);
 
-  let y = 40;
-  if (simulated) {
-    doc.setFillColor(...AMBER);
-    doc.roundedRect(margin, y, pageWidth - 2 * margin, 12, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text('IA SIMULADA: los resultados de análisis de imagen son ficticios y no tienen valor clínico.', pageWidth / 2, y + 7.5, {
-      align: 'center',
-    });
-    doc.setTextColor(0, 0, 0);
-    y += 18;
+  // Titular: código del caso (Display) con su timbre de nivel y estado, como en el detalle del caso
+  text(doc, C.ink, 24, 'extrabold');
+  doc.text(caseData.code, MARGIN, y + 6);
+  text(doc, C.muted, 8.5);
+  doc.text(`Creado el ${fmt(caseData.created_at)}  ·  Cerrado el ${fmt(caseData.closed_at)}`, MARGIN, y + 12);
+  if (triage) {
+    const level = triage.final_level;
+    text(doc, C.ink, 13, 'extrabold');
+    const stampWidth = 2 * 2.6 + 2 + doc.getTextWidth(level) + level.length * 0.25;
+    drawLevelStamp(doc, pageWidth - MARGIN - stampWidth, y + 4, level, 'lg');
   }
-  if (prototype) {
-    doc.setFillColor(...FUCHSIA);
-    doc.roundedRect(margin, y, pageWidth - 2 * margin, 12, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text('MODELO PROTOTIPO, NO VALIDADO: el resultado de IA no tiene validación clínica y no es un diagnóstico.', pageWidth / 2, y + 7.5, {
-      align: 'center',
-    });
-    doc.setTextColor(0, 0, 0);
-    y += 18;
-  }
+  text(doc, C.muted, 8.5);
+  doc.text(STATUS_LABEL[caseData.status] ?? caseData.status, pageWidth - MARGIN, y + 12, { align: 'right' });
+  y += 18;
 
-  const section = (title: string) => {
-    if (y > pageHeight - 50) {
-      doc.addPage();
-      y = margin;
-    }
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text(title, margin, y);
-    y += 4;
-  };
-  const table = (head: string[], body: Array<Array<string>>) => {
-    autoTable(doc, {
-      startY: y,
-      head: [head],
-      body,
-      theme: 'striped',
-      headStyles: { fillColor: PRIMARY, textColor: [255, 255, 255] },
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 8.5 },
-    });
-    y = lastY(doc) + 10;
-  };
-
-  section('Caso');
-  table(
-    ['Campo', 'Valor'],
+  // Paciente (anónimo) en tres columnas, entre reglas finas
+  rule(doc, y);
+  const col = contentWidth / 3;
+  const symptoms =
     [
-      ['Código anónimo', caseData.code],
-      ['Edad de la paciente', caseData.patient ? `${ageFrom(caseData.patient.birth_date)} años` : '—'],
-      ['Fecha de creación', new Date(caseData.created_at).toLocaleString('es-CL')],
-      ['Fecha de cierre', caseData.closed_at ? new Date(caseData.closed_at).toLocaleString('es-CL') : '—'],
-      ['Síntomas', [
-        caseData.palpable_mass && 'masa palpable',
-        caseData.nipple_discharge && 'secreción por el pezón',
-        caseData.skin_or_nipple_changes && 'cambios en piel/pezón',
-      ].filter(Boolean).join(', ') || 'ninguno'],
-      ['BI-RADS informado', caseData.birads_reported === null ? 'sin informe' : String(caseData.birads_reported)],
+      caseData.palpable_mass && 'masa palpable',
+      caseData.nipple_discharge && 'secreción por el pezón',
+      caseData.skin_or_nipple_changes && 'cambios en piel o pezón',
     ]
-  );
+      .filter(Boolean)
+      .join(', ') || 'ninguno';
+  const cells: Array<[string, string, string]> = [
+    ['Edad de la paciente', caseData.patient ? `${ageFrom(caseData.patient.birth_date)} años` : '—', ''],
+    ['Síntomas', symptoms, ''],
+    ['BI-RADS informado', caseData.birads_reported === null ? 'Sin informe' : String(caseData.birads_reported), ''],
+  ];
+  cells.forEach(([label, value], i) => {
+    text(doc, C.muted, 7.5);
+    doc.text(label, MARGIN + i * col, y + 6);
+    text(doc, C.ink, 9.5, 'bold');
+    doc.text(value, MARGIN + i * col, y + 11.5, { maxWidth: col - 4 });
+  });
+  y += 17;
+  rule(doc, y);
+  y += 7;
+
+  if (simulated)
+    y = drawNotice(doc, y, 'IA SIMULADA', 'Los resultados de análisis de imagen son ficticios y no tienen valor clínico.', C.sim, C.simBg);
+  if (prototype)
+    y = drawNotice(doc, y, 'MODELO PROTOTIPO — NO VALIDADO', 'El resultado de IA no tiene validación clínica.', C.proto, C.protoBg);
+
+  const ensureSpace = (needed: number) => {
+    if (y > pageHeight - 22 - needed) {
+      doc.addPage();
+      y = 34;
+    }
+  };
+  const section = (title: string) => {
+    ensureSpace(30);
+    y = sectionTitle(doc, y + 2, title);
+  };
 
   if (triage) {
     section('Triage');
-    const color = LEVEL_COLOR[triage.final_level];
-    doc.setFillColor(...color);
-    doc.roundedRect(margin, y, 60, 9, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(9);
-    doc.text(`Nivel ${triage.final_level}`, margin + 30, y + 6, { align: 'center' });
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'normal');
-    doc.text(
-      `Puntaje ${triage.score.toFixed(2)} / 100 · configuración v${triage.config_version}` +
-        (triage.escalation_rule ? ` · regla ${triage.escalation_rule}` : ''),
-      margin + 65,
-      y + 6
-    );
-    y += 14;
+    y += 3;
+    text(doc, C.muted, 8.5);
+    let line = `Puntaje ${triage.score.toFixed(1).replace('.', ',')} / 100 · parámetros v${triage.config_version}`;
+    if (triage.escalation_rule) line += ` · regla de escalamiento ${triage.escalation_rule}`;
+    doc.text(line, MARGIN, y + 2);
+    // Barra de puntaje: pista rubor y relleno del color del nivel
+    const barY = y + 5;
+    doc.setFillColor(...C.blush);
+    doc.roundedRect(MARGIN, barY, contentWidth, 2.4, 1.2, 1.2, 'F');
+    doc.setFillColor(...(C.level[triage.final_level] ?? C.rose));
+    doc.roundedRect(MARGIN, barY, Math.max(2.4, (contentWidth * Math.min(100, triage.score)) / 100), 2.4, 1.2, 1.2, 'F');
+    y = barY + 7;
     if (triage.override_by !== null) {
-      doc.setFontSize(8.5);
-      doc.text(`Nivel ajustado por médico (calculado: ${triage.computed_level}). Motivo: ${triage.override_reason ?? ''}`, margin, y, {
-        maxWidth: pageWidth - 2 * margin,
-      });
-      y += 8;
+      text(doc, C.ink, 8.5);
+      const msg = `Nivel ajustado por el médico (calculado: ${triage.computed_level}). Motivo: ${triage.override_reason ?? ''}`;
+      const lines = doc.splitTextToSize(msg, contentWidth);
+      doc.text(lines, MARGIN, y + 1);
+      y += lines.length * 4 + 3;
     }
     if (triage.breakdown) {
       const b = triage.breakdown as unknown as Record<string, { value: number | boolean; weight: number; points: number }>;
-      table(
-        ['Factor', 'Valor', 'Peso', 'Aporte'],
-        Object.keys(FACTOR_LABELS).map((k) => [
-          FACTOR_LABELS[k] + (k === 'ai' && simulated ? ' [IA SIMULADA]' : k === 'ai' && prototype ? ' [PROTOTIPO]' : ''),
+      autoTable(doc, {
+        ...tableStyle(y),
+        head: [['Factor', 'Valor', 'Peso', 'Aporte']],
+        body: Object.keys(FACTOR_LABELS).map((k) => [
+          FACTOR_LABELS[k] + (k === 'ai' && simulated ? ' · IA SIMULADA' : k === 'ai' && prototype ? ' · PROTOTIPO' : ''),
           typeof b[k].value === 'boolean' ? (b[k].value ? 'Sí' : 'No') : String(b[k].value),
           String(b[k].weight),
-          b[k].points.toFixed(2),
-        ])
-      );
+          b[k].points.toFixed(2).replace('.', ','),
+        ]),
+        columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right', fontStyle: 'bold' } },
+      });
+      y = lastY(doc) + 8;
     }
   }
 
   section('Revisión médica');
-  table(
-    ['Campo', 'Valor'],
-    [
+  autoTable(doc, {
+    ...kvStyle(y + 1),
+    body: [
       ['BI-RADS final', String(review.birads_final)],
       ['Hallazgos', review.findings],
       ['Recomendación', RECOMMENDATION_LABELS[review.recommendation]],
       ['Médico', medicoName],
-      ['Fecha', review.created_at ? new Date(review.created_at).toLocaleString('es-CL') : '—'],
-    ]
-  );
+      ['Fecha', fmt(review.created_at)],
+    ],
+  });
+  y = lastY(doc) + 8;
 
   section('Validación médica de la IA y del triage');
   const validated = images.filter((img) => img.inference);
-  table(
-    ['Elemento', 'Resultado IA', 'Validación del médico'],
-    [
+  autoTable(doc, {
+    ...tableStyle(y + 1),
+    head: [['Elemento', 'Resultado', 'Validación del médico']],
+    body: [
       ...validated.map((img) => [
-        `${EXAM_TYPE_LABELS[img.exam_type]}${img.laterality ? ` (${img.laterality === 'L' ? 'izq.' : 'der.'})` : ''}`,
-        `${img.inference!.detected ? 'Hallazgo' : 'Sin hallazgos'} ${img.inference!.confidence.toFixed(1)}%` +
-          (img.inference!.is_simulated ? ' [IA SIMULADA]' : img.inference!.clinically_validated ? '' : ' [PROTOTIPO NO VALIDADO]'),
+        `${EXAM_TYPE_LABELS[img.exam_type]}${img.laterality ? ` · ${img.laterality === 'L' ? 'Izquierda' : 'Derecha'}` : ''}`,
+        `${img.inference!.detected ? 'Hallazgo' : 'Sin hallazgos'} · ${img.inference!.confidence.toFixed(1).replace('.', ',')} %` +
+          (img.inference!.is_simulated ? ' · IA SIMULADA' : img.inference!.clinically_validated ? '' : ' · PROTOTIPO'),
         img.validation
           ? AI_VERDICT_LABELS[img.validation.verdict] + (img.validation.comment ? ` — ${img.validation.comment}` : '')
           : 'Sin validar',
@@ -216,50 +216,62 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
       [
         'Triage',
         review.triage_level_at_review
-          ? `Nivel ${review.triage_level_at_review} (configuración v${review.triage_config_version_at_review})`
+          ? `Nivel ${review.triage_level_at_review} · parámetros v${review.triage_config_version_at_review}`
           : '—',
         review.triage_assessment
           ? TRIAGE_ASSESSMENT_LABELS[review.triage_assessment] + (review.triage_comment ? ` — ${review.triage_comment}` : '')
           : 'No registrada',
       ],
-    ]
-  );
+    ],
+  });
+  y = lastY(doc) + 8;
 
   const signature = metadata.MedicalSignature as MedicalSignatureBlock | undefined;
   if (signature) {
-    section('Firma del médico');
-    table(
-      ['Campo', 'Valor'],
-      [
-        ['Declaración', 'El médico declara su conformidad con el contenido de este reporte, incluida la validación del resultado de IA.'],
-        ['Firmado por', signature.SignedBy],
-        ['Fecha de firma', new Date(signature.SignedAt).toLocaleString('es-CL')],
-        ['Código de verificación', signature.VerificationCode],
-        ['SHA-256 del contenido firmado', signature.ContentSHA256],
-      ]
+    ensureSpace(52);
+    y = sectionTitle(doc, y + 2, 'Firma del médico');
+    // Bloque de firma: borde rosa, como la acción principal del caso
+    const boxY = y + 2;
+    doc.setDrawColor(...C.rose);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(MARGIN, boxY, contentWidth, 34, 2, 2, 'S');
+    text(doc, C.ink, 8.5);
+    doc.text(
+      doc.splitTextToSize(
+        'El médico declara su conformidad con el contenido de este reporte, incluida la validación del resultado de IA.',
+        contentWidth - 10,
+      ),
+      MARGIN + 5,
+      boxY + 7,
     );
+    text(doc, C.ink, 12, 'extrabold');
+    doc.text(signature.SignedBy, MARGIN + 5, boxY + 17);
+    text(doc, C.muted, 8);
+    doc.text(`Firmado el ${fmt(signature.SignedAt)}`, MARGIN + 5, boxY + 22);
+    text(doc, C.muted, 7.5);
+    doc.text('Código de verificación', pageWidth - MARGIN - 5, boxY + 13, { align: 'right' });
+    text(doc, C.rose, 12, 'extrabold');
+    doc.text(signature.VerificationCode, pageWidth - MARGIN - 5, boxY + 19, { align: 'right' });
+    text(doc, C.muted, 6.5);
+    doc.text(`SHA-256 del contenido firmado: ${signature.ContentSHA256}`, MARGIN + 5, boxY + 30);
+    y = boxY + 34 + 8;
   }
 
   section('Metadatos tipo DICOM (SC-02)');
-  table(
-    ['Atributo', 'Valor'],
-    Object.entries(metadata)
+  autoTable(doc, {
+    ...kvStyle(y + 1, 62),
+    styles: { ...kvStyle(y + 1).styles, fontSize: 7.5, cellPadding: { top: 1.5, bottom: 1.5, left: 2.5, right: 2.5 } },
+    head: [['Atributo', 'Valor']],
+    body: Object.entries(metadata)
       .filter(([k]) => k !== 'MedicalSignature')
-      .map(([k, v]) => [k, Array.isArray(v) ? v.join(', ') : v === null ? '—' : String(v)])
-  );
+      .map(([k, v]) => [k, Array.isArray(v) ? v.join(', ') : v === null ? '—' : String(v)]),
+  });
 
-  const pages = doc.getNumberOfPages();
-  for (let i = 1; i <= pages; i++) {
-    doc.setPage(i);
-    doc.setFontSize(7.5);
-    doc.setTextColor(120, 120, 120);
-    doc.text(
-      `${caseData.code} · Generado el ${generatedAt.toLocaleString('es-CL')} por ${medicoName} · Página ${i} de ${pages}`,
-      pageWidth / 2,
-      pageHeight - 8,
-      { align: 'center' }
-    );
-  }
+  drawFooter(doc, `${caseData.code} · Generado el ${generatedAt.toLocaleString('es-CL')} por ${medicoName}`, {
+    assets,
+    kind: 'Reporte de caso',
+    detail: caseData.code,
+  });
   return doc;
 }
 
@@ -273,7 +285,9 @@ export async function generateAndRegisterReport(
   if (!meta.data) return { error: meta.error || 'No se pudieron obtener los metadatos del reporte' };
   const [triage, images] = await Promise.all([apiClient.getTriage(caseData.id), apiClient.listImages(caseData.id)]);
 
+  const assets = await loadPdfAssets();
   const doc = buildCaseReport({
+    assets,
     caseData,
     triage: triage.data ?? null,
     review,
