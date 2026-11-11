@@ -5,6 +5,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY index.html vite.config.ts tsconfig*.json postcss.config.js tailwind.config.js eslint.config.js ./
 COPY src ./src
+# Archivos estáticos sin procesar: theme-init.js (tema antes del primer render, sin script inline por la CSP) y favicon
+COPY public ./public
 # La API se sirve en el mismo dominio, bajo /api (sin CORS)
 ARG VITE_API_URL=/api
 ENV VITE_API_URL=$VITE_API_URL

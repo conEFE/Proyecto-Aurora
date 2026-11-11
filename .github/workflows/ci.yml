@@ -94,5 +94,10 @@ jobs:
           curl -fsSI http://localhost:8080/ | tee headers.txt
           grep -qi "content-security-policy" headers.txt
           grep -qi "x-frame-options: DENY" headers.txt
+      - name: Archivos estáticos del sitio (tema y favicon)
+        run: |
+          curl -fsS -o /dev/null http://localhost:8080/theme-init.js
+          curl -fsS -o /dev/null http://localhost:8080/favicon.png
+          curl -fsSI http://localhost:8080/theme-init.js | grep -qi "content-type: text/javascript\|content-type: application/javascript"
       - if: always()
         run: docker compose --env-file deploy/.env down -v
