@@ -7,7 +7,7 @@ Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.7.0** (rediseño visua
 
 | Pieza | Detalle |
 |---|---|
-| Sitio | **https://13-184-207-158.sslip.io** (HTTPS de Let's Encrypt, renovación automática por Caddy) |
+| Sitio | **https://demo.auroracare.cl** (desde el 11-11-2026) y, en paralelo, https://13-184-207-158.sslip.io. HTTPS de Let's Encrypt, renovación automática por Caddy |
 | Proyecto de AWS | Nueva experiencia de AWS, **plan gratuito**, región fija **us-east-2** (Ohio). Vence el **10-05-2027** |
 | Créditos | **USD 180** al 10-11-2026 (100 iniciales + 80 de actividades). Pendiente: actividad de RDS (+20) |
 | Servidor | EC2 `aurora-prod` (`i-0f7427c0dac2fd6b0`), `t4g.micro` arm64, Amazon Linux 2023, disco 10 GB gp3 cifrado, IMDSv2, créditos de CPU «estándar», 2 GB de swap |
@@ -20,7 +20,7 @@ Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.7.0** (rediseño visua
 | Ciclo de vida del bucket | Versiones antiguas: 7 días. Respaldos (`backups/`): 35 días. Cargas incompletas: 7 días |
 | Respaldo | `deploy/backup_db.sh` diario a las **03:15 hora de Chile** (crontab de `ec2-user`), verificado (13,5 KB) |
 | Logs | CloudWatch `/aurora/prod` (backend, db, web), retención 30 días |
-| DNS | Route 53, zona `auroracare.cl` (`Z0628464DNWEOT5ICYNC`), registro `demo` → Elastic IP. Pendiente la delegación en NIC |
+| DNS | Route 53, zona `auroracare.cl` (`Z0628464DNWEOT5ICYNC`), registro `demo` → Elastic IP. Delegado en NIC Chile (inscrito el 11-11-2026, vence el 11-11-2027) |
 | Tailscale | Instalado en el servidor (11-11-2026): `aurora-ec2`, IP `100.83.18.31`, `--accept-dns=false`, servicio `tailscaled` habilitado al arrancar. Falta Juan (`aurora-modelo`) |
 | Presupuesto | `aurora-mensual`: USD 15 al mes, alertas al 85 %, 100 % y pronóstico |
 | Modelo de IA | `INFERENCE_PROVIDER=simulated` por ahora. El token del modelo ya está en `deploy/.env` |
@@ -75,16 +75,14 @@ Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.7.0** (rediseño visua
 14. Sacar del repositorio los pesos del modelo (≈63 MB) y llevarlos a un almacenamiento de artefactos.
 
 ### Dominio propio: `auroracare.cl` (en curso; antes se pensó en `aurorahealth.cl`)
-15. **Inscripción en NIC Chile:** Felipe la está haciendo (11-11-2026). En «Configuración técnica» van los
-    **servidores DNS de Route 53** (no «Redireccionamiento Web»), uno por uno y **sin el punto final**:
-    `ns-1350.awsdns-40.org`, `ns-862.awsdns-43.net`, `ns-73.awsdns-09.com`, `ns-1730.awsdns-24.co.uk`.
+15. ~~Inscripción en NIC Chile~~: **hecha (11-11-2026), vence el 11-11-2027** (renovar en NIC antes de esa fecha).
+    Servidores DNS: `ns-1350.awsdns-40.org`, `ns-862.awsdns-43.net`, `ns-73.awsdns-09.com`, `ns-1730.awsdns-24.co.uk`.
 16. ~~Zona en Route 53~~: **hecha (11-11-2026).** Zona pública `auroracare.cl`, ID `Z0628464DNWEOT5ICYNC`
-    (USD 0,50 al mes). Si se cambia de dominio, borrar la zona para no pagarla.
-17. **Apuntar el sitio:** el registro `A` `demo.auroracare.cl` → `13.184.207.158` (TTL 300) **ya está creado**.
-    Falta, **solo cuando `dig +short demo.auroracare.cl` devuelva la IP** (si no, Caddy no obtiene el certificado y
-    Let's Encrypt puede bloquear los intentos): en el servidor, `deploy/.env`: `SITE_ADDRESS=demo.auroracare.cl` y
-    `PUBLIC_URL=https://demo.auroracare.cl`, y `dc up -d`. Opcional: mantener `13-184-207-158.sslip.io` con
-    redirección al dominio nuevo (bloque extra en `deploy/Caddyfile`).
+    (USD 0,50 al mes). Registro `A` `demo` → `13.184.207.158` (TTL 300).
+17. ~~Apuntar el sitio~~: **hecho (11-11-2026).** En `deploy/.env`:
+    `SITE_ADDRESS="demo.auroracare.cl, 13-184-207-158.sslip.io"` (Caddy saca certificado para las dos) y
+    `PUBLIC_URL=https://demo.auroracare.cl`. Los valores anteriores quedaron en `deploy/.env.dominio-anterior`.
+    Opcional: que sslip.io redirija al dominio (bloque extra en `deploy/Caddyfile`) o quitarla de `SITE_ADDRESS`.
 18. **Marca:** antes de usar «Aurora Care» comercialmente, revisar en **INAPI** que no haya una marca igual en
     salud o software.
 
