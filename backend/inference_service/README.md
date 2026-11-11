@@ -86,8 +86,11 @@ Se necesitan tres terminales y el orden importa: el servicio tiene que estar arr
 cd backend
 venv\Scripts\activate
 cd inference_service
-uvicorn app:app --port 8080
+uvicorn app:app --host 0.0.0.0 --port 8080
 ```
+
+`--host 0.0.0.0` permite que la plataforma en AWS llegue por Tailscale. Protege el puerto con la regla del firewall
+de `docs/guia_modelo_juan.md` (paso 4): solo direcciones de Tailscale (`100.64.0.0/10`).
 
 Espera a que aparezca `Application startup complete` y abre <http://localhost:8080/health>.
 Debe mostrar `"device": "cuda:0"` (o `"cpu"` si no hay GPU).

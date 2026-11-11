@@ -42,7 +42,7 @@ Actualizado: 11-11-2026. Versión desplegada: **2.7.0** (rediseño visual «Orde
    copia de la configuración previa (con permisos 600): se puede borrar.
 
 ### Modelo de IA (opción B, `docs/inferencia_remota.md`)
-5. Juan instala **Tailscale** en su PC (nombre `aurora-modelo`) y levanta el servicio con
+5. **Guía paso a paso para Juan: `docs/guia_modelo_juan.md`.** Juan instala **Tailscale** en su PC (nombre `aurora-modelo`) y levanta el servicio con
    `docker-compose.gpu.yml` o en forma nativa.
 6. En el servidor: instalar Tailscale (`sudo tailscale up --hostname aurora-ec2`), poner en `deploy/.env`
    `INFERENCE_PROVIDER=http` e `INFERENCE_URL=http://aurora-modelo:8080`, y entregarle a Juan el
