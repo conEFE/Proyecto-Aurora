@@ -48,6 +48,7 @@ está en `/openapi.json` y la documentación interactiva en `/docs` del backend.
 | POST | `/patients` | ADMINISTRATIVO, MEDICO | Registra un paciente. El consentimiento informado es obligatorio. |
 | GET | `/patients/{patient_id}` | ADMINISTRATIVO, MEDICO | Detalle del paciente (registra VIEW). |
 | PUT | `/patients/{patient_id}` | ADMINISTRATIVO, MEDICO | Edita datos y antecedentes del paciente; recalcula el triage de sus casos abiertos. |
+| DELETE | `/patients/{patient_id}` | ADMINISTRATIVO, MEDICO | Elimina un paciente sin casos (registrado por error). Con casos responde 409: use el bloqueo. |
 | POST | `/patients/{patient_id}/block` | ADMINISTRATIVO, MEDICO | Bloquea el tratamiento de los datos (exige casos cerrados). Los datos se conservan por la Ley 20.584. |
 | POST | `/patients/{patient_id}/consent` | ADMINISTRATIVO, MEDICO | Registra el consentimiento con el texto vigente (nuevo otorgamiento o actualización de versión). |
 | GET | `/patients/{patient_id}/consent/events` | ADMINISTRATIVO, MEDICO | Historial del consentimiento con la versión del texto aceptado. |

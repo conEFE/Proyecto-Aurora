@@ -89,7 +89,7 @@ function App() {
         {currentSection === 'cases' && (
           <CaseManagement key={openCaseNonce} me={me} initialCaseId={openCaseId} />
         )}
-        {currentSection === 'dashboard' && <Dashboard />}
+        {currentSection === 'dashboard' && <Dashboard me={me} />}
         {currentSection === 'privacy' && me.role !== 'ADMIN' && <PrivacyPanel me={me} />}
         {currentSection === 'panel' && me.role === 'ADMIN' && <AdminPanel />}
       </main>

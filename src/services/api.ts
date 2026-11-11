@@ -209,6 +209,10 @@ class ApiClient {
     return this.request<Patient>(`/patients/${patientId}/block`, { method: 'POST', body: JSON.stringify({ reason }) });
   }
 
+  async deletePatient(patientId: number) {
+    return this.request<null>(`/patients/${patientId}`, { method: 'DELETE' });
+  }
+
   async unblockPatient(patientId: number) {
     return this.request<Patient>(`/patients/${patientId}/unblock`, { method: 'POST' });
   }

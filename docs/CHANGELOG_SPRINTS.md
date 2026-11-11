@@ -707,6 +707,23 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## 2.8.0 — Eliminar pacientes sin casos, informe de gestión en PDF y datos de demostración
+
+- **Eliminar paciente** (`DELETE /patients/{id}`, ADMINISTRATIVO y MEDICO): solo si **no tiene casos** (registrado
+  por error). Borra también su historial de consentimiento y sus solicitudes, y deja `DELETE` en la auditoría (solo
+  el id, sin RUT ni nombre). Con casos responde 409: la ficha clínica se conserva por la **Ley 20.584** y corresponde
+  «Bloquear datos». Botón «Eliminar paciente» con confirmación en Privacidad → Por paciente. Sin cambios de esquema.
+- **Informe de gestión en PDF**: botón «Exportar informe PDF» en el Dashboard (jsPDF, una página). Respeta el filtro
+  de fechas e incluye indicadores con metas, casos por nivel, estado y semana, calidad de las decisiones y, para
+  MEDICO y ADMIN, el desempeño del modelo. Avisa si incluye resultados de IA SIMULADA.
+- **Datos de demostración** (`python -m scripts.seed_demo [--patients 120] [--weeks 10]`): pacientes ficticios
+  (RUT desde 40.000.000) con casos repartidos en varias semanas, imágenes con IA SIMULADA, validaciones, ajustes de
+  nivel y revisiones con fechas realistas. Usa un MEDICO activo existente y no se repite. Se deshace restaurando el
+  respaldo previo.
+- Pruebas: eliminación sin casos, rechazo con casos y rechazo para ADMIN.
+
+---
+
 ## Pendiente para S8 (no implementado, según la regla 2)
 Pruebas de carga con Locust y soporte DICOM en la carga (el servicio del modelo ya lee DICOM; la plataforma
 todavía no lo acepta). De S7 queda ejecutar el

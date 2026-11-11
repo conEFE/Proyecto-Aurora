@@ -43,6 +43,7 @@ const ACTIONS = [
   'VIEW',
   'CREATE',
   'UPDATE',
+  'DELETE',
   'DOWNLOAD',
   'OVERRIDE',
   'CONFIG_CHANGE',

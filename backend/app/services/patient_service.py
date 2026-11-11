@@ -107,6 +107,28 @@ def update_patient(
     return with_version(db, patient)
 
 
+def delete_patient(db: Session, patient_id: int, actor: User, ip: str | None = None) -> None:
+    """Elimina un paciente registrado por error. Solo si no tiene casos: la ficha clínica se conserva
+    (Ley 20.584) y para esos pacientes corresponde «Bloquear datos»."""
+    from app.db.models.case import Case
+    from app.db.models.privacy import ConsentEvent, DataSubjectRequest
+
+    patient = db.get(Patient, patient_id)
+    if patient is None:
+        raise NotFoundError("Paciente no encontrado")
+    if db.query(Case.id).filter(Case.patient_id == patient.id).first() is not None:
+        raise ConflictError(
+            "No se puede eliminar: el paciente tiene casos clínicos y su ficha se conserva por la Ley 20.584. "
+            "Use «Bloquear datos»."
+        )
+    db.query(DataSubjectRequest).filter(DataSubjectRequest.patient_id == patient.id).delete()
+    db.query(ConsentEvent).filter(ConsentEvent.patient_id == patient.id).delete()
+    # Sin RUT ni nombre en la auditoría: solo el identificador interno
+    audit(db, actor, "DELETE", "patient", patient.id, {"reason": "sin casos"}, ip, commit=False)
+    db.delete(patient)
+    db.commit()
+
+
 def on_patient_updated(db: Session, patient: Patient) -> None:
     """Los antecedentes y la edad del paciente influyen en el triage de sus casos abiertos."""
     from app.services import triage_service

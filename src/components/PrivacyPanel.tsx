@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, Download, FileText, Loader2, Lock, Search, ShieldCheck, Unlock, UserX } from 'lucide-react';
+import { AlertTriangle, Download, FileText, Loader2, Lock, Search, ShieldCheck, Trash2, Unlock, UserX } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { cn } from '../lib/cn';
 import type {
@@ -220,13 +220,23 @@ function downloadJson(data: unknown, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function PatientPrivacy({ patient, me, onChanged }: { patient: Patient; me: Me; onChanged: (p: Patient) => void }) {
+function PatientPrivacy({
+  patient,
+  me,
+  onChanged,
+  onDeleted,
+}: {
+  patient: Patient;
+  me: Me;
+  onChanged: (p: Patient) => void;
+  onDeleted: (id: number) => void;
+}) {
   const [events, setEvents] = useState<ConsentEvent[]>([]);
   const [requests, setRequests] = useState<DataSubjectRequest[]>([]);
   const [activeText, setActiveText] = useState<ConsentText | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [action, setAction] = useState<'withdraw' | 'grant' | 'block' | 'request' | null>(null);
+  const [action, setAction] = useState<'withdraw' | 'grant' | 'block' | 'request' | 'delete' | null>(null);
   const [reason, setReason] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [reqType, setReqType] = useState<DataRequestType>('ACCESO');
@@ -270,6 +280,15 @@ function PatientPrivacy({ patient, me, onChanged }: { patient: Patient; me: Me; 
       reset();
       load();
     } else setError(r.error || 'No se pudo completar la acción');
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    setError(null);
+    const r = await apiClient.deletePatient(patient.id);
+    setBusy(false);
+    if (r.error) setError(r.error);
+    else onDeleted(patient.id);
   };
 
   const submitRequest = async () => {
@@ -362,7 +381,28 @@ function PatientPrivacy({ patient, me, onChanged }: { patient: Patient; me: Me; 
         <button className={secondaryButton} onClick={() => { reset(); setAction('request'); }}>
           <FileText className="w-3.5 h-3.5" /> Registrar solicitud
         </button>
+        {!blocked && (
+          <button className={secondaryButton} onClick={() => { reset(); setAction('delete'); }}>
+            <Trash2 className="w-3.5 h-3.5" /> Eliminar paciente
+          </button>
+        )}
       </div>
+
+      {action === 'delete' && (
+        <div className="p-3 border border-alta/30 rounded space-y-2">
+          <p className="text-xs text-foreground">
+            Solo se elimina un paciente <strong>sin casos</strong> (por ejemplo, registrado por error). Si ya tiene
+            casos, su ficha clínica se conserva por la Ley 20.584 y corresponde «Bloquear datos». La eliminación queda
+            en la auditoría y no se puede deshacer.
+          </p>
+          <div className="flex gap-2">
+            <button className={primaryButton} disabled={busy} onClick={remove}>
+              Eliminar definitivamente
+            </button>
+            <button className={secondaryButton} onClick={reset}>Cancelar</button>
+          </div>
+        </div>
+      )}
 
       {action === 'withdraw' && (
         <div className="p-3 border border-border rounded space-y-2">
@@ -490,10 +530,12 @@ function PatientView({ me }: { me: Me }) {
   const [results, setResults] = useState<Patient[] | null>(null);
   const [selected, setSelected] = useState<Patient | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const search = async (e: React.FormEvent) => {
     e.preventDefault();
     const r = await apiClient.searchPatients(term.trim() || undefined, true);
+    setNotice(null);
     if (r.data) {
       setResults(r.data);
       setError(null);
@@ -508,6 +550,9 @@ function PatientView({ me }: { me: Me }) {
         <button type="submit" className={primaryButton}><Search className="w-3.5 h-3.5" /> Buscar</button>
       </form>
       {error && <div className={errorBox}>{error}</div>}
+      {notice && (
+        <div className="p-2 bg-baja/10 border border-baja/20 text-baja rounded text-xs">{notice}</div>
+      )}
       {results && !selected && (
         <div className={`${cardClass} divide-y divide-border`}>
           {results.length === 0 && <p className="p-4 text-xs text-muted-foreground">Sin resultados.</p>}
@@ -525,7 +570,17 @@ function PatientView({ me }: { me: Me }) {
       {selected && (
         <>
           <button className={secondaryButton} onClick={() => setSelected(null)}>← Volver a los resultados</button>
-          <PatientPrivacy key={selected.id} patient={selected} me={me} onChanged={setSelected} />
+          <PatientPrivacy
+            key={selected.id}
+            patient={selected}
+            me={me}
+            onChanged={setSelected}
+            onDeleted={(id) => {
+              setSelected(null);
+              setResults((prev) => prev?.filter((p) => p.id !== id) ?? null);
+              setNotice('Paciente eliminado.');
+            }}
+          />
         </>
       )}
     </div>

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.orm import Session
 
 from app.auth.rbac import require_roles
@@ -68,6 +68,18 @@ def update_patient(
 ):
     """Edita datos y antecedentes del paciente; recalcula el triage de sus casos abiertos."""
     return patient_service.update_patient(db, patient_id, data, actor, client_ip(request))
+
+
+@router.delete("/{patient_id}", status_code=204)
+def delete_patient(
+    patient_id: int,
+    request: Request,
+    actor: User = Depends(clinical_staff),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Elimina un paciente sin casos (registrado por error). Con casos responde 409: use el bloqueo."""
+    patient_service.delete_patient(db, patient_id, actor, client_ip(request))
+    return Response(status_code=204)
 
 
 # --- Privacidad: consentimiento, bloqueo, exportación y solicitudes (Ley 21.719) -------------------

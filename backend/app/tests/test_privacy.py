@@ -174,6 +174,30 @@ def test_blocked_patient_is_hidden_and_frozen(client, tokens, db):
     assert client.put(f"/patients/{p['id']}", json={"first_name": "Ana"}, headers=h).status_code == 200
 
 
+def test_delete_patient_without_cases(client, tokens, db):
+    h = auth(tokens["ADMINISTRATIVO"])
+    p = create_patient(client, h, last_name="Errónea")
+    assert client.delete(f"/patients/{p['id']}", headers=h).status_code == 204
+    assert client.get(f"/patients/{p['id']}", headers=h).status_code == 404
+    assert db.query(ConsentEvent).filter(ConsentEvent.patient_id == p["id"]).count() == 0
+    assert [a.entity_id for a in _audit(db, "DELETE")] == [p["id"]]
+    assert client.delete(f"/patients/{p['id']}", headers=h).status_code == 404
+
+
+def test_delete_patient_with_cases_is_rejected(client, tokens, db):
+    h = auth(tokens["MEDICO"])
+    p = create_patient(client, h)
+    create_case(client, h, p["id"])
+    r = client.delete(f"/patients/{p['id']}", headers=h)
+    assert r.status_code == 409 and "20.584" in r.json()["detail"]
+    assert client.get(f"/patients/{p['id']}", headers=h).status_code == 200
+
+
+def test_admin_cannot_delete_patient(client, tokens):
+    p = create_patient(client, auth(tokens["MEDICO"]))
+    assert client.delete(f"/patients/{p['id']}", headers=auth(tokens["ADMIN"])).status_code == 403
+
+
 def test_block_reason_is_required(client, tokens):
     h = auth(tokens["MEDICO"])
     p = create_patient(client, h)

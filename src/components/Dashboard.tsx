@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { AlertTriangle, CheckCircle2, Minus } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileDown, Minus } from 'lucide-react';
 import { apiClient } from '../services/api';
 import type {
   AIVerdict,
   CaseStatus,
   DashboardMetrics,
+  Me,
   ModelPerformanceReport,
   TriageAssessment,
   TriageLevel,
@@ -12,9 +13,10 @@ import type {
 import { AI_VERDICT_LABELS, CASE_STATUS_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
 import { LEVEL_FILL, LEVEL_RING, LEVEL_TEXT } from '../constants';
 import { cn } from '../lib/cn';
+import { buildManagementReport } from '../utils/generateManagementReport';
 import { SimulatedBadge } from './Badges';
 import { ErrorMessage, Loading } from './Feedback';
-import { cardClass, ghostButton, inputClass, labelClass, pageClass, pageSubtitle, pageTitle, sectionTitle, tdClass, thClass } from './ui';
+import { cardClass, ghostButton, secondaryButton, inputClass, labelClass, pageClass, pageSubtitle, pageTitle, sectionTitle, tdClass, thClass } from './ui';
 
 const LEVELS: TriageLevel[] = ['ALTA', 'MEDIA', 'BAJA'];
 
@@ -229,7 +231,7 @@ function ModelPerformanceTable({ report }: { report: ModelPerformanceReport }) {
   );
 }
 
-export default function Dashboard() {
+export default function Dashboard({ me }: { me: Me }) {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [hours, setHours] = useState(24);
@@ -256,6 +258,12 @@ export default function Dashboard() {
     load();
   }, [load]);
 
+  const exportPdf = () => {
+    if (!data) return;
+    const doc = buildManagementReport({ data, model, generatedBy: me.full_name });
+    doc.save(`informe-gestion-aurora-${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   return (
     <div className={pageClass}>
       <div className="flex flex-wrap items-end justify-between gap-6">
@@ -277,6 +285,9 @@ export default function Dashboard() {
             <input id="d-hours" type="number" min={1} className={cn(inputClass, 'w-28')} value={hours}
               onChange={(e) => setHours(Math.max(1, Number(e.target.value) || 1))} />
           </div>
+          <button type="button" className={secondaryButton} onClick={exportPdf} disabled={!data}>
+            <FileDown className="w-4 h-4" /> Exportar informe PDF
+          </button>
         </div>
       </div>
 
