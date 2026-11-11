@@ -1,7 +1,7 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.9.0** («Aurora Care»: landing, sección Pacientes, un caso
-por examen con varias imágenes, eliminar pacientes sin casos e informe de gestión en PDF), imágenes `sha-3bdaeb9…` de
+Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.9.1** (reportes PDF con el diseño de la interfaz) sobre la **2.9.0** («Aurora Care»: landing, sección Pacientes, un caso
+por examen con varias imágenes, eliminar pacientes sin casos e informe de gestión en PDF), imágenes `sha-85318b7…` de
 `main`. Sin migraciones nuevas desde la 2.6.0.
 
 **Datos de demostración en producción (11-11-2026):** `python -m scripts.seed_demo` cargó 120 pacientes ficticios (RUT
@@ -75,7 +75,7 @@ desde 40.000.000) y 134 casos en 10 semanas, a nombre del médico de prueba. Res
 12. Borrar la rama `claude/bold-maxwell-13fkwp` en GitHub (su contenido ya está en `main`):
     `git push origin --delete claude/bold-maxwell-13fkwp`.
 13. Tags de versión desde un PC (desde las sesiones en la nube no se pueden subir tags):
-    `git tag v2.6.0 9175cfe && git tag v2.7.0 2f5bbdc && git tag v2.8.0 43e0d1c && git tag v2.9.0 3bdaeb9 && git push origin v2.6.0 v2.7.0 v2.8.0 v2.9.0`. Las imágenes ya se publicaron
+    `git tag v2.6.0 9175cfe && git tag v2.7.0 2f5bbdc && git tag v2.8.0 43e0d1c && git tag v2.9.0 3bdaeb9 && git tag v2.9.1 85318b7 && git push origin v2.6.0 v2.7.0 v2.8.0 v2.9.0 v2.9.1`. Las imágenes ya se publicaron
     con `workflow_dispatch`.
 14. Sacar del repositorio los pesos del modelo (≈63 MB) y llevarlos a un almacenamiento de artefactos.
 
