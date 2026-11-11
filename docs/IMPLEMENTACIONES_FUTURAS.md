@@ -162,6 +162,12 @@ El informe describe prácticas que deben existir en el repositorio para que la e
 - [ ] Tarea programada que proponga anonimizar las fichas con el plazo de conservación vencido.
 - [ ] Región de la nube y DPA del proveedor al desplegar (cifrado y TLS ya preparados en la 2.5.0).
 
+## Varias instituciones (comercialización)
+- [ ] Herramienta `aurora-admin`: inscribir, listar, actualizar, respaldar, pausar y dar de baja instituciones (una
+  instancia por institución, en la cuenta de AWS del equipo). Detalle en `docs/ESTADO_AWS.md`, puntos 19 a 21.
+- [ ] Nombre del establecimiento configurable en el consentimiento, los reportes y la interfaz.
+- [ ] Revisión regulatoria (ISP, dispositivo médico) y contrato de encargo tipo.
+
 ## Mejoras menores detectadas
 - [ ] Recálculo periódico del triage (tarea programada) para que el factor «tiempo de espera» suba sin datos nuevos.
 - [x] Actualizar `docs/resultados_tests.md` (2.3.0: 241 tests).

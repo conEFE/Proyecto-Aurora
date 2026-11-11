@@ -1,6 +1,6 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 11-11-2026. Versión desplegada: **2.7.0** (rediseño visual «Orden de mamografía»), imágenes
+Actualizado: 11-11-2026 (tarde). Versión desplegada: **2.7.0** (rediseño visual «Orden de mamografía»), imágenes
 `sha-2f5bbdc…` de `main`. El backend no cambió respecto de la 2.6.0.
 
 ## 1. Qué está funcionando
@@ -42,11 +42,15 @@ Actualizado: 11-11-2026. Versión desplegada: **2.7.0** (rediseño visual «Orde
    copia de la configuración previa (con permisos 600): se puede borrar.
 
 ### Modelo de IA (opción B, `docs/inferencia_remota.md`)
-5. **Guía paso a paso para Juan: `docs/guia_modelo_juan.md`.** Juan instala **Tailscale** en su PC (nombre `aurora-modelo`) y levanta el servicio con
-   `docker-compose.gpu.yml` o en forma nativa.
-6. En el servidor: instalar Tailscale (`sudo tailscale up --hostname aurora-ec2`), poner en `deploy/.env`
-   `INFERENCE_PROVIDER=http` e `INFERENCE_URL=http://aurora-modelo:8080`, y entregarle a Juan el
-   `INFERENCE_API_TOKEN` por un canal privado (no por chat ni por el repositorio). Después, `dc up -d`.
+5. **Guía paso a paso para Juan: `docs/guia_modelo_juan.md`** (incluye al final la parte de Felipe). Estado: guía
+   entregada; **nada configurado todavía** (ni Tailscale ni el servicio en el PC de Juan).
+6. **Felipe:** crear la red de Tailscale (login.tailscale.com, con su Google o GitHub), **invitar a Juan**
+   (*Users → Invite users*), unir el servidor (`curl -fsSL https://tailscale.com/install.sh | sh` y
+   `sudo tailscale up --hostname aurora-ec2`) y enviarle a Juan el token por mensaje directo
+   (`sudo grep '^INFERENCE_API_TOKEN=' /opt/aurora/deploy/.env | cut -d= -f2-`).
+   **Cuando Juan avise:** en `deploy/.env`, `INFERENCE_PROVIDER=http` e `INFERENCE_URL=http://<IP 100.x de Juan>:8080`
+   (la IP, no el nombre: dentro de los contenedores el nombre puede no resolverse), y `dc up -d`. Probar con
+   `curl -H "Authorization: Bearer <token>" http://<IP>:8080/health` y subiendo una imagen ficticia.
 7. Si se quiere **todo en AWS:** `t4g.medium` + perfil `inference` (≈ USD 28 al mes), o Lambda. Detalle en la
    sección 5 de `docs/inferencia_remota.md`.
 
@@ -61,9 +65,38 @@ Actualizado: 11-11-2026. Versión desplegada: **2.7.0** (rediseño visual «Orde
 ### Orden y limpieza
 12. Borrar la rama `claude/bold-maxwell-13fkwp` en GitHub (su contenido ya está en `main`):
     `git push origin --delete claude/bold-maxwell-13fkwp`.
-13. Tag de versión: `git tag v2.6.0 9175cfe && git push origin v2.6.0` desde un PC (desde la sesión en la nube no se
-    pudo subir tags). Las imágenes ya se publicaron con `workflow_dispatch`.
+13. Tags de versión desde un PC (desde las sesiones en la nube no se pueden subir tags):
+    `git tag v2.6.0 9175cfe && git tag v2.7.0 2f5bbdc && git push origin v2.6.0 v2.7.0`. Las imágenes ya se publicaron
+    con `workflow_dispatch`.
 14. Sacar del repositorio los pesos del modelo (≈63 MB) y llevarlos a un almacenamiento de artefactos.
+
+### Dominio propio: `aurorahealth.cl` (en curso)
+15. **Inscripción en NIC Chile:** Felipe estaba completando el formulario el 11-11-2026. Falta confirmar que se pagó y
+    quedó activo. En «Configuración técnica» van los **servidores DNS de Route 53** (no «Redireccionamiento Web»).
+16. **Zona en Route 53** (USD 0,50 al mes): crear la zona pública `aurorahealth.cl` (Route 53 → Zonas alojadas →
+    Crear). Copiar en NIC los **4 valores del registro NS**, uno por uno y **sin el punto final**. Si NIC permitió
+    dejar los DNS para después, se cargan desde la cuenta de NIC cuando la zona exista.
+17. **Apuntar el sitio:** registro `A` `demo.aurorahealth.cl` → `13.184.207.158`. En el servidor, `deploy/.env`:
+    `SITE_ADDRESS=demo.aurorahealth.cl` y `PUBLIC_URL=https://demo.aurorahealth.cl`, y `dc up -d`. Caddy obtiene el
+    certificado solo. Opcional: mantener `13-184-207-158.sslip.io` con redirección al dominio nuevo (bloque extra en
+    `deploy/Caddyfile`).
+18. **Marca:** antes de usar «Aurora Health» comercialmente, revisar en **INAPI** que no haya una marca igual en
+    salud o software.
+
+### Venta a varias instituciones (decisión del 11-11-2026, aún no implementado)
+19. **Modelo elegido:** **una instancia por institución**, todo en **una cuenta de AWS del equipo** (cobran una
+    mensualidad que incluye la infraestructura). Cada hospital: su EC2, base de datos, bucket, secretos y subdominio
+    (`<hospital>.aurorahealth.cl`). Aislamiento total y **sin cambios al código**.
+20. **Herramienta a construir: `aurora-admin`** (menú en terminal; plantilla de CloudFormation + script en Python).
+    Opciones: inscribir institución (≈ 15 min: servidor, IP, bucket, rol, secretos en Parameter Store, registro DNS,
+    instalación, respaldo y primer administrador), listar con estado, versión y costo (etiquetas por institución),
+    actualizar una o todas, respaldar o restaurar, pausar o reactivar, y dar de baja exportando los datos. Más
+    adelante, un panel web de superadministrador. Estimación: un par de días para la versión 1.
+21. **Antes de vender:** el modelo de IA es un prototipo no validado y podría requerir registro como dispositivo
+    médico en el **ISP**. Además: **contrato de encargo** con cada institución (ellos son responsables y el equipo es
+    encargado del tratamiento), textos de consentimiento y reportes con el nombre de cada hospital, **salir del plan
+    gratuito** (pruebas, vence en mayo) y definir soporte y SLA. Con muchos clientes, evaluar una cuenta de AWS por
+    cliente.
 
 ## 3. Operación del servidor (comandos)
 
@@ -91,9 +124,29 @@ alias dc='docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml
 **Si el CI falla en «Imágenes Docker y prueba de humo» con `context deadline exceeded` al descargar `postgres`:** es
 una falla pasajera del registro `public.ecr.aws`, no del código. Se resuelve con *Re-run jobs*.
 
-## 4. Dónde está la documentación
+## 4. Para agentes de Claude que continúen este trabajo
+
+- **Acceso a AWS desde una sesión en la nube:** perfil `aurora` con `aws login --remote --region us-east-2 --profile aurora`.
+  Se muestra un enlace, el usuario inicia sesión y pega el código. La sesión dura 12 horas y se renueva hasta 90 días,
+  pero en una sesión nueva hay que repetirlo, porque el contenedor no conserva `~/.aws`. Hay que permitir
+  `signin.aws.amazon.com` en la red del entorno.
+- **Comandos en el servidor sin SSH:** SSM `SendCommand` (`AWS-RunShellScript`) sobre `i-0f7427c0dac2fd6b0`. Ojo: el
+  historial de SSM guarda los parámetros, así que **nunca pasar secretos** en un comando ni leerlos para mostrarlos en
+  el chat. Los secretos viven solo en `/opt/aurora/deploy/.env`.
+- **Servidor MCP de AWS (`aws-mcp`):** a veces no conecta. Si no está, usar el AWS CLI con `--profile aurora`.
+- **Commits:** en `main`, con la autoría de Felipe (la misma de los commits anteriores) y **sin coautoría de Claude**
+  (pedido del equipo). Desde la nube no se pueden subir tags.
+- **Imágenes Docker:** se bajan desde `public.ecr.aws` (Docker Hub limita las descargas). Para construirlas en el
+  entorno en la nube hay que agregar el CA del proxy en una copia temporal del Dockerfile (ver `/root/.ccr/README.md`),
+  nunca en el Dockerfile del repositorio.
+- **Nivel de ayuda en AWS:** el usuario eligió **alto** (explicar cada paso, proponer alternativas y buenas
+  prácticas).
+
+## 5. Dónde está la documentación
 
 - `docs/despliegue_aws.md`: guía completa (este despliegue sigue esa guía, opción de costo mínimo).
 - `docs/inferencia_remota.md`: modelo en el PC de Juan con Tailscale y cómo moverlo a AWS.
+- `docs/guia_modelo_juan.md`: pasos para Juan (y para Felipe) para conectar el modelo.
+- `DESIGN.md` y `PRODUCT.md`: sistema visual de la 2.7.0 y contexto de producto.
 - `docs/cumplimiento_legal.md` y `docs/seguridad_owasp.md`: cumplimiento y seguridad.
 - `docs/CHANGELOG_SPRINTS.md`: qué se hizo en cada versión.
