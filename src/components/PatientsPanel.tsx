@@ -7,6 +7,7 @@ import { cn } from '../lib/cn';
 import { LevelBadge, StatusBadge } from './Badges';
 import { EmptyState, ErrorMessage, Loading } from './Feedback';
 import PatientModal from './PatientModal';
+import PatientTimeline from './PatientTimeline';
 import {
   cardClass,
   dangerButton,
@@ -238,6 +239,12 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
           </table>
         )}
       </section>
+
+      <PatientTimeline
+        patientId={patient.id}
+        refreshKey={`${cases?.length ?? ''}-${patient.consent_given}-${patient.blocked_at ?? ''}`}
+        onOpenCase={onOpenCase}
+      />
 
       {!blocked && cases !== null && (
         <section className={cn(cardClass, 'p-6 space-y-3')} aria-labelledby="pd-delete">

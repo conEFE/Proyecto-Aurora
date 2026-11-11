@@ -9,6 +9,7 @@ Para deshacerlo, restaurar el respaldo tomado antes (la auditoría es de solo ag
 
 Uso (desde backend/, con las migraciones aplicadas):
     python -m scripts.seed_demo [--patients 120] [--weeks 10]
+    python -m scripts.seed_demo --fix-history   # ordena la historia de datos cargados con una versión anterior
 """
 
 import argparse
@@ -29,6 +30,7 @@ from app.db.models.case import Case, CaseStatus  # noqa: E402
 from app.db.models.image import ExamType, Image  # noqa: E402
 from app.db.models.inference_result import InferenceResult  # noqa: E402
 from app.db.models.patient import Patient  # noqa: E402
+from app.db.models.privacy import ConsentEvent  # noqa: E402
 from app.db.models.review import AIValidation, ClinicalReview  # noqa: E402
 from app.db.models.triage import Notification, TriageLevel, TriageResult  # noqa: E402
 from app.db.models.user import User, UserRole  # noqa: E402
@@ -147,16 +149,67 @@ def shift_case(db, case: Case, created: datetime) -> datetime:
     return first
 
 
+def demo_patients(db) -> list[Patient]:
+    return (
+        db.query(Patient)
+        .filter(Patient.rut >= f"{RUT_BASE}-", Patient.rut < f"{RUT_BASE + 10_000}-")
+        .order_by(Patient.id)
+        .all()
+    )
+
+
+def align_history(db, patients: list[Patient], rng: random.Random) -> int:
+    """Deja la historia de cada paciente en orden: registro y consentimiento unos días antes de su primer caso, y
+    cada ajuste de nivel poco después del primer triage del caso. Devuelve cuántos pacientes se corrigieron."""
+    fixed = 0
+    for p in patients:
+        first_case = (
+            db.query(Case.created_at).filter(Case.patient_id == p.id).order_by(Case.created_at).first()
+        )
+        if first_case is None:
+            continue
+        if p.created_at is None or p.created_at >= first_case[0]:
+            registered = first_case[0] - timedelta(days=rng.uniform(1, 14), minutes=rng.uniform(0, 600))
+            p.created_at = registered
+            p.consent_at = registered
+            db.query(ConsentEvent).filter(ConsentEvent.patient_id == p.id).update(
+                {ConsentEvent.occurred_at: registered}, synchronize_session=False
+            )
+            fixed += 1
+        for case_id, created in db.query(Case.id, Case.created_at).filter(Case.patient_id == p.id).all():
+            results = (
+                db.query(TriageResult).filter(TriageResult.case_id == case_id).order_by(TriageResult.id).all()
+            )
+            computed = [r.computed_at for r in results if r.override_by is None]
+            first = computed[0] if computed else created + timedelta(seconds=40)
+            review = db.query(ClinicalReview.created_at).filter(ClinicalReview.case_id == case_id).first()
+            for r in results:
+                if r.override_by is not None and (review is None or r.computed_at > review[0]):
+                    r.computed_at = first + timedelta(minutes=rng.uniform(10, 50))
+    db.commit()
+    return fixed
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--patients", type=int, default=120)
     parser.add_argument("--weeks", type=int, default=10)
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument(
+        "--fix-history",
+        action="store_true",
+        help="Solo ordena la historia de los datos de demostración ya cargados (registro, consentimiento y ajustes)",
+    )
     args = parser.parse_args()
     rng = random.Random(args.seed)
     now = datetime.now(timezone.utc)
 
     with SessionLocal() as db:
+        if args.fix_history:
+            patients = demo_patients(db)
+            fixed = align_history(db, patients, rng)
+            print(f"Historia ordenada: {fixed} de {len(patients)} pacientes de demostración corregidos.")
+            return 0
         seed_service.ensure_reference_data(db)
         if db.query(Patient).filter(Patient.rut == rut(RUT_BASE)).first():
             print("Los datos de demostración ya están cargados. No se repiten.")
@@ -230,7 +283,12 @@ def main() -> int:
                 level = result.final_level.value
                 if rng.random() < 0.08 and case.status != CaseStatus.CERRADO:
                     new = rng.choice([lv for lv in TriageLevel if lv != result.final_level])
-                    triage_service.override(db, case.id, new, "Ajuste clínico (dato de demostración)", medico)
+                    adjusted = triage_service.override(
+                        db, case.id, new, "Ajuste clínico (dato de demostración)", medico
+                    )
+                    # El ajuste ocurre poco después del primer triage (la historia queda en orden)
+                    adjusted.computed_at = first + timedelta(minutes=rng.uniform(10, 50))
+                    db.commit()
                     level = new.value
                     counts["ajustes"] += 1
 
@@ -270,6 +328,8 @@ def main() -> int:
                 )
                 db.commit()
                 counts["cerrados"] += 1
+
+        align_history(db, patients, rng)
 
         levels: dict[str, int] = {}
         for case_id in case_ids:

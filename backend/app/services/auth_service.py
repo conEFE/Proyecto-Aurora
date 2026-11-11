@@ -6,7 +6,7 @@ from app.auth.security import create_access_token, hash_password, password_stamp
 from app.config import settings
 from app.db.models.user import User
 from app.services.audit_service import audit
-from app.services.errors import DomainError, ValidationError
+from app.services.errors import ConflictError, DomainError, ValidationError
 from app.services.password_policy import ensure_valid_password
 from app.utils.rate_limit import login_limiter
 from app.utils.rut import normalize_rut
@@ -131,3 +131,21 @@ def change_password(db: Session, user: User, current: str, new: str, ip: str | N
     db.refresh(user)
     # Los tokens anteriores quedan revocados; se entrega uno nuevo para seguir en la sesión
     return issue_token(user)
+
+
+def change_email(db: Session, user: User, email: str, current: str, ip: str | None = None) -> User:
+    """Cambio de email del propio usuario: exige la contraseña actual y que el email no esté en uso."""
+    allowed, retry_after, _ = login_limiter.hit(f"chemail:{user.id}", settings.LOGIN_MAX_FAILED_ATTEMPTS)
+    if not allowed:
+        raise RateLimitedError(f"Demasiados intentos. Espere {retry_after} segundos", retry_after)
+    if not verify_password(current, user.password_hash):
+        raise ValidationError("La contraseña actual no es correcta")
+    if email == user.email:
+        return user
+    if db.query(User).filter(User.email == email, User.id != user.id).first():
+        raise ConflictError("Ya existe un usuario con ese email")
+    user.email = email
+    audit(db, user, "UPDATE", "user", user.id, {"fields": ["email"], "self_service": True}, ip, commit=False)
+    db.commit()
+    db.refresh(user)
+    return user

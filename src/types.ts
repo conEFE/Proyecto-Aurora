@@ -13,6 +13,9 @@ export interface Me {
   full_name: string;
   role: Role;
   must_change_password: boolean;
+  created_at?: string | null;
+  last_login_at?: string | null;
+  password_changed_at?: string | null;
 }
 
 export interface UserAccount {
@@ -516,4 +519,36 @@ export interface DataRequestSummary {
   by_status: Record<DataRequestStatus, number>;
   open_total: number;
   overdue: number;
+}
+
+export type TimelineKind =
+  | 'PATIENT_REGISTERED'
+  | 'CONSENT_GRANTED'
+  | 'CONSENT_WITHDRAWN'
+  | 'PATIENT_BLOCKED'
+  | 'CASE_CREATED'
+  | 'IMAGES_UPLOADED'
+  | 'TRIAGE_OVERRIDE'
+  | 'REVIEW_REGISTERED'
+  | 'CASE_CLOSED';
+
+/** Hito de la historia del paciente. `detail` depende del tipo (y del rol: el ADMINISTRATIVO no recibe los clínicos). */
+export interface TimelineEvent {
+  kind: TimelineKind;
+  at: string;
+  case_id: number | null;
+  case_code: string | null;
+  actor_name: string | null;
+  detail: {
+    version?: string | null;
+    note?: string;
+    reason?: string | null;
+    triage_level?: TriageLevel | null;
+    symptoms?: string[];
+    count?: number;
+    computed_level?: TriageLevel;
+    final_level?: TriageLevel;
+    birads_final?: number;
+    recommendation?: Recommendation;
+  };
 }

@@ -16,6 +16,10 @@ Sin migraciones nuevas desde la 2.6.0. Lo que trajo cada versión está en `docs
 desde 40.000.000) y 134 casos en 10 semanas, a nombre del médico de prueba (`11111111-1`). Respaldo previo:
 `backups/aurora-20261111T145234Z.sql.gz` (restaurarlo para quitarlos; la auditoría no permite borrar). Para la demo,
 entrar como el médico de prueba: es quien ve el informe completo, incluido el desempeño del modelo.
+**En el próximo despliegue** (trae la historia del paciente): correr una vez `python -m scripts.seed_demo
+--fix-history` en el contenedor del backend, para que el registro y el consentimiento de esos pacientes queden antes
+de sus casos (hoy aparecen con fecha 11-11-2026, después de casos de semanas anteriores). Solo toca pacientes con RUT
+desde 40.000.000 y se puede repetir sin efecto.
 
 ## 1. Qué está funcionando
 

@@ -707,6 +707,26 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## Sin publicar (próxima versión, junto con el modelo real)
+
+- **Textos de la IA alineados con el modelo** (CNN + YOLO): «Sospecha de malignidad» / «Baja probabilidad de
+  malignidad» en vez de «Hallazgo» / «Sin hallazgos», «probabilidad de malignidad X %» en vez de «confianza», y en las
+  cajas «Masa · confianza de detección X %». Igual en el desglose del triage, el reporte PDF y la IA simulada.
+- **Mi perfil** (todos los roles; en el menú y al hacer clic en el nombre): datos de la cuenta (RUT, rol, email, fecha
+  de creación, último inicio de sesión y último cambio de contraseña), qué puede hacer su rol, cambio de contraseña y
+  **corrección del email propio** (`PUT /auth/me/email`, exige la contraseña actual, rechaza emails en uso y queda
+  `UPDATE` en la auditoría con `self_service`). `GET /auth/me` devuelve además las tres fechas. Sin cambios de esquema.
+- **Historia del paciente** en Pacientes (`GET /patients/{id}/timeline`, ADMINISTRATIVO y MEDICO, registra `VIEW`):
+  registro, consentimiento (otorgado o retirado), bloqueo, casos creados (prioridad actual y síntomas), imágenes
+  cargadas y cierre. El MEDICO ve además los ajustes de prioridad y la revisión médica (BI-RADS y recomendación), según
+  la matriz de permisos. Del más reciente al más antiguo; el código del caso abre el caso. Sin cambios de esquema.
+- **`seed_demo`**: el registro y el consentimiento de cada paciente quedan unos días antes de su primer caso, y los
+  ajustes de nivel poco después del primer triage. `--fix-history` ordena así los datos ya cargados en producción.
+- Pruebas: perfil y cambio de email (contraseña incorrecta, duplicado, inválido, sin sesión) e historia del paciente
+  (eventos, orden, auditoría, permisos por rol, retiro del consentimiento y 404).
+
+---
+
 ## 2.9.2 — Informe de gestión con relato
 
 - El informe de gestión cuenta lo que muestran los datos: resumen ejecutivo, cuatro cifras principales, hallazgos clave

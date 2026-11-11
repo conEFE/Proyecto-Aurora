@@ -74,3 +74,27 @@ class PatientOut(BaseModel):
     block_reason: str | None = None
     created_by: int | None = None
     created_at: datetime | None = None
+
+
+TimelineKind = Literal[
+    "PATIENT_REGISTERED",
+    "CONSENT_GRANTED",
+    "CONSENT_WITHDRAWN",
+    "PATIENT_BLOCKED",
+    "CASE_CREATED",
+    "IMAGES_UPLOADED",
+    "TRIAGE_OVERRIDE",
+    "REVIEW_REGISTERED",
+    "CASE_CLOSED",
+]
+
+
+class TimelineEvent(BaseModel):
+    """Un hito de la historia del paciente. `detail` depende del tipo y del rol de quien consulta."""
+
+    kind: TimelineKind
+    at: datetime
+    case_id: int | None = None
+    case_code: str | None = None
+    actor_name: str | None = None
+    detail: dict = Field(default_factory=dict)

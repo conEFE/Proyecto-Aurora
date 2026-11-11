@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.auth.rbac import require_roles
 from app.db.models.user import User, UserRole
 from app.deps import get_db
-from app.schemas.patients import PatientCreate, PatientOut, PatientUpdate
+from app.schemas.patients import PatientCreate, PatientOut, PatientUpdate, TimelineEvent
 from app.schemas.privacy import (
     BlockRequest,
     ConsentEventOut,
@@ -16,6 +16,7 @@ from app.schemas.privacy import (
 )
 from app.services import patient_service, privacy_service
 from app.services.audit_service import client_ip
+from app.services.patient_timeline import patient_timeline
 
 router = APIRouter()
 clinical_staff = require_roles(UserRole.ADMINISTRATIVO, UserRole.MEDICO)
@@ -80,6 +81,18 @@ def delete_patient(
     """Elimina un paciente sin casos (registrado por error). Con casos responde 409: use el bloqueo."""
     patient_service.delete_patient(db, patient_id, actor, client_ip(request))
     return Response(status_code=204)
+
+
+@router.get("/{patient_id}/timeline", response_model=list[TimelineEvent])
+def get_timeline(
+    patient_id: int,
+    request: Request,
+    actor: User = Depends(clinical_staff),
+    db: Session = Depends(get_db),
+):
+    """Historia del paciente, del más reciente al más antiguo. El MEDICO ve además el override del triage y la
+    revisión médica (registra VIEW)."""
+    return patient_timeline(db, patient_id, actor, client_ip(request))
 
 
 # --- Privacidad: consentimiento, bloqueo, exportación y solicitudes (Ley 21.719) -------------------

@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sun,
+  UserRound,
   type LucideIcon,
   Users,
 } from 'lucide-react';
@@ -26,7 +27,7 @@ import ChangePassword from './ChangePassword';
 import Dialog from './Dialog';
 import { iconButton } from './ui';
 
-export type Section = 'home' | 'queue' | 'patients' | 'cases' | 'dashboard' | 'config' | 'privacy' | 'panel';
+export type Section = 'home' | 'queue' | 'patients' | 'cases' | 'dashboard' | 'config' | 'privacy' | 'panel' | 'profile';
 
 interface HeaderProps {
   currentSection: Section;
@@ -54,6 +55,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'config', label: 'Parámetros', icon: SlidersHorizontal, roles: ['MEDICO', 'ADMIN'] },
   { id: 'privacy', label: 'Privacidad', icon: ShieldCheck, roles: CLINICAL },
   { id: 'panel', label: 'Administración', icon: Settings, roles: ['ADMIN'] },
+  { id: 'profile', label: 'Mi perfil', icon: UserRound, roles: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'] },
 ];
 
 /** Barra lateral fija: marca, secciones por rol, usuario, tema y salida. */
@@ -112,8 +114,14 @@ export default function Header({ currentSection, onSectionChange, onOpenCase, me
       </nav>
 
       <div className="mt-auto hidden lg:block border-t border-border px-4 py-4">
-        <p className="text-sm font-semibold text-foreground truncate">{me.full_name}</p>
-        <p className="text-xs text-muted-foreground">{ROLE_LABELS[me.role]}</p>
+        <button
+          onClick={() => onSectionChange('profile')}
+          className="block w-full text-left rounded-md -mx-1 px-1 hover:bg-accent transition-colors"
+          title="Mi perfil"
+        >
+          <span className="block text-sm font-semibold text-foreground truncate">{me.full_name}</span>
+          <span className="block text-xs text-muted-foreground">{ROLE_LABELS[me.role]}</span>
+        </button>
         <div className="mt-3 flex items-center gap-1">
           {me.role === 'MEDICO' && <NotificationBell onOpenCase={onOpenCase} />}
           <button

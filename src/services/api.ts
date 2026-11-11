@@ -40,6 +40,7 @@ import type {
   UserAccount,
   UserCreateInput,
   UserUpdateInput,
+  TimelineEvent,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -158,6 +159,13 @@ class ApiClient {
     return this.request<Me>('/auth/me');
   }
 
+  async changeEmail(email: string, currentPassword: string) {
+    return this.request<Me>('/auth/me/email', {
+      method: 'PUT',
+      body: JSON.stringify({ email, current_password: currentPassword }),
+    });
+  }
+
   // --- Pacientes -----------------------------------------------------------
   async createPatient(data: PatientInput) {
     return this.request<Patient>('/patients', { method: 'POST', body: JSON.stringify(data) });
@@ -203,6 +211,10 @@ class ApiClient {
 
   async consentEvents(patientId: number) {
     return this.request<ConsentEvent[]>(`/patients/${patientId}/consent/events`);
+  }
+
+  async getPatientTimeline(patientId: number) {
+    return this.request<TimelineEvent[]>(`/patients/${patientId}/timeline`);
   }
 
   async blockPatient(patientId: number, reason: string) {

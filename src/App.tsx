@@ -12,6 +12,7 @@ import TriageConfigPanel from './components/TriageConfigPanel';
 import { Loading } from './components/Feedback';
 import ChangePassword from './components/ChangePassword';
 import PrivacyPanel from './components/PrivacyPanel';
+import Profile from './components/Profile';
 import { apiClient } from './services/api';
 import type { Me, Patient } from './types';
 
@@ -120,6 +121,7 @@ function App() {
         )}
         {currentSection === 'dashboard' && <Dashboard me={me} />}
         {currentSection === 'privacy' && me.role !== 'ADMIN' && <PrivacyPanel me={me} />}
+        {currentSection === 'profile' && <Profile me={me} onUpdated={setMe} />}
         {currentSection === 'panel' && me.role === 'ADMIN' && <AdminPanel />}
       </main>
     </div>
