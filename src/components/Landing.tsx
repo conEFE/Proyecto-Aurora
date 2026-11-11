@@ -1,25 +1,11 @@
 import type { ReactNode } from 'react';
-import {
-  ArrowRight,
-  ClipboardList,
-  FileSignature,
-  GraduationCap,
-  Images,
-  LockKeyhole,
-  Moon,
-  ScanEye,
-  Scale,
-  ShieldCheck,
-  Stethoscope,
-  Sun,
-  UserRoundCheck,
-} from 'lucide-react';
+import { ArrowRight, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../lib/theme';
 import { cn } from '../lib/cn';
 import type { TriageLevel } from '../types';
 import { LevelBadge, SimulatedBadge } from './Badges';
 import BrandMark from './BrandMark';
-import { iconButton, primaryButton, secondaryButton } from './ui';
+import { iconButton, primaryButton } from './ui';
 
 // Ejemplo ilustrativo con códigos ficticios (no son pacientes reales)
 const SAMPLE_QUEUE: Array<{ code: string; level: TriageLevel; reason: string; wait: string }> = [
@@ -29,59 +15,72 @@ const SAMPLE_QUEUE: Array<{ code: string; level: TriageLevel; reason: string; wa
   { code: 'AUR-2026-000417', level: 'BAJA', reason: 'Control sin hallazgos', wait: '20 min' },
 ];
 
-const STEPS: Array<{ icon: ReactNode; title: string; text: string }> = [
+const STEPS: Array<{ title: string; text: string }> = [
   {
-    icon: <ClipboardList aria-hidden className="w-5 h-5" />,
     title: 'Registro con consentimiento',
     text: 'Admisión registra a la paciente con su RUT, antecedentes y consentimiento informado, y abre el caso con sus síntomas.',
   },
   {
-    icon: <Images aria-hidden className="w-5 h-5" />,
     title: 'Imágenes del examen',
     text: 'Se cargan las vistas de la mamografía o la ecografía. Se guardan cifradas y un modelo de IA las analiza en segundo plano.',
   },
   {
-    icon: <ScanEye aria-hidden className="w-5 h-5" />,
     title: 'Triage transparente',
     text: 'Reglas clínicas y factores ponderados asignan ALTA, MEDIA o BAJA, y muestran por qué. La cola ordena primero lo urgente.',
   },
   {
-    icon: <FileSignature aria-hidden className="w-5 h-5" />,
     title: 'Revisión y firma médica',
     text: 'El médico valida cada resultado de la IA, ajusta el nivel si corresponde, registra su revisión y firma el reporte.',
   },
 ];
 
-const PRINCIPLES: Array<{ icon: ReactNode; title: string; text: string }> = [
+const LEVELS: Array<{ level: TriageLevel; text: string }> = [
+  { level: 'ALTA', text: 'Revisión prioritaria: hallazgos o síntomas de alarma. Notifica al equipo médico.' },
+  { level: 'MEDIA', text: 'Riesgo intermedio: se revisa después de los casos ALTA, dentro del plazo definido.' },
+  { level: 'BAJA', text: 'Sin señales de alarma: sigue el flujo habitual de control.' },
+];
+
+const PRINCIPLES: Array<{ title: string; text: string }> = [
   {
-    icon: <Stethoscope aria-hidden className="w-5 h-5" />,
     title: 'El médico decide',
     text: 'La IA y el triage sugieren. Toda sugerencia se puede corregir con un motivo, y queda registrada.',
   },
   {
-    icon: <Scale aria-hidden className="w-5 h-5" />,
     title: 'Transparencia antes que magia',
     text: 'Cada nivel de prioridad muestra los factores que lo explican. Los parámetros los define el equipo médico.',
   },
   {
-    icon: <UserRoundCheck aria-hidden className="w-5 h-5" />,
     title: 'Honestidad sobre la IA',
     text: 'El modelo es un prototipo sin validación clínica. Lo simulado se ve como simulado, y su desempeño se mide contra el juicio médico.',
   },
   {
-    icon: <LockKeyhole aria-hidden className="w-5 h-5" />,
     title: 'Privacidad por diseño',
     text: 'Imágenes cifradas, bitácora de auditoría de solo agregar, y derechos de los titulares según las leyes 19.628, 21.719 y 20.584.',
   },
 ];
 
-function SectionHeading({ eyebrow, title, children }: { eyebrow: string; title: string; children?: ReactNode }) {
+const FACTS: Array<{ label: string; value: string }> = [
+  { label: 'Origen', value: 'Proyecto de título, INACAP · 2026' },
+  { label: 'Pensado para', value: 'Equipos de atención primaria (CESFAM y consultorios)' },
+  { label: 'Datos', value: 'Ficticios, con RUT de prueba' },
+  { label: 'Modelo de IA', value: 'Prototipo, sin validación clínica' },
+  { label: 'Normativa', value: 'Consentimiento informado, auditoría y leyes 19.628, 21.719 y 20.584' },
+];
+
+const container = 'mx-auto max-w-6xl px-4 sm:px-6';
+
+/** Sección con el título en la columna izquierda y el contenido a la derecha, separada por una regla. */
+function Section({ id, title, intro, children }: { id?: string; title: string; intro?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="max-w-2xl">
-      <p className="text-sm font-bold uppercase tracking-wider text-brand">{eyebrow}</p>
-      <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight">{title}</h2>
-      {children && <p className="mt-4 text-lg text-muted-foreground leading-relaxed">{children}</p>}
-    </div>
+    <section id={id} className="scroll-mt-16 border-t border-border">
+      <div className={cn(container, 'py-16 lg:py-24 grid lg:grid-cols-12 gap-x-12 gap-y-8')}>
+        <div className="lg:col-span-4">
+          <h2 className="text-3xl font-extrabold tracking-tight leading-tight text-balance">{title}</h2>
+          {intro && <p className="mt-4 text-muted-foreground leading-relaxed max-w-md">{intro}</p>}
+        </div>
+        <div className="lg:col-span-8">{children}</div>
+      </div>
+    </section>
   );
 }
 
@@ -91,13 +90,13 @@ export default function Landing({ onLogin }: { onLogin: () => void }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <a href="#inicio" className="flex items-center gap-2.5">
+      <header className="sticky top-0 z-20 border-b border-border bg-background">
+        <div className={cn(container, 'h-16 flex items-center justify-between gap-4')}>
+          <a href="#inicio" className="flex items-center gap-2.5 rounded-md">
             <BrandMark alt="" />
             <span className="text-lg font-extrabold">Aurora Care</span>
           </a>
-          <nav aria-label="Secciones" className="hidden md:flex items-center gap-6 text-sm font-semibold text-muted-foreground">
+          <nav aria-label="Secciones" className="hidden md:flex items-center gap-7 text-sm font-semibold text-muted-foreground">
             <a href="#como-funciona" className="hover:text-foreground">Cómo funciona</a>
             <a href="#principios" className="hover:text-foreground">Principios</a>
             <a href="#quienes-somos" className="hover:text-foreground">Quiénes somos</a>
@@ -117,183 +116,148 @@ export default function Landing({ onLogin }: { onLogin: () => void }) {
 
       <main>
         {/* Portada */}
-        <section id="inicio" className="relative overflow-hidden">
-          <div aria-hidden className="pointer-events-none absolute inset-0">
-            <div className="absolute -top-40 -left-32 w-[36rem] h-[36rem] rounded-full bg-brand/15 blur-3xl" />
-            <div className="absolute top-10 right-[-10rem] w-[32rem] h-[32rem] rounded-full bg-[hsl(262_83%_58%/0.14)] blur-3xl" />
-            <div className="absolute bottom-[-12rem] left-1/3 w-[28rem] h-[28rem] rounded-full bg-[hsl(190_80%_45%/0.10)] blur-3xl" />
-          </div>
-          <div className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-16 pb-20 lg:pt-24 lg:pb-28 grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-12 items-center">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-sm font-semibold text-muted-foreground">
-                <span aria-hidden className="w-2 h-2 rounded-full bg-brand" />
-                Detección temprana de cáncer de mama
-              </p>
-              <h1 className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]">
-                Los casos más urgentes, <span className="text-brand">primero</span>.
-              </h1>
-              <p className="mt-6 text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-xl">
+        <section id="inicio" className={cn(container, 'pt-16 pb-20 lg:pt-28 lg:pb-28')}>
+          <h1 className="max-w-4xl text-4xl sm:text-5xl lg:text-[4.25rem] font-extrabold tracking-tight leading-[1.04] text-balance">
+            Los casos más urgentes, primero.
+          </h1>
+          <div className="mt-12 lg:mt-16 grid lg:grid-cols-12 gap-x-12 gap-y-12">
+            <div className="lg:col-span-5">
+              <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
                 Aurora Care ayuda a los equipos de atención primaria a priorizar los casos sospechosos de cáncer de mama:
                 ordena la espera según el riesgo, explica cada prioridad y deja al médico la última palabra.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
                 <button className={cn(primaryButton, 'h-12 px-6 text-base')} onClick={onLogin}>
                   Ingresar a la plataforma <ArrowRight aria-hidden className="w-4 h-4" />
                 </button>
-                <a href="#como-funciona" className={cn(secondaryButton, 'h-12 px-6 text-base')}>Cómo funciona</a>
+                <a
+                  href="#como-funciona"
+                  className="text-base font-semibold underline decoration-border underline-offset-4 hover:decoration-current rounded-sm"
+                >
+                  Cómo funciona
+                </a>
               </div>
-              <p className="mt-6 text-sm text-muted-foreground">La plataforma apoya, no reemplaza, el criterio médico.</p>
+              <p className="mt-8 text-sm text-muted-foreground">La plataforma apoya, no reemplaza, el criterio médico.</p>
             </div>
 
-            <div className="relative">
-              <div className="relative rounded-2xl border border-border bg-card p-5 shadow-[0_24px_60px_-24px_hsl(var(--shadow)/0.45)]">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold">Cola de triage</p>
-                  <span className="text-xs text-muted-foreground">Ejemplo con datos ficticios</span>
-                </div>
-                <ul className="mt-4 divide-y divide-border">
+            {/* Cola de ejemplo, con la misma forma que la tabla real */}
+            <figure className="lg:col-span-7">
+              <figcaption className="flex items-baseline justify-between gap-4 pb-3 border-b-2 border-foreground">
+                <span className="font-bold">Cola de triage</span>
+                <span className="text-xs text-muted-foreground">Ejemplo con datos ficticios</span>
+              </figcaption>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs font-semibold text-muted-foreground">
+                    <th scope="col" className="py-2.5 pr-3 font-semibold border-b border-border">Nivel</th>
+                    <th scope="col" className="py-2.5 px-3 font-semibold border-b border-border">Caso</th>
+                    <th scope="col" className="hidden sm:table-cell py-2.5 px-3 font-semibold border-b border-border">Motivo</th>
+                    <th scope="col" className="py-2.5 pl-3 font-semibold border-b border-border text-right">Espera</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {SAMPLE_QUEUE.map((q) => (
-                    <li key={q.code} className="py-3 flex items-center gap-3">
-                      <LevelBadge level={q.level} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-bold tabular-nums">{q.code}</span>
-                        <span className="block text-sm text-muted-foreground truncate">{q.reason}</span>
-                      </span>
-                      <span className="text-sm text-muted-foreground tabular-nums">{q.wait}</span>
-                    </li>
+                    <tr key={q.code}>
+                      <td className="py-3 pr-3 border-b border-border whitespace-nowrap"><LevelBadge level={q.level} /></td>
+                      <td className="py-3 px-3 border-b border-border">
+                        <span className="block font-extrabold tabular-nums whitespace-nowrap">{q.code}</span>
+                        <span className="sm:hidden block text-muted-foreground">{q.reason}</span>
+                      </td>
+                      <td className="hidden sm:table-cell py-3 px-3 border-b border-border text-muted-foreground">{q.reason}</td>
+                      <td className="py-3 pl-3 border-b border-border text-right tabular-nums whitespace-nowrap text-muted-foreground">{q.wait}</td>
+                    </tr>
                   ))}
-                </ul>
-                <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 text-xs text-muted-foreground">
-                  <SimulatedBadge /> Los resultados de IA de la demostración son simulados.
-                </div>
-              </div>
-            </div>
+                </tbody>
+              </table>
+              <p className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <SimulatedBadge /> Los resultados de IA de la demostración son simulados.
+              </p>
+            </figure>
           </div>
         </section>
 
-        {/* El problema */}
-        <section className="border-y border-border bg-muted/50">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-16 grid md:grid-cols-3 gap-10">
-            <div className="md:col-span-1">
-              <SectionHeading eyebrow="El problema" title="La espera no es igual para todas" />
-            </div>
-            <div className="md:col-span-2 space-y-4 text-lg text-muted-foreground leading-relaxed">
-              <p>
-                En un consultorio con alta demanda, una mamografía sospechosa puede quedar en la misma fila que un control de
-                rutina. Cada día de espera importa cuando el diagnóstico es temprano.
-              </p>
-              <p>
-                Aurora Care no diagnostica: <strong className="text-foreground">ordena</strong>. Reúne síntomas,
-                antecedentes, el BI-RADS informado y el análisis de las imágenes para que el equipo médico vea primero los
-                casos de mayor riesgo, sin perder la trazabilidad de ninguna decisión.
-              </p>
-            </div>
+        <Section title="La espera no es igual para todas">
+          <div className="max-w-2xl space-y-5 text-lg leading-relaxed text-muted-foreground">
+            <p>
+              En un consultorio con alta demanda, una mamografía sospechosa puede quedar en la misma fila que un control de
+              rutina. Cada día de espera importa cuando el diagnóstico es temprano.
+            </p>
+            <p>
+              Aurora Care no diagnostica: <strong className="text-foreground">ordena</strong>. Reúne síntomas,
+              antecedentes, el BI-RADS informado y el análisis de las imágenes para que el equipo médico vea primero los
+              casos de mayor riesgo, sin perder la trazabilidad de ninguna decisión.
+            </p>
           </div>
-        </section>
+        </Section>
 
-        {/* Cómo funciona */}
-        <section id="como-funciona" className="mx-auto max-w-6xl px-4 sm:px-6 py-20 scroll-mt-16">
-          <SectionHeading eyebrow="Cómo funciona" title="De la admisión a la firma del médico">
-            Un caso por examen, con todas sus imágenes, y un nivel de prioridad que cualquiera del equipo puede entender.
-          </SectionHeading>
-          <ol className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <Section
+          id="como-funciona"
+          title="De la admisión a la firma del médico"
+          intro="Un caso por examen, con todas sus imágenes, y un nivel de prioridad que cualquiera del equipo puede entender."
+        >
+          <ol className="border-t-2 border-foreground">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="relative rounded-2xl border border-border bg-card p-6">
-                <span className="absolute top-5 right-5 text-4xl font-extrabold text-border tabular-nums" aria-hidden>
-                  {i + 1}
-                </span>
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand/10 text-brand">
-                  {s.icon}
-                </span>
-                <h3 className="mt-4 text-lg font-bold">{s.title}</h3>
-                <p className="mt-2 text-muted-foreground leading-relaxed">{s.text}</p>
+              <li key={s.title} className="grid grid-cols-[2.5rem_minmax(0,1fr)] sm:grid-cols-[3rem_14rem_minmax(0,1fr)] gap-x-4 gap-y-1 py-5 border-b border-border">
+                <span className="font-extrabold tabular-nums text-muted-foreground">{String(i + 1).padStart(2, '0')}</span>
+                <h3 className="font-bold">{s.title}</h3>
+                <p className="col-start-2 sm:col-start-3 text-muted-foreground leading-relaxed">{s.text}</p>
               </li>
             ))}
           </ol>
-          <div className="mt-10 grid sm:grid-cols-3 gap-4">
-            {(['ALTA', 'MEDIA', 'BAJA'] as TriageLevel[]).map((l) => (
-              <div key={l} className="flex items-start gap-3 rounded-xl border border-border p-4">
-                <LevelBadge level={l} />
-                <p className="text-sm text-muted-foreground">
-                  {l === 'ALTA' && 'Revisión prioritaria: hallazgos o síntomas de alarma. Notifica al equipo médico.'}
-                  {l === 'MEDIA' && 'Riesgo intermedio: se revisa después de los casos ALTA, dentro del plazo definido.'}
-                  {l === 'BAJA' && 'Sin señales de alarma: sigue el flujo habitual de control.'}
-                </p>
+
+          <h3 className="mt-14 font-bold">Tres niveles, una sola escala</h3>
+          <dl className="mt-4 border-t-2 border-foreground">
+            {LEVELS.map((l) => (
+              <div key={l.level} className="grid grid-cols-[6.5rem_minmax(0,1fr)] sm:grid-cols-[17.5rem_minmax(0,1fr)] gap-x-4 py-4 border-b border-border">
+                <dt><LevelBadge level={l.level} /></dt>
+                <dd className="text-muted-foreground leading-relaxed">{l.text}</dd>
               </div>
             ))}
-          </div>
-        </section>
+          </dl>
+        </Section>
 
-        {/* Principios */}
-        <section id="principios" className="border-y border-border bg-muted/50 scroll-mt-16">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-20">
-            <SectionHeading eyebrow="Principios" title="Tecnología al servicio del criterio clínico" />
-            <div className="mt-12 grid sm:grid-cols-2 gap-5">
-              {PRINCIPLES.map((p) => (
-                <div key={p.title} className="flex gap-4 rounded-2xl border border-border bg-card p-6">
-                  <span className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl bg-brand/10 text-brand">
-                    {p.icon}
-                  </span>
-                  <div>
-                    <h3 className="text-lg font-bold">{p.title}</h3>
-                    <p className="mt-1.5 text-muted-foreground leading-relaxed">{p.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <Section id="principios" title="Tecnología al servicio del criterio clínico">
+          <dl className="grid sm:grid-cols-2 gap-x-12">
+            {PRINCIPLES.map((p) => (
+              <div key={p.title} className="py-6 border-t border-border">
+                <dt className="text-lg font-bold">{p.title}</dt>
+                <dd className="mt-2 text-muted-foreground leading-relaxed">{p.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </Section>
 
-        {/* Quiénes somos */}
-        <section id="quienes-somos" className="mx-auto max-w-6xl px-4 sm:px-6 py-20 scroll-mt-16">
-          <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-12 items-center">
+        <Section id="quienes-somos" title="Un equipo que quiere ganarle tiempo al diagnóstico">
+          <div className="max-w-2xl space-y-5 text-lg leading-relaxed text-muted-foreground">
+            <p>
+              Aurora Care nace como proyecto de título en INACAP. Somos un equipo de estudiantes que unió desarrollo de
+              software, ciencia de datos e inteligencia artificial para un problema concreto de la atención primaria en
+              Chile: que los casos de mayor riesgo no esperen de más.
+            </p>
+            <p>
+              El nombre viene de la aurora, el primer momento del día: queremos que cada caso sospechoso se mire lo antes
+              posible. Trabajamos con datos ficticios y un modelo de IA en etapa de prototipo, con la mirada puesta en un
+              piloto responsable junto a equipos de salud.
+            </p>
+          </div>
+          <dl className="mt-12 border-t-2 border-foreground">
+            {FACTS.map((f) => (
+              <div key={f.label} className="grid sm:grid-cols-[12rem_minmax(0,1fr)] gap-x-4 gap-y-0.5 py-3.5 border-b border-border">
+                <dt className="text-sm font-semibold text-muted-foreground">{f.label}</dt>
+                <dd>{f.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </Section>
+
+        {/* Acceso */}
+        <section className="border-t border-border">
+          <div className={cn(container, 'py-16 lg:py-20 flex flex-col md:flex-row md:items-end md:justify-between gap-8')}>
             <div>
-              <SectionHeading eyebrow="Quiénes somos" title="Un equipo que quiere ganarle tiempo al diagnóstico" />
-              <div className="mt-6 space-y-4 text-lg text-muted-foreground leading-relaxed">
-                <p>
-                  Aurora Care nace como proyecto de título en INACAP. Somos un equipo de estudiantes que unió desarrollo de
-                  software, ciencia de datos e inteligencia artificial para un problema concreto de la atención primaria en
-                  Chile: que los casos de mayor riesgo no esperen de más.
-                </p>
-                <p>
-                  El nombre viene de la aurora, el primer momento del día: queremos que cada caso sospechoso se mire lo antes
-                  posible. Trabajamos con datos ficticios y un modelo de IA en etapa de prototipo, con la mirada puesta en un
-                  piloto responsable junto a equipos de salud.
-                </p>
-              </div>
+              <h2 className="text-3xl font-extrabold tracking-tight">¿Parte del equipo de salud?</h2>
+              <p className="mt-3 text-lg text-muted-foreground">Ingrese con el RUT y la contraseña que le entregó el administrador.</p>
             </div>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <GraduationCap aria-hidden className="w-6 h-6 text-brand" />
-                <p className="mt-3 font-bold">Proyecto de título</p>
-                <p className="mt-1 text-sm text-muted-foreground">INACAP · 2026</p>
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <ShieldCheck aria-hidden className="w-6 h-6 text-brand" />
-                <p className="mt-3 font-bold">Normativa chilena</p>
-                <p className="mt-1 text-sm text-muted-foreground">Consentimiento, auditoría y derechos de los titulares.</p>
-              </div>
-              <div className="sm:col-span-2 rounded-2xl border border-border bg-card p-6 flex items-center gap-5">
-                <BrandMark alt="" size="lg" className="w-28 h-20" />
-                <p className="text-muted-foreground">
-                  Hecho para el día a día de un CESFAM: claro para admisión, completo para el médico y trazable para la
-                  institución.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Llamado final */}
-        <section className="mx-auto max-w-6xl px-4 sm:px-6 pb-20">
-          <div className="relative overflow-hidden rounded-3xl bg-primary px-6 py-14 sm:px-12 text-center text-primary-foreground">
-            <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-white/10 blur-2xl" />
-            <h2 className="relative text-3xl sm:text-4xl font-extrabold tracking-tight">¿Parte del equipo de salud?</h2>
-            <p className="relative mt-3 text-lg opacity-90">Ingrese con el RUT y la contraseña que le entregó el administrador.</p>
-            <button
-              onClick={onLogin}
-              className="relative mt-8 inline-flex items-center gap-2 h-12 px-7 rounded-lg bg-white text-[hsl(324_31%_12%)] font-bold hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
-            >
+            <button className={cn(primaryButton, 'h-12 px-6 text-base self-start md:self-auto')} onClick={onLogin}>
               Ingresar a Aurora Care <ArrowRight aria-hidden className="w-4 h-4" />
             </button>
           </div>
@@ -301,7 +265,7 @@ export default function Landing({ onLogin }: { onLogin: () => void }) {
       </main>
 
       <footer className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
+        <div className={cn(container, 'py-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-muted-foreground')}>
           <div className="flex items-center gap-2">
             <BrandMark alt="" />
             <span className="font-bold text-foreground">Aurora Care</span>
