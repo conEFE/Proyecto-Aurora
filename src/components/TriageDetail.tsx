@@ -5,7 +5,7 @@ import { apiClient } from '../services/api';
 import type { TriageBreakdown, TriageLevel, TriageResult } from '../types';
 import { cn } from '../lib/cn';
 import { RULE_LABELS } from '../constants';
-import { LevelBadge, PrototypeBadge, ScoreBar, SimulatedBadge } from './Badges';
+import { LevelBadge, PrototypeBadge, SimulatedBadge } from './Badges';
 import { ErrorMessage } from './Feedback';
 import { cardClass, formatDateTime, ghostButton, inputClass, labelClass, primaryButton, secondaryButton, sectionTitle, textareaClass } from './ui';
 
@@ -122,7 +122,10 @@ export default function TriageDetail({ caseId, closed, onChanged, embedded = fal
         </div>
         <div className="py-3 px-4">
           <dt className="text-xs text-muted-foreground">Puntaje</dt>
-          <dd className="mt-1.5"><ScoreBar score={triage.score} level={triage.final_level} /></dd>
+          <dd className="mt-1 tabular-nums">
+            <span className="text-lg font-extrabold">{num(triage.score)}</span>
+            <span className="text-sm text-muted-foreground"> / 100</span>
+          </dd>
         </div>
         <div className="py-3 pl-4">
           <dt className="text-xs text-muted-foreground">Parámetros</dt>

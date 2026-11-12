@@ -12,7 +12,7 @@ import { uploadBatch, type PendingImage } from '../utils/imageBatch';
 import SymptomsForm from './SymptomsForm';
 import ReviewPanel from './ReviewPanel';
 import TriageDetail from './TriageDetail';
-import { cardClass, formatDate, formatDateTime, iconButton, primaryButton, secondaryButton, sectionTitle } from './ui';
+import { cardClass, formatDateTime, iconButton, primaryButton, secondaryButton, sectionTitle } from './ui';
 
 interface CaseDetailProps {
   caseId: number;
@@ -158,94 +158,81 @@ export default function CaseDetail({ caseId, me, onChanged, onNextCase }: CaseDe
 
   const p = data.patient;
 
+  const symptomsCard = (
+    <section aria-labelledby={`symptoms-${data.id}`} className={cn(cardClass, 'p-6 space-y-4')}>
+      <h3 id={`symptoms-${data.id}`} className={sectionTitle}>Síntomas y BI-RADS informado</h3>
+      <ErrorMessage>{error}</ErrorMessage>
+      <SymptomsForm value={symptoms} onChange={setSymptoms} disabled={closed} />
+      {closed ? (
+        <p className="text-sm text-muted-foreground">Caso cerrado el {formatDateTime(data.closed_at)}</p>
+      ) : (
+        <button className={primaryButton} disabled={!dirty || saving} onClick={save}>
+          {saving ? <Loader2 aria-hidden className="w-4 h-4 animate-spin" /> : <Save aria-hidden className="w-4 h-4" />}
+          Guardar y recalcular triage
+        </button>
+      )}
+    </section>
+  );
+
   return (
-    <div className="space-y-5">
-      <section aria-labelledby={`case-${data.id}`} className={cn(cardClass, 'p-6')}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 id={`case-${data.id}`} className="text-3xl font-extrabold tabular-nums tracking-tight">{data.code}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Creado el {formatDateTime(data.created_at)}</p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
+    <div className="space-y-6">
+      <section aria-labelledby={`case-${data.id}`} className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4 pb-6 border-b border-border">
+        <div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <h2 id={`case-${data.id}`} className="text-4xl font-extrabold tabular-nums tracking-tight">{data.code}</h2>
             <LevelBadge level={data.triage_level} size="lg" />
             <StatusBadge status={data.status} />
           </div>
-        </div>
-
-        {p && (
-          <dl className="mt-5 grid sm:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)_minmax(0,1.2fr)] gap-x-6 gap-y-3 py-4 border-y border-border text-sm">
-            <div>
-              <dt className="text-xs text-muted-foreground">Paciente</dt>
-              <dd className="font-semibold">{p.first_name} {p.last_name}</dd>
-              <dd className="text-muted-foreground tabular-nums">RUT {p.rut}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Edad</dt>
-              <dd className="font-semibold tabular-nums">{ageFrom(p.birth_date)} años</dd>
-              <dd className="text-muted-foreground tabular-nums">{formatDate(p.birth_date)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Antecedentes</dt>
-              <dd>Familiar 1er grado: <strong>{p.family_history_first_degree ? 'Sí' : 'No'}</strong></dd>
-              <dd>Cáncer previo: <strong>{p.previous_breast_cancer ? 'Sí' : 'No'}</strong></dd>
-            </div>
-          </dl>
-        )}
-
-        <div className="mt-6">
-          <h3 id={`images-${data.id}`} className="sr-only">Imágenes por lado</h3>
-          {!closed && (
-            <div className="mb-5">
-              <AddImages
-                caseId={data.id}
-                onUploaded={() => {
-                  setImagesKey((k) => k + 1);
-                  reload();
-                }}
-              />
-            </div>
+          {p && (
+            <p className="mt-2 text-muted-foreground">
+              <span className="font-semibold text-foreground">{p.first_name} {p.last_name}</span>
+              <span className="tabular-nums"> · RUT {p.rut} · {ageFrom(p.birth_date)} años</span>
+              {' · '}Familiar 1er grado: <strong className="text-foreground">{p.family_history_first_degree ? 'Sí' : 'No'}</strong>
+              {' · '}Cáncer previo: <strong className="text-foreground">{p.previous_breast_cancer ? 'Sí' : 'No'}</strong>
+            </p>
           )}
+          <p className="mt-1 text-sm text-muted-foreground">Creado el {formatDateTime(data.created_at)}</p>
+        </div>
+        {!closed && (
+          <AddImages
+            caseId={data.id}
+            onUploaded={() => {
+              setImagesKey((k) => k + 1);
+              reload();
+            }}
+          />
+        )}
+      </section>
+
+      <div className="grid xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-6 items-start">
+        <section aria-labelledby={`images-${data.id}`} className={cn(cardClass, 'p-6 min-w-0')}>
+          <h3 id={`images-${data.id}`} className="sr-only">Imágenes por lado</h3>
           <CaseImages
             caseId={data.id}
             me={me}
             refreshKey={imagesKey}
             readOnly={closed}
             onValidationChange={() => setValidationKey((k) => k + 1)}
-            afterPlate={
-              me.role === 'MEDICO' ? (
-                <div className="space-y-8 pt-6 border-t border-border">
-                  <ReviewPanel
-                    key={`rv-${data.status}`}
-                    caseData={data}
-                    me={me}
-                    validationKey={validationKey}
-                    onChanged={reload}
-                    onNextCase={onNextCase}
-                    embedded
-                  />
-                  <div className="pt-6 border-t border-border">
-                    <TriageDetail key={triageKey} caseId={data.id} closed={closed} onChanged={reload} embedded />
-                  </div>
-                </div>
-              ) : undefined
-            }
           />
-        </div>
-      </section>
+        </section>
 
-      <section aria-labelledby={`symptoms-${data.id}`} className={cn(cardClass, 'p-6 space-y-4')}>
-        <h3 id={`symptoms-${data.id}`} className={sectionTitle}>Síntomas y BI-RADS informado</h3>
-        <ErrorMessage>{error}</ErrorMessage>
-        <SymptomsForm value={symptoms} onChange={setSymptoms} disabled={closed} />
-        {closed ? (
-          <p className="text-sm text-muted-foreground">Caso cerrado el {formatDateTime(data.closed_at)}: solo lectura.</p>
-        ) : (
-          <button className={primaryButton} disabled={!dirty || saving} onClick={save}>
-            {saving ? <Loader2 aria-hidden className="w-4 h-4 animate-spin" /> : <Save aria-hidden className="w-4 h-4" />}
-            Guardar y recalcular triage
-          </button>
-        )}
-      </section>
+        <div className="space-y-6 min-w-0">
+          {me.role === 'MEDICO' && (
+            <>
+              <ReviewPanel
+                key={`rv-${data.status}`}
+                caseData={data}
+                me={me}
+                validationKey={validationKey}
+                onChanged={reload}
+                onNextCase={onNextCase}
+              />
+              <TriageDetail key={triageKey} caseId={data.id} closed={closed} onChanged={reload} />
+            </>
+          )}
+          {symptomsCard}
+        </div>
+      </div>
     </div>
   );
 }

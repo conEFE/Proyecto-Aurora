@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, FolderOpen, Loader2, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
-import type { CaseStatus, CaseSymptoms, ClinicalCase, Me, Page, Patient } from '../types';
+import type { CaseStatus, CaseSymptoms, ClinicalCase, Me, Page, Patient, TriageLevel } from '../types';
 import { CASE_STATUS_LABELS } from '../types';
 import { cn } from '../lib/cn';
 import { LevelBadge, StatusBadge } from './Badges';
@@ -15,6 +15,7 @@ import SymptomsForm from './SymptomsForm';
 import {
   cardClass,
   formatDate,
+  ghostButton,
   iconButton,
   inputClass,
   pageClass,
@@ -135,25 +136,35 @@ interface CaseManagementProps {
   newCasePatient?: Patient | null;
 }
 
+type LevelFilter = TriageLevel | 'TODOS';
+const LEVEL_TABS: LevelFilter[] = ['TODOS', 'ALTA', 'MEDIA', 'BAJA'];
+
 export default function CaseManagement({ me, initialCaseId = null, newCasePatient = null }: CaseManagementProps) {
   const [data, setData] = useState<Page<ClinicalCase> | null>(null);
+  const [counts, setCounts] = useState<Record<LevelFilter, number> | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(initialCaseId);
+  const [level, setLevel] = useState<LevelFilter>('TODOS');
   const [statusFilter, setStatusFilter] = useState<CaseStatus | ''>('');
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(newCasePatient !== null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const size = 15;
+  const size = 20;
 
   const loadCases = useCallback(async () => {
     setLoading(true);
-    const r = await apiClient.getCases({ status: statusFilter || undefined, page, size });
-    if (r.data) {
-      setData(r.data);
+    const status = statusFilter || undefined;
+    const [list, ...totals] = await Promise.all([
+      apiClient.getCases({ status, level: level === 'TODOS' ? undefined : level, page, size }),
+      ...LEVEL_TABS.map((l) => apiClient.getCases({ status, level: l === 'TODOS' ? undefined : l, page: 1, size: 1 })),
+    ]);
+    if (list.data) {
+      setData(list.data);
       setError(null);
-    } else setError(r.error || 'No se pudieron cargar los casos.');
+    } else setError(list.error || 'No se pudieron cargar los casos.');
+    setCounts(Object.fromEntries(LEVEL_TABS.map((l, i) => [l, totals[i].data?.total ?? 0])) as Record<LevelFilter, number>);
     setLoading(false);
-  }, [statusFilter, page]);
+  }, [statusFilter, level, page]);
 
   useEffect(() => {
     loadCases();
@@ -161,20 +172,57 @@ export default function CaseManagement({ me, initialCaseId = null, newCasePatien
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / size)) : 1;
 
+  const openCase = (id: number) => {
+    setCreating(false);
+    setSelectedId(id);
+    window.scrollTo(0, 0);
+  };
+
+  const backToList = () => {
+    setSelectedId(null);
+    setCreating(false);
+    loadCases();
+  };
+
   // El siguiente caso de la cola queda a una acción de distancia al terminar una revisión
   const openNextCase = async () => {
     const r = await apiClient.getQueue(false);
     const next = r.data?.find((q) => q.case_id && q.case_id !== selectedId);
-    if (next?.case_id) setSelectedId(next.case_id);
+    if (next?.case_id) openCase(next.case_id);
     else toast('No quedan casos pendientes en la cola.');
   };
+
+  if (creating || selectedId) {
+    return (
+      <div className={pageClass}>
+        <button className={cn(ghostButton, '-ml-3 mb-4')} onClick={backToList}>
+          <ChevronLeft aria-hidden className="w-4 h-4" /> Casos
+        </button>
+        {creating ? (
+          <div className="max-w-3xl">
+            <NewCaseForm
+              initialPatient={newCasePatient}
+              onCancel={backToList}
+              onCreated={(c) => openCase(c.id)}
+            />
+          </div>
+        ) : (
+          <CaseDetail
+            key={selectedId}
+            caseId={selectedId!}
+            me={me}
+            onChanged={loadCases}
+            onNextCase={me.role === 'MEDICO' ? openNextCase : undefined}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={pageClass}>
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className={pageTitle}>Casos</h1>
-        </div>
+        <h1 className={pageTitle}>Casos</h1>
         <button className={primaryButton} onClick={() => setCreating(true)}>
           <Plus aria-hidden className="w-4 h-4" /> Nuevo caso
         </button>
@@ -182,112 +230,107 @@ export default function CaseManagement({ me, initialCaseId = null, newCasePatien
 
       <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
-      <div className="mt-6 grid xl:grid-cols-[minmax(0,31rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)] gap-6 items-start">
-        <div className={cn(cardClass, 'overflow-hidden')}>
-          <div className="px-4 py-3 border-b border-border flex items-center gap-3">
-            <label className="text-sm text-muted-foreground" htmlFor="status-filter">Estado</label>
-            <select
-              id="status-filter"
-              className={cn(inputClass, 'h-9 w-48')}
-              value={statusFilter}
-              onChange={(e) => {
-                setPage(1);
-                setStatusFilter(e.target.value as CaseStatus | '');
-              }}
-            >
-              <option value="">Todos</option>
-              {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map((s) => (
-                <option key={s} value={s}>{CASE_STATUS_LABELS[s]}</option>
-              ))}
-            </select>
-            {data && <span className="ml-auto text-sm text-muted-foreground tabular-nums">{data.total} casos</span>}
-          </div>
-          {loading ? (
-            <Loading label="Cargando casos…" />
-          ) : !data || data.items.length === 0 ? (
-            <EmptyState title="No hay casos" icon={<FolderOpen aria-hidden className="w-8 h-8" />}>
-              {statusFilter ? 'No hay casos en este estado.' : 'Cree el primer caso con «Nuevo caso».'}
-            </EmptyState>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <caption className="sr-only">Lista de casos</caption>
-                <thead className="bg-muted/60">
-                  <tr>
-                    <th scope="col" className={thClass}>Código</th>
-                    <th scope="col" className={thClass}>Paciente</th>
-                    <th scope="col" className={cn(thClass, "hidden 2xl:table-cell")}>Fecha</th>
-                    <th scope="col" className={thClass}>Estado</th>
-                    <th scope="col" className={thClass}>Triage</th>
-                    <th scope="col" className={cn(thClass, "hidden 2xl:table-cell text-right")}>Imág.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.items.map((c) => {
-                    const selected = selectedId === c.id && !creating;
-                    return (
-                      <tr key={c.id} className={cn('transition-colors', selected ? 'bg-accent' : 'hover:bg-accent/60')}>
-                        <td className={tdClass}>
-                          <button
-                            onClick={() => {
-                              setCreating(false);
-                              setSelectedId(c.id);
-                            }}
-                            aria-current={selected ? 'true' : undefined}
-                            className={cn('font-bold tabular-nums hover:text-brand hover:underline', selected && 'text-brand')}
-                          >
-                            {c.code}
-                          </button>
-                        </td>
-                        <td className={cn(tdClass, "text-muted-foreground max-w-[9rem] truncate")}>
-                          {c.patient ? `${c.patient.first_name} ${c.patient.last_name}` : '—'}
-                        </td>
-                        <td className={cn(tdClass, "hidden 2xl:table-cell text-muted-foreground tabular-nums")}>{formatDate(c.created_at)}</td>
-                        <td className={tdClass}><StatusBadge status={c.status} /></td>
-                        <td className={tdClass}><LevelBadge level={c.triage_level} /></td>
-                        <td className={cn(tdClass, "hidden 2xl:table-cell text-right tabular-nums text-muted-foreground")}>{c.image_count}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <div className="px-4 py-3 border-t border-border flex items-center justify-between">
-            <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              <ChevronLeft aria-hidden className="w-4 h-4" /> Anterior
-            </button>
-            <span className="text-sm text-muted-foreground tabular-nums">Página {page} de {totalPages}</span>
-            <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              Siguiente <ChevronRight aria-hidden className="w-4 h-4" />
-            </button>
-          </div>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div role="tablist" aria-label="Filtrar por nivel de triage" className="inline-flex p-1 rounded-lg bg-muted">
+          {LEVEL_TABS.map((l) => {
+            const on = level === l;
+            return (
+              <button
+                key={l}
+                role="tab"
+                aria-selected={on}
+                onClick={() => {
+                  setPage(1);
+                  setLevel(l);
+                }}
+                className={cn(
+                  'inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm transition-colors',
+                  on ? 'bg-card text-foreground font-bold ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {l === 'TODOS' ? 'Todos' : <LevelBadge level={l} />}
+                <span className="tabular-nums text-muted-foreground">{counts ? counts[l] : '—'}</span>
+              </button>
+            );
+          })}
         </div>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          Estado
+          <select
+            className={cn(inputClass, 'h-9 w-44')}
+            value={statusFilter}
+            onChange={(e) => {
+              setPage(1);
+              setStatusFilter(e.target.value as CaseStatus | '');
+            }}
+          >
+            <option value="">Todos</option>
+            {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map((st) => (
+              <option key={st} value={st}>{CASE_STATUS_LABELS[st]}</option>
+            ))}
+          </select>
+        </label>
+      </div>
 
-        <div className="min-w-0">
-          {creating ? (
-            <NewCaseForm
-              initialPatient={newCasePatient}
-              onCancel={() => setCreating(false)}
-              onCreated={(c) => {
-                setCreating(false);
-                setSelectedId(c.id);
-                loadCases();
-              }}
-            />
-          ) : selectedId ? (
-            <CaseDetail
-              key={selectedId}
-              caseId={selectedId}
-              me={me}
-              onChanged={loadCases}
-              onNextCase={me.role === 'MEDICO' ? openNextCase : undefined}
-            />
-          ) : (
-            <div className={cn(cardClass, 'border-dashed')}>
-              <EmptyState title="Ningún caso seleccionado">Elija un caso de la lista para ver su detalle.</EmptyState>
-            </div>
-          )}
+      <div className={cn(cardClass, 'mt-4 overflow-hidden')}>
+        {loading && !data ? (
+          <Loading label="Cargando casos…" />
+        ) : !data || data.items.length === 0 ? (
+          <EmptyState title="No hay casos" icon={<FolderOpen aria-hidden className="w-8 h-8" />}>
+            {level !== 'TODOS' || statusFilter ? 'No hay casos con estos filtros.' : 'Cree el primero con «Nuevo caso».'}
+          </EmptyState>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <caption className="sr-only">Lista de casos</caption>
+              <thead className="bg-muted/60">
+                <tr>
+                  <th scope="col" className={cn(thClass, 'pl-5')}>Código</th>
+                  <th scope="col" className={thClass}>Nivel</th>
+                  <th scope="col" className={thClass}>Paciente</th>
+                  <th scope="col" className={thClass}>Estado</th>
+                  <th scope="col" className={thClass}>Creado</th>
+                  <th scope="col" className={cn(thClass, 'text-right pr-5')}>Imágenes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.items.map((c) => (
+                  <tr key={c.id} onClick={() => openCase(c.id)} className="cursor-pointer hover:bg-accent/60 transition-colors">
+                    <td className={cn(tdClass, 'pl-5')}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCase(c.id);
+                        }}
+                        className="font-bold tabular-nums hover:text-brand hover:underline"
+                      >
+                        {c.code}
+                      </button>
+                    </td>
+                    <td className={tdClass}><LevelBadge level={c.triage_level} /></td>
+                    <td className={cn(tdClass, 'text-muted-foreground')}>
+                      {c.patient ? `${c.patient.first_name} ${c.patient.last_name}` : '—'}
+                    </td>
+                    <td className={tdClass}><StatusBadge status={c.status} /></td>
+                    <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{formatDate(c.created_at)}</td>
+                    <td className={cn(tdClass, 'text-right pr-5 tabular-nums text-muted-foreground')}>{c.image_count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+          <span className="text-sm text-muted-foreground tabular-nums">{data ? `${data.total} casos` : ''}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground tabular-nums">Página {page} de {totalPages}</span>
+            <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((n) => n - 1)} aria-label="Página anterior">
+              <ChevronLeft aria-hidden className="w-4 h-4" />
+            </button>
+            <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((n) => n + 1)} aria-label="Página siguiente">
+              <ChevronRight aria-hidden className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

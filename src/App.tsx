@@ -109,6 +109,11 @@ function App() {
         currentSection={currentSection}
         onSectionChange={(section) => {
           setNewCasePatient(null);
+          // «Casos» desde el menú siempre vuelve a la lista
+          if (section === 'cases') {
+            setOpenCaseId(null);
+            setOpenCaseNonce((n) => n + 1);
+          }
           setCurrentSection(section);
         }} onOpenCase={openCase} me={me} />
       <main ref={mainRef} tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">
