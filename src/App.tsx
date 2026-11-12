@@ -22,6 +22,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [openCaseId, setOpenCaseId] = useState<number | null>(null);
   const [openCaseNonce, setOpenCaseNonce] = useState(0);
+  const [patientsNonce, setPatientsNonce] = useState(0);
   const mainRef = useRef<HTMLElement>(null);
   const firstRender = useRef(true);
 
@@ -114,13 +115,14 @@ function App() {
             setOpenCaseId(null);
             setOpenCaseNonce((n) => n + 1);
           }
+          if (section === 'patients') setPatientsNonce((n) => n + 1);
           setCurrentSection(section);
         }} onOpenCase={openCase} me={me} />
       <main ref={mainRef} tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">
         {currentSection === 'home' && <Home me={me} onGetStarted={() => setCurrentSection('queue')} />}
         {currentSection === 'queue' && <TriageQueue me={me} onOpenCase={openCase} />}
         {currentSection === 'config' && <TriageConfigPanel me={me} />}
-        {currentSection === 'patients' && <PatientsPanel onOpenCase={openCase} onNewCase={newCaseFor} />}
+        {currentSection === 'patients' && <PatientsPanel key={patientsNonce} onOpenCase={openCase} onNewCase={newCaseFor} />}
         {currentSection === 'cases' && (
           <CaseManagement key={openCaseNonce} me={me} initialCaseId={openCaseId} newCasePatient={newCasePatient} />
         )}

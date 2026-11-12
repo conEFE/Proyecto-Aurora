@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FolderPlus, Loader2, Save, Search, Trash2, UserPlus, Users } from 'lucide-react';
+import { ChevronLeft, FolderPlus, Loader2, Save, Search, Trash2, UserPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type { ClinicalCase, Patient, PatientInput, Sex } from '../types';
@@ -12,6 +12,7 @@ import {
   cardClass,
   dangerButton,
   formatDate,
+  ghostButton,
   inputClass,
   labelClass,
   pageClass,
@@ -119,19 +120,29 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
   const hasCases = (cases?.length ?? 0) > 0;
 
   return (
-    <div className="space-y-5">
-      <section className={cn(cardClass, 'p-6 space-y-5')} aria-labelledby="pd-title">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 id="pd-title" className="text-2xl font-extrabold tracking-tight">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 pb-6 border-b border-border">
+        <div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <h2 id="pd-title" className="text-4xl font-extrabold tracking-tight">
               {patient.first_name} {patient.last_name}
             </h2>
-            <p className="text-sm text-muted-foreground tabular-nums">
-              RUT {patient.rut} · {ageFrom(patient.birth_date)} años · registrada el {formatDate(patient.created_at)}
-            </p>
+            <PatientState p={patient} />
           </div>
-          <PatientState p={patient} />
+          <p className="mt-2 text-muted-foreground tabular-nums">
+            RUT {patient.rut} · {ageFrom(patient.birth_date)} años · registrada el {formatDate(patient.created_at)}
+          </p>
         </div>
+        <button className={primaryButton} disabled={blocked || !patient.consent_given} onClick={() => onNewCase(patient)}
+          title={!patient.consent_given ? 'Registre el consentimiento en Privacidad para crear casos' : undefined}>
+          <FolderPlus aria-hidden className="w-4 h-4" /> Nuevo caso
+        </button>
+      </div>
+
+      <div className="grid xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-6 items-start">
+      <div className="space-y-6 min-w-0">
+      <section className={cn(cardClass, 'p-6 space-y-5')} aria-labelledby="pd-data">
+        <h3 id="pd-data" className={sectionTitle}>Datos</h3>
         {blocked && (
           <p className="text-sm text-muted-foreground">
             Datos bloqueados desde el {formatDate(patient.blocked_at)}. No se pueden editar ni crear casos.
@@ -198,10 +209,6 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
       <section className={cn(cardClass, 'overflow-hidden')} aria-labelledby="pd-cases">
         <div className="px-6 pt-5 pb-3 flex flex-wrap items-center justify-between gap-3">
           <h3 id="pd-cases" className={sectionTitle}>Casos{cases ? ` (${cases.length})` : ''}</h3>
-          <button className={secondaryButton} disabled={blocked || !patient.consent_given} onClick={() => onNewCase(patient)}
-            title={!patient.consent_given ? 'Registre el consentimiento en Privacidad para crear casos' : undefined}>
-            <FolderPlus aria-hidden className="w-4 h-4" /> Nuevo caso
-          </button>
         </div>
         {cases === null ? (
           <Loading label="Cargando casos…" />
@@ -237,7 +244,9 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
           </table>
         )}
       </section>
+      </div>
 
+      <div className="space-y-6 min-w-0">
       <PatientTimeline
         patientId={patient.id}
         refreshKey={`${cases?.length ?? ''}-${patient.consent_given}-${patient.blocked_at ?? ''}`}
@@ -276,6 +285,8 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
           )}
         </section>
       )}
+      </div>
+      </div>
     </div>
   );
 }
@@ -305,12 +316,47 @@ export default function PatientsPanel({ onOpenCase, onNewCase }: PatientsPanelPr
     load();
   }, [load]);
 
+  const modal = (
+    <PatientModal
+      isOpen={creating}
+      createOnly
+      onClose={() => setCreating(false)}
+      onSelectPatient={(p) => {
+        setSelected(p);
+        load(term);
+      }}
+    />
+  );
+
+  if (selected) {
+    return (
+      <div className={pageClass}>
+        <button className={cn(ghostButton, '-ml-3 mb-4')} onClick={() => setSelected(null)}>
+          <ChevronLeft aria-hidden className="w-4 h-4" /> Pacientes
+        </button>
+        <PatientDetail
+          key={selected.id}
+          patient={selected}
+          onOpenCase={onOpenCase}
+          onNewCase={onNewCase}
+          onUpdated={(p) => {
+            setSelected(p);
+            setPatients((prev) => prev?.map((x) => (x.id === p.id ? p : x)) ?? null);
+          }}
+          onDeleted={(id) => {
+            setSelected(null);
+            setPatients((prev) => prev?.filter((x) => x.id !== id) ?? null);
+          }}
+        />
+        {modal}
+      </div>
+    );
+  }
+
   return (
     <div className={pageClass}>
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className={pageTitle}>Pacientes</h1>
-        </div>
+        <h1 className={pageTitle}>Pacientes</h1>
         <button className={primaryButton} onClick={() => setCreating(true)}>
           <UserPlus aria-hidden className="w-4 h-4" /> Nuevo paciente
         </button>
@@ -318,93 +364,70 @@ export default function PatientsPanel({ onOpenCase, onNewCase }: PatientsPanelPr
 
       <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
-      <div className="mt-6 grid xl:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] gap-6 items-start">
-        <div className={cn(cardClass, 'overflow-hidden')}>
-          <form
-            className="p-3 border-b border-border flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              load(term);
-            }}
-          >
-            <label htmlFor="pp-search" className="sr-only">Buscar por RUT o nombre</label>
-            <input id="pp-search" type="search" className={inputClass} placeholder="RUT o nombre" value={term}
-              onChange={(e) => setTerm(e.target.value)} />
-            <button type="submit" className={secondaryButton}><Search aria-hidden className="w-4 h-4" /> Buscar</button>
-          </form>
-          {patients === null ? (
-            <Loading label="Cargando pacientes…" />
-          ) : patients.length === 0 ? (
-            <EmptyState title="Sin pacientes" icon={<Users aria-hidden className="w-8 h-8" />}>
-              {term ? 'No hay coincidencias.' : 'Registre la primera con «Nuevo paciente».'}
-            </EmptyState>
-          ) : (
-            <ul className="divide-y divide-border max-h-[70vh] overflow-y-auto">
-              {patients.map((p) => {
-                const active = selected?.id === p.id;
-                return (
-                  <li key={p.id}>
-                    <button
-                      onClick={() => setSelected(p)}
-                      aria-current={active ? 'true' : undefined}
-                      className={cn('w-full text-left px-4 py-2.5 flex items-center justify-between gap-3 transition-colors',
-                        active ? 'bg-accent' : 'hover:bg-accent/60')}
-                    >
-                      <span className="min-w-0">
-                        <span className={cn('block font-semibold truncate', active && 'text-brand')}>
-                          {p.first_name} {p.last_name}
-                        </span>
-                        <span className="block text-sm text-muted-foreground tabular-nums">
-                          RUT {p.rut} · {ageFrom(p.birth_date)} años
-                        </span>
-                      </span>
-                      <PatientState p={p} />
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {patients && patients.length >= 50 && (
-            <p className="px-4 py-2 border-t border-border text-xs text-muted-foreground">
-              Se muestran las 50 más recientes. Use la búsqueda para encontrar otras.
-            </p>
-          )}
-        </div>
-
-        <div className="min-w-0">
-          {selected ? (
-            <PatientDetail
-              key={selected.id}
-              patient={selected}
-              onOpenCase={onOpenCase}
-              onNewCase={onNewCase}
-              onUpdated={(p) => {
-                setSelected(p);
-                setPatients((prev) => prev?.map((x) => (x.id === p.id ? p : x)) ?? null);
-              }}
-              onDeleted={(id) => {
-                setSelected(null);
-                setPatients((prev) => prev?.filter((x) => x.id !== id) ?? null);
-              }}
-            />
-          ) : (
-            <div className={cn(cardClass, 'border-dashed')}>
-              <EmptyState title="Ningún paciente seleccionado">Elija un paciente de la lista para ver su ficha.</EmptyState>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <PatientModal
-        isOpen={creating}
-        createOnly
-        onClose={() => setCreating(false)}
-        onSelectPatient={(p) => {
-          setSelected(p);
+      <form
+        className="mt-6 flex gap-2 max-w-xl"
+        onSubmit={(e) => {
+          e.preventDefault();
           load(term);
         }}
-      />
+      >
+        <label htmlFor="pp-search" className="sr-only">Buscar por RUT o nombre</label>
+        <input id="pp-search" type="search" className={inputClass} placeholder="Buscar por RUT o nombre" value={term}
+          onChange={(e) => setTerm(e.target.value)} />
+        <button type="submit" className={secondaryButton}><Search aria-hidden className="w-4 h-4" /> Buscar</button>
+      </form>
+
+      <div className={cn(cardClass, 'mt-4 overflow-hidden')}>
+        {patients === null ? (
+          <Loading label="Cargando pacientes…" />
+        ) : patients.length === 0 ? (
+          <EmptyState title="Sin pacientes" icon={<Users aria-hidden className="w-8 h-8" />}>
+            {term ? 'No hay coincidencias.' : 'Registre la primera con «Nuevo paciente».'}
+          </EmptyState>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <caption className="sr-only">Lista de pacientes</caption>
+              <thead className="bg-muted/60">
+                <tr>
+                  <th scope="col" className={cn(thClass, 'pl-5')}>Paciente</th>
+                  <th scope="col" className={thClass}>RUT</th>
+                  <th scope="col" className={cn(thClass, 'text-right')}>Edad</th>
+                  <th scope="col" className={thClass}>Estado</th>
+                  <th scope="col" className={cn(thClass, 'pr-5')}>Registrada</th>
+                </tr>
+              </thead>
+              <tbody>
+                {patients.map((p) => (
+                  <tr key={p.id} onClick={() => setSelected(p)} className="cursor-pointer hover:bg-accent/60 transition-colors">
+                    <td className={cn(tdClass, 'pl-5')}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelected(p);
+                        }}
+                        className="font-semibold hover:text-brand hover:underline text-left"
+                      >
+                        {p.first_name} {p.last_name}
+                      </button>
+                    </td>
+                    <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{p.rut}</td>
+                    <td className={cn(tdClass, 'text-right tabular-nums')}>{ageFrom(p.birth_date)}</td>
+                    <td className={tdClass}><PatientState p={p} /></td>
+                    <td className={cn(tdClass, 'pr-5 text-muted-foreground tabular-nums')}>{formatDate(p.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {patients && patients.length >= 50 && (
+          <p className="px-5 py-3 border-t border-border text-sm text-muted-foreground">
+            Se muestran las 50 más recientes. Use la búsqueda para encontrar otras.
+          </p>
+        )}
+      </div>
+      {modal}
     </div>
   );
 }
