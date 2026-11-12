@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
-import type { Me, Role } from '../types';
+import type { Me } from '../types';
 import { ROLE_LABELS } from '../types';
 import { cn } from '../lib/cn';
 import ChangePassword from './ChangePassword';
@@ -19,29 +19,6 @@ import {
   primaryButton,
   sectionTitle,
 } from './ui';
-
-// Resumen de la matriz de permisos, en lenguaje de usuario
-const ROLE_PERMISSIONS: Record<Role, string[]> = {
-  MEDICO: [
-    'Registrar pacientes, crear casos y cargar imágenes',
-    'Ver imágenes, resultados de IA y el detalle del triage',
-    'Ajustar la prioridad (override) con motivo',
-    'Registrar la revisión médica, cerrar casos y firmar reportes',
-    'Editar los parámetros del triage',
-  ],
-  ADMINISTRATIVO: [
-    'Registrar y editar pacientes con su consentimiento',
-    'Crear casos y cargar imágenes',
-    'Ver la cola de triage (código, nivel y estado)',
-    'Gestionar consentimiento, bloqueo y solicitudes de datos',
-  ],
-  ADMIN: [
-    'Crear, editar y desactivar usuarios',
-    'Revisar la bitácora de auditoría y los errores',
-    'Ver los parámetros del triage y el dashboard agregado',
-    'No accede a datos de pacientes',
-  ],
-};
 
 interface ProfileProps {
   me: Me;
@@ -84,7 +61,7 @@ export default function Profile({ me, onUpdated }: ProfileProps) {
   return (
     <div className={pageClass}>
       <h1 className={pageTitle}>Mi perfil</h1>
-      <p className={pageSubtitle}>Sus datos de acceso a Aurora Care. El nombre, el RUT y el rol los cambia un administrador.</p>
+      <p className={pageSubtitle}>El nombre, el RUT y el rol los cambia un administrador.</p>
 
       <div className="mt-6 grid xl:grid-cols-2 gap-6 items-start">
         <div className="space-y-6">
@@ -100,14 +77,6 @@ export default function Profile({ me, onUpdated }: ProfileProps) {
             </dl>
           </section>
 
-          <section className={cn(cardClass, 'p-6')} aria-labelledby="pf-role">
-            <h2 id="pf-role" className={sectionTitle}>Qué puede hacer como {ROLE_LABELS[me.role].toLowerCase()}</h2>
-            <ul className="mt-3 space-y-1.5 text-sm list-disc pl-5 marker:text-brand">
-              {ROLE_PERMISSIONS[me.role].map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-          </section>
         </div>
 
         <div className="space-y-6">

@@ -333,9 +333,6 @@ function ErrorViewer({ users }: { users: UserAccount[] }) {
             <h2 id="errors-title" className={sectionTitle}>Errores del servidor (5xx)</h2>
             {data && <span className="text-sm text-muted-foreground tabular-nums">{data.total} registros</span>}
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Sin datos personales ni clínicos. El código de solicitud es el que ve el usuario en el mensaje de error.
-          </p>
         </div>
         <div className="grid sm:grid-cols-3 gap-3">
           <div>
@@ -468,9 +465,7 @@ export default function AdminPanel() {
   return (
     <div className={pageClass}>
       <h1 className={pageTitle}>Administración</h1>
-      <p className={pageSubtitle}>
-        Usuarios, roles, auditoría y errores del servidor. Por mínimo privilegio, el administrador no accede a datos clínicos.
-      </p>
+      <p className={pageSubtitle}>Usuarios, auditoría y errores del servidor.</p>
 
       <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
@@ -485,7 +480,7 @@ export default function AdminPanel() {
 
       {privacy && (
         <div className={cn(cardClass, 'mt-4 px-6 py-4 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm')}>
-          <span className="font-bold">Solicitudes de titulares (Ley 21.719)</span>
+          <span className="font-bold">Solicitudes de titulares</span>
           <span><strong className="tabular-nums">{privacy.open_total}</strong> <span className="text-muted-foreground">abiertas</span></span>
           <span className={privacy.overdue > 0 ? 'font-bold text-alta' : 'text-muted-foreground'}>
             <span className="tabular-nums">{privacy.overdue}</span> con el plazo de 30 días vencido
@@ -493,7 +488,6 @@ export default function AdminPanel() {
           <span className="text-muted-foreground">
             <span className="tabular-nums">{privacy.by_status.RESUELTA}</span> resueltas, <span className="tabular-nums">{privacy.by_status.RECHAZADA}</span> rechazadas
           </span>
-          <span className="text-xs text-muted-foreground">Las gestionan médicos y administrativos en «Privacidad».</span>
         </div>
       )}
 
@@ -524,8 +518,7 @@ export default function AdminPanel() {
                 <caption className="sr-only">Usuarios y roles</caption>
                 <thead className="bg-muted/60">
                   <tr>
-                    <th scope="col" className={thClass}>Nombre</th>
-                    <th scope="col" className={thClass}>RUT</th>
+                    <th scope="col" className={thClass}>Usuario</th>
                     <th scope="col" className={thClass}>Correo</th>
                     <th scope="col" className={thClass}>Rol</th>
                     <th scope="col" className={thClass}>Último acceso</th>
@@ -537,12 +530,14 @@ export default function AdminPanel() {
                   {users.map((u) => (
                     <Fragment key={u.id}>
                     <tr>
-                      <td className={cn(tdClass, 'font-semibold')}>{u.full_name}</td>
-                      <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{u.rut}</td>
+                      <td className={tdClass}>
+                        <span className="block font-semibold">{u.full_name}</span>
+                        <span className="block text-xs text-muted-foreground tabular-nums">{u.rut}</span>
+                      </td>
                       <td className={cn(tdClass, 'text-muted-foreground')}>{u.email}</td>
                       <td className={tdClass}>
                         <select
-                          className={cn(inputClass, 'h-9 w-44')}
+                          className={cn(inputClass, 'h-9 w-40')}
                           value={u.role}
                           onChange={(e) => updateUser(u, { role: e.target.value as Role })}
                           aria-label={`Rol de ${u.full_name}`}
@@ -591,7 +586,7 @@ export default function AdminPanel() {
                     </tr>
                     {resetFor === u.id && (
                       <tr>
-                        <td colSpan={7} className="px-4 py-4 bg-muted border-b border-border">
+                        <td colSpan={6} className="px-4 py-4 bg-muted border-b border-border">
                           <ResetPasswordForm
                             user={u}
                             onDone={(err) => {

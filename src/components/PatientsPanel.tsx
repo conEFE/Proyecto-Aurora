@@ -15,7 +15,6 @@ import {
   inputClass,
   labelClass,
   pageClass,
-  pageSubtitle,
   pageTitle,
   primaryButton,
   secondaryButton,
@@ -135,8 +134,7 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
         </div>
         {blocked && (
           <p className="text-sm text-muted-foreground">
-            Sus datos están bloqueados desde el {formatDate(patient.blocked_at)}: se conservan (Ley 20.584), pero no se
-            pueden editar ni crear casos. El bloqueo se gestiona en Privacidad.
+            Datos bloqueados desde el {formatDate(patient.blocked_at)}. No se pueden editar ni crear casos.
           </p>
         )}
         <ErrorMessage>{error}</ErrorMessage>
@@ -251,8 +249,7 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
           <h3 id="pd-delete" className={sectionTitle}>Eliminar paciente</h3>
           {hasCases ? (
             <p className="text-sm text-muted-foreground">
-              Tiene casos clínicos: su ficha se conserva por la <strong>Ley 20.584</strong> y no se puede eliminar. Si
-              la paciente pide la supresión de sus datos, use «Bloquear datos» en Privacidad.
+              Tiene casos clínicos, así que no se puede eliminar. Para suprimir sus datos, use «Bloquear datos» en Privacidad.
             </p>
           ) : confirmDelete ? (
             <div className="space-y-3">
@@ -270,7 +267,7 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
           ) : (
             <>
               <p className="text-sm text-muted-foreground">
-                Sin casos asociados: se puede eliminar (por ejemplo, si se registró por error).
+                Sin casos asociados.
               </p>
               <button className={secondaryButton} onClick={() => setConfirmDelete(true)}>
                 <Trash2 aria-hidden className="w-4 h-4" /> Eliminar paciente
@@ -313,7 +310,6 @@ export default function PatientsPanel({ onOpenCase, onNewCase }: PatientsPanelPr
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className={pageTitle}>Pacientes</h1>
-          <p className={pageSubtitle}>Registre, busque y edite pacientes, y vea o cree sus casos.</p>
         </div>
         <button className={primaryButton} onClick={() => setCreating(true)}>
           <UserPlus aria-hidden className="w-4 h-4" /> Nuevo paciente

@@ -162,7 +162,7 @@ export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged
             {busy && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
             Tomar caso para revisión
           </button>
-          <p className="text-sm text-muted-foreground">Queda asignado a usted y sale de la cola de otros médicos.</p>
+          <p className="text-sm text-muted-foreground">Queda asignado a usted.</p>
         </div>
       )}
 

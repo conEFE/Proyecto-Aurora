@@ -15,7 +15,7 @@ import { LEVEL_FILL, LEVEL_RING, LEVEL_TEXT } from '../constants';
 import { cn } from '../lib/cn';
 import { SimulatedBadge } from './Badges';
 import { ErrorMessage, Loading } from './Feedback';
-import { cardClass, ghostButton, secondaryButton, inputClass, labelClass, pageClass, pageSubtitle, pageTitle, sectionTitle, tdClass, thClass } from './ui';
+import { cardClass, ghostButton, secondaryButton, inputClass, labelClass, pageClass, pageTitle, sectionTitle, tdClass, thClass } from './ui';
 
 const LEVELS: TriageLevel[] = ['ALTA', 'MEDIA', 'BAJA'];
 
@@ -171,9 +171,7 @@ function ModelPerformanceTable({ report }: { report: ModelPerformanceReport }) {
       <div className="p-6 pb-4">
         <h2 className={sectionTitle}>Desempeño del modelo por versión</h2>
         <p className="mt-1 text-sm text-muted-foreground max-w-[75ch]">
-          Referencia: {report.reference_standard.toLowerCase()}. Entre paréntesis, intervalo de confianza de 95 %. El KPI
-          K5 (exactitud ≥ {(report.k5_target * 100).toFixed(0)} %) se evalúa solo con resultados reales y al menos{' '}
-          {report.min_sample} imágenes evaluables.
+          Comparado con la validación del médico. Entre paréntesis, intervalo de confianza de 95 %.
         </p>
       </div>
       {report.versions.length === 0 ? (
@@ -190,7 +188,7 @@ function ModelPerformanceTable({ report }: { report: ModelPerformanceReport }) {
                 <th scope="col" className={cn(thClass, 'text-right')}>Sensibilidad</th>
                 <th scope="col" className={cn(thClass, 'text-right')}>Especificidad</th>
                 <th scope="col" className={cn(thClass, 'text-right')}>VPP / VPN</th>
-                <th scope="col" className={thClass}>K5</th>
+                <th scope="col" className={thClass}>Meta ≥ {(report.k5_target * 100).toFixed(0)} %</th>
               </tr>
             </thead>
             <tbody className="tabular-nums">
@@ -277,7 +275,6 @@ export default function Dashboard({ me }: { me: Me }) {
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
           <h1 className={pageTitle}>Dashboard</h1>
-          <p className={pageSubtitle}>Métricas agregadas, sin datos identificables de pacientes.</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div>
@@ -348,7 +345,7 @@ export default function Dashboard({ me }: { me: Me }) {
                 </tr>
                 <tr>
                   <th scope="row" className={cn(tdClass, 'text-left font-normal')}>
-                    Errores del servidor (5xx) <span className="text-muted-foreground">(K9)</span>
+                    Errores del servidor
                   </th>
                   <td className={cn(tdClass, 'text-right text-lg font-extrabold tabular-nums', data.server_errors > 0 && 'text-alta')}>
                     {data.server_errors}
@@ -358,7 +355,7 @@ export default function Dashboard({ me }: { me: Me }) {
                       </span>
                     )}
                   </td>
-                  <td className={cn(tdClass, 'text-muted-foreground')}>Proporción sobre las solicitudes medidas</td>
+                  <td className={cn(tdClass, 'text-muted-foreground')}>—</td>
                   <td className={tdClass}><Status ok={null} /></td>
                 </tr>
               </tbody>
@@ -420,7 +417,7 @@ export default function Dashboard({ me }: { me: Me }) {
                   <th scope="row" className={cn(tdClass, 'text-left font-normal')}>Ajustes médicos del nivel</th>
                   <td className={cn(tdClass, 'text-right text-lg font-extrabold tabular-nums')}>{pct(data.override_ratio)}</td>
                   <td className={cn(tdClass, 'whitespace-normal text-muted-foreground')}>
-                    {data.triage_overrides} de {data.triage_total} cálculos ajustados. Una proporción alta sugiere revisar los parámetros.
+                    {data.triage_overrides} de {data.triage_total} cálculos ajustados
                   </td>
                 </tr>
                 <tr>
@@ -441,7 +438,7 @@ export default function Dashboard({ me }: { me: Me }) {
                     {data.ai_validations_simulated > 0 && (
                       <span className="mt-2 flex items-center gap-2 text-sm">
                         <SimulatedBadge />
-                        {data.ai_validations_simulated} de {data.ai_validations_total} son sobre IA simulada: no mide un modelo real.
+                        {data.ai_validations_simulated} de {data.ai_validations_total} sobre IA simulada
                       </span>
                     )}
                   </td>
@@ -460,9 +457,6 @@ export default function Dashboard({ me }: { me: Me }) {
                           <span className="text-muted-foreground">{TRIAGE_ASSESSMENT_LABELS[x].split(' (')[0].toLowerCase()}</span>
                         </span>
                       ))}
-                    </span>
-                    <span className="mt-1 block text-sm text-muted-foreground">
-                      Muchos subestimados sugieren bajar umbrales o subir pesos; muchos sobreestimados, lo contrario.
                     </span>
                   </td>
                 </tr>

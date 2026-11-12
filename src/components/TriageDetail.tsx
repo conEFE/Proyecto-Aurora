@@ -4,22 +4,19 @@ import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type { TriageBreakdown, TriageLevel, TriageResult } from '../types';
 import { cn } from '../lib/cn';
+import { RULE_LABELS } from '../constants';
 import { LevelBadge, PrototypeBadge, ScoreBar, SimulatedBadge } from './Badges';
 import { ErrorMessage } from './Feedback';
 import { cardClass, formatDateTime, ghostButton, inputClass, labelClass, primaryButton, secondaryButton, sectionTitle, textareaClass } from './ui';
 
 const FACTOR_LABELS: Record<keyof Omit<TriageBreakdown, 'escalation_rule' | 'ai_is_simulated' | 'ai_is_prototype' | 'images_analyzed'>, string> = {
-  ai: 'IA (máx. probabilidad de malignidad sobre el umbral)',
+  ai: 'IA: probabilidad de malignidad',
   age: 'Edad',
   family_history: 'Antecedente familiar 1er grado',
   previous_cancer: 'Cáncer de mama previo',
   wait_time: 'Tiempo de espera',
 };
 
-const RULE_LABELS: Record<string, string> = {
-  R_BIRADS: 'BI-RADS informado en la lista de escalamiento',
-  R_SINTOMA: 'Síntoma de alarma registrado',
-};
 
 function formatValue(key: string, value: number | boolean): string {
   if (typeof value === 'boolean') return value ? 'Sí' : 'No';
@@ -124,13 +121,13 @@ export default function TriageDetail({ caseId, closed, onChanged, embedded = fal
           <dd className="mt-1"><LevelBadge level={triage.final_level} size="lg" /></dd>
         </div>
         <div className="py-3 px-4">
-          <dt className="text-xs text-muted-foreground">Puntaje (0–100)</dt>
+          <dt className="text-xs text-muted-foreground">Puntaje</dt>
           <dd className="mt-1.5"><ScoreBar score={triage.score} level={triage.final_level} /></dd>
         </div>
         <div className="py-3 pl-4">
-          <dt className="text-xs text-muted-foreground">Calculado · configuración</dt>
+          <dt className="text-xs text-muted-foreground">Parámetros</dt>
           <dd className="mt-1 text-sm font-semibold">
-            {triage.computed_level} · v{triage.config_version}
+            Versión {triage.config_version}
           </dd>
         </div>
       </dl>
@@ -139,9 +136,7 @@ export default function TriageDetail({ caseId, closed, onChanged, embedded = fal
         <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-alta/10 border border-alta/30 text-sm">
           <ShieldAlert aria-hidden className="w-4 h-4 mt-0.5 shrink-0 text-alta" />
           <p>
-            Escalado directo a ALTA por la regla <strong>{triage.escalation_rule}</strong>
-            {RULE_LABELS[triage.escalation_rule] ? `: ${RULE_LABELS[triage.escalation_rule].toLowerCase()}` : ''}. El
-            puntaje queda como referencia.
+            <strong>ALTA por escalamiento:</strong> {RULE_LABELS[triage.escalation_rule] ?? triage.escalation_rule}.
           </p>
         </div>
       )}
@@ -157,44 +152,33 @@ export default function TriageDetail({ caseId, closed, onChanged, embedded = fal
       )}
 
       {b && (
-        <table className="w-full text-sm">
-          <caption className="sr-only">Aporte de cada factor al puntaje</caption>
-          <thead>
-            <tr className="text-xs text-muted-foreground">
-              <th scope="col" className="text-left font-semibold pb-2">Factor</th>
-              <th scope="col" className="text-right font-semibold pb-2">Valor</th>
-              <th scope="col" className="text-left font-semibold pb-2 pl-6">Aporte / peso</th>
-            </tr>
-          </thead>
-          <tbody>
-            {factorKeys.map((key) => {
-              const f = b[key];
-              const pct = f.weight > 0 ? Math.min(100, (f.points / f.weight) * 100) : 0;
-              return (
-                <tr key={key} className="border-t border-border">
-                  <th scope="row" className="py-2.5 text-left font-normal">{FACTOR_LABELS[key]}</th>
-                  <td className="py-2.5 text-right text-muted-foreground tabular-nums">{formatValue(key, f.value)}</td>
-                  <td className="py-2.5 pl-6">
-                    <span className="inline-flex items-center gap-2.5">
-                      <span aria-hidden className="relative w-28 h-1.5 rounded-full bg-muted overflow-hidden">
-                        <span className="absolute inset-y-0 left-0 rounded-full bg-brand" style={{ width: `${pct}%` }} />
-                      </span>
-                      <span className="tabular-nums">
-                        <strong>{num(f.points)}</strong>
-                        <span className="text-muted-foreground"> / {f.weight}</span>
-                      </span>
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <ul aria-label="Aporte de cada factor al puntaje" className="text-sm">
+          {factorKeys.map((key) => {
+            const f = b[key];
+            const pct = f.weight > 0 ? Math.min(100, (f.points / f.weight) * 100) : 0;
+            return (
+              <li key={key} className="py-3 border-t border-border">
+                <div className="flex items-baseline justify-between gap-4">
+                  <span>
+                    {FACTOR_LABELS[key]}
+                    <span className="text-muted-foreground tabular-nums"> · {formatValue(key, f.value)}</span>
+                  </span>
+                  <span className="tabular-nums whitespace-nowrap">
+                    <strong>{num(f.points)}</strong>
+                    <span className="text-muted-foreground"> / {f.weight}</span>
+                  </span>
+                </div>
+                <span aria-hidden className="mt-2 block h-1.5 rounded-full bg-muted overflow-hidden">
+                  <span className="block h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
+                </span>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       <p className="text-xs text-muted-foreground">
-        Calculado el {formatDateTime(triage.computed_at)}. Es una propuesta técnica de priorización, no un criterio
-        clínico validado.
+        Calculado el {formatDateTime(triage.computed_at)}
       </p>
 
       <ErrorMessage>{error}</ErrorMessage>

@@ -139,7 +139,7 @@ export default function ImageBatchPicker({ items, onChange, onRejected, disabled
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <PrototypeBadge />
         <SimulatedBadge />
-        <span>Se guardan cifradas y se analizan en segundo plano. Apoyo al criterio médico, no lo reemplaza.</span>
+        <span>Se guardan cifradas y se analizan al subirlas.</span>
       </div>
     </div>
   );

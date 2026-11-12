@@ -103,12 +103,11 @@ export default function Login({ onLogin, onBack }: LoginProps) {
             </button>
 
             <p className="text-xs text-muted-foreground">
-              ¿No tiene cuenta o la olvidó? Pídasela al administrador de la plataforma en su centro.
+              ¿Sin cuenta o la olvidó? Pídasela al administrador de su centro.
             </p>
           </form>
         </div>
 
-        <p className="text-xs text-muted-foreground">Proyecto de título · INACAP</p>
       </div>
 
       <div className="hidden lg:flex items-center justify-center bg-sidebar border-l border-border px-14 py-12">
@@ -116,7 +115,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
           <BrandMark alt="Aurora Care" size="lg" className="w-72 h-48 mx-auto" />
           <p className="mt-6 text-3xl font-extrabold tracking-tight">Aurora Care</p>
           <p className="mt-3 text-sm text-muted-foreground">
-            Priorización de casos sospechosos de cáncer de mama. La plataforma apoya, no reemplaza, el criterio médico.
+            Los casos urgentes, primero.
           </p>
         </div>
       </div>

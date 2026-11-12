@@ -100,9 +100,8 @@ export default function TriageConfigPanel({ me }: { me: Me }) {
   return (
     <div className={pageClass}>
       <h1 className={pageTitle}>Parámetros de triage</h1>
-      <p className={cn(pageSubtitle, 'max-w-[80ch]')}>
-        Versión activa v{active.version}. Los valores iniciales son una propuesta técnica que el equipo médico debe
-        revisar. {canEdit ? 'Cada cambio crea una versión nueva y queda auditado.' : 'Solo lectura para su rol.'}
+      <p className={pageSubtitle}>
+        Versión activa v{active.version}{canEdit ? ' · cada cambio crea una versión nueva' : ' · solo lectura'}
       </p>
 
       <ErrorMessage className="mt-4">{error}</ErrorMessage>
@@ -211,8 +210,7 @@ export default function TriageConfigPanel({ me }: { me: Me }) {
               </div>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
-              La banda alta aporta el factor completo. Bandas medias (factor 0,5):{' '}
-              {draft.age_bands.medium.map(([a, b]) => `${a}–${b}`).join(', ')} años.
+              Medio factor: {draft.age_bands.medium.map(([a, b]) => `${a}–${b}`).join(', ')} años.
             </p>
           </div>
         </section>

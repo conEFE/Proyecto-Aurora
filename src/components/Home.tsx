@@ -4,7 +4,7 @@ import { apiClient } from '../services/api';
 import type { Me, QueueItem, TriageLevel } from '../types';
 import { usePolling } from '../lib/usePolling';
 import { cn } from '../lib/cn';
-import { LevelBadge, PrototypeBadge, SimulatedBadge } from './Badges';
+import { LevelBadge } from './Badges';
 import { cardClass, pageClass, pageSubtitle, pageTitle, primaryButton } from './ui';
 
 interface HomeProps {
@@ -44,18 +44,26 @@ export default function Home({ me, onGetStarted }: HomeProps) {
 
   return (
     <div className={pageClass}>
-      <h1 className={pageTitle}>
-        {greeting()}, {me.full_name.split(' ')[0]}
-      </h1>
-      <p className={pageSubtitle}>
-        {queue === null
-          ? 'Revisando la cola de triage…'
-          : queue.length === 0
-            ? 'No hay casos pendientes en la cola.'
-            : `Hay ${queue.length} ${queue.length === 1 ? 'caso pendiente' : 'casos pendientes'} en la cola de triage.`}
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className={pageTitle}>
+            {greeting()}, {me.full_name.split(' ')[0]}
+          </h1>
+          <p className={pageSubtitle}>
+            {queue === null
+              ? 'Cargando…'
+              : queue.length === 0
+                ? 'No hay casos pendientes.'
+                : `${queue.length} ${queue.length === 1 ? 'caso pendiente' : 'casos pendientes'}`}
+          </p>
+        </div>
+        <button onClick={onGetStarted} className={primaryButton}>
+          Abrir la cola de triage
+          <ArrowRight aria-hidden className="w-4 h-4" />
+        </button>
+      </div>
 
-      <div className="mt-8 grid xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-6">
+      <div className="mt-8 grid xl:grid-cols-2 gap-6 items-start">
         <section aria-labelledby="pending-title" className={cn(cardClass, 'p-6')}>
           <h2 id="pending-title" className="text-base font-bold">Pendientes por prioridad</h2>
           <table className="mt-4 w-full">
@@ -77,53 +85,27 @@ export default function Home({ me, onGetStarted }: HomeProps) {
               ))}
             </tbody>
           </table>
-
-          <div className="mt-6 border-t border-border pt-4">
-            <h3 className="text-sm font-semibold text-muted-foreground">Casos de prioridad alta en espera</h3>
-            {urgent.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">Ninguno por ahora.</p>
-            ) : (
-              <ul className="mt-2">
-                {urgent.map((q) => (
-                  <li key={q.code} className="flex items-center justify-between gap-4 py-2.5 border-b border-border last:border-0">
-                    <span className="font-bold tabular-nums">{q.code}</span>
-                    <span className="flex items-center gap-6">
-                      <LevelBadge level={q.level} />
-                      <span className="w-20 text-right text-sm text-muted-foreground tabular-nums">
-                        {formatWaiting(q.waiting_hours)}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <button onClick={onGetStarted} className={cn(primaryButton, 'mt-6')}>
-            Abrir la cola de triage
-            <ArrowRight aria-hidden className="w-4 h-4" />
-          </button>
         </section>
 
-        <section aria-labelledby="about-title" className="space-y-5">
-          <div className={cn(cardClass, 'p-6')}>
-            <h2 id="about-title" className="text-base font-bold">Cómo se decide la prioridad</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Cada caso recibe un nivel por reglas de escalamiento (BI-RADS 4–5, síntomas) o por un puntaje que suma
-              edad, antecedentes, tiempo de espera y el resultado de la IA. El detalle de cada factor está en el caso,
-              y el médico puede corregir el nivel con un motivo que queda registrado.
-            </p>
-          </div>
-          <div className="rounded-xl border border-sim/40 bg-[hsl(var(--sim-bg))] p-6">
-            <div className="flex flex-wrap gap-2">
-              <PrototypeBadge />
-              <SimulatedBadge />
-            </div>
-            <p className="mt-3 text-sm text-foreground">
-              El análisis de imágenes usa un modelo de IA en etapa de prototipo, sin validación clínica, o, si no está
-              disponible, un proveedor simulado. Cada resultado indica su origen y ninguno reemplaza el criterio médico.
-            </p>
-          </div>
+        <section aria-labelledby="urgent-title" className={cn(cardClass, 'p-6')}>
+          <h2 id="urgent-title" className="text-base font-bold">Prioridad alta en espera</h2>
+          {urgent.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">Ninguno por ahora.</p>
+          ) : (
+            <ul className="mt-3">
+              {urgent.map((q) => (
+                <li key={q.code} className="flex items-center justify-between gap-4 py-3 border-t border-border">
+                  <span className="font-bold tabular-nums">{q.code}</span>
+                  <span className="flex items-center gap-6">
+                    <LevelBadge level={q.level} />
+                    <span className="w-20 text-right text-sm text-muted-foreground tabular-nums">
+                      {formatWaiting(q.waiting_hours)}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
     </div>

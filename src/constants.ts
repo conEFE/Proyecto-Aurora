@@ -35,3 +35,9 @@ export const BIRADS_LABELS: Record<number, string> = {
   5: '5 — Altamente sugestivo de malignidad',
   6: '6 — Malignidad confirmada por biopsia',
 };
+
+/** Reglas de escalamiento directo a ALTA, en lenguaje del usuario. */
+export const RULE_LABELS: Record<string, string> = {
+  R_BIRADS: 'BI-RADS informado',
+  R_SINTOMA: 'Síntoma de alarma',
+};

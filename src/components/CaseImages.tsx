@@ -56,14 +56,14 @@ export function InferenceCard({ result }: { result: InferenceResult }) {
         <span className="tabular-nums text-muted-foreground">probabilidad de malignidad {result.confidence.toFixed(1).replace('.', ',')} %</span>
         <AiOriginBadge isSimulated={result.is_simulated} clinicallyValidated={result.clinically_validated} />
       </div>
-      <p className="text-muted-foreground">{result.message}</p>
+      {!result.is_simulated && <p className="text-muted-foreground">{result.message}</p>}
       <p className="text-xs text-muted-foreground">
         Modelo {result.model_version} · {result.processing_time_ms} ms
         {result.is_simulated ? (
-          <span className="font-semibold text-sim"> · Resultado ficticio, sin valor clínico ni diagnóstico.</span>
+          <span className="font-semibold text-sim"> · Resultado ficticio</span>
         ) : (
           !result.clinically_validated && (
-            <span className="font-semibold text-proto"> · Modelo en etapa de prototipo, sin validación clínica. Apoya, no reemplaza, el criterio médico.</span>
+            <span className="font-semibold text-proto"> · Sin validación clínica</span>
           )
         )}
       </p>
@@ -317,8 +317,7 @@ function Viewer({
         </>
       ) : (
         <p className="text-sm text-muted-foreground">
-          {image.size_kb ?? 0} KB · análisis {image.inference_status === 'LISTO' ? 'listo' : 'pendiente'}. Las imágenes y
-          sus resultados solo los ve el personal médico.
+          {image.size_kb ?? 0} KB · análisis {image.inference_status === 'LISTO' ? 'listo' : 'pendiente'}
         </p>
       )}
     </div>
@@ -398,7 +397,7 @@ export default function CaseImages({ caseId, me, refreshKey = 0, readOnly = fals
           </div>
         )}
         {images.length === 0 && (
-          <p className="mt-4 text-sm text-muted-foreground text-center">El caso aún no tiene imágenes. Agréguelas con «Agregar imágenes».</p>
+          <p className="mt-4 text-sm text-muted-foreground text-center">Sin imágenes todavía.</p>
         )}
       </div>
 

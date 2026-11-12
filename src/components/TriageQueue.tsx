@@ -4,7 +4,7 @@ import { apiClient } from '../services/api';
 import type { Me, QueueItem, TriageLevel } from '../types';
 import { usePolling } from '../lib/usePolling';
 import { cn } from '../lib/cn';
-import { LEVEL_RING, LEVEL_TEXT } from '../constants';
+import { LEVEL_RING, LEVEL_TEXT, RULE_LABELS } from '../constants';
 import { LevelBadge, ScoreBar, StatusBadge } from './Badges';
 import { EmptyState, ErrorMessage, Loading } from './Feedback';
 import { cardClass, pageClass, pageSubtitle, pageTitle, secondaryButton, tdClass, thClass } from './ui';
@@ -60,8 +60,9 @@ export default function TriageQueue({ me, onOpenCase }: TriageQueueProps) {
         <div>
           <h1 className={pageTitle}>Cola de triage</h1>
           <p className={pageSubtitle}>
-            Ordenada por nivel, puntaje y antigüedad. Se actualiza sola cada 30 segundos
-            {updatedAt && ` · última vez a las ${updatedAt.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`}.
+            {updatedAt
+              ? `Actualizada a las ${updatedAt.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`
+              : 'Cargando…'}
           </p>
         </div>
         <button className={secondaryButton} onClick={load}>
@@ -118,7 +119,7 @@ export default function TriageQueue({ me, onOpenCase }: TriageQueueProps) {
                   <th scope="col" className={cn(thClass, 'text-right')}>Espera</th>
                   {isMedico && (
                     <>
-                      <th scope="col" className={thClass}>Regla</th>
+                      <th scope="col" className={thClass}>Escalamiento</th>
                       <th scope="col" className={thClass}>Paciente</th>
                     </>
                   )}
@@ -161,7 +162,7 @@ export default function TriageQueue({ me, onOpenCase }: TriageQueueProps) {
                     <td className={cn(tdClass, 'text-right tabular-nums text-muted-foreground')}>{formatWaiting(item.waiting_hours)}</td>
                     {isMedico && (
                       <>
-                        <td className={cn(tdClass, 'text-muted-foreground')}>{item.escalation_rule ?? '—'}</td>
+                        <td className={cn(tdClass, 'text-muted-foreground')}>{item.escalation_rule ? (RULE_LABELS[item.escalation_rule] ?? item.escalation_rule) : '—'}</td>
                         <td className={cn(tdClass, 'text-muted-foreground')}>{item.patient_name ?? '—'}</td>
                       </>
                     )}
@@ -172,11 +173,6 @@ export default function TriageQueue({ me, onOpenCase }: TriageQueueProps) {
           </div>
         )}
       </div>
-      {!isMedico && (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Vista administrativa: solo código, nivel, estado y espera. El detalle clínico lo ve el personal médico.
-        </p>
-      )}
     </div>
   );
 }

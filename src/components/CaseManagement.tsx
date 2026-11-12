@@ -18,7 +18,6 @@ import {
   iconButton,
   inputClass,
   pageClass,
-  pageSubtitle,
   pageTitle,
   primaryButton,
   secondaryButton,
@@ -175,7 +174,6 @@ export default function CaseManagement({ me, initialCaseId = null, newCasePatien
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className={pageTitle}>Casos</h1>
-          <p className={pageSubtitle}>Cada caso se identifica por un código anónimo. Seleccione uno para ver su detalle.</p>
         </div>
         <button className={primaryButton} onClick={() => setCreating(true)}>
           <Plus aria-hidden className="w-4 h-4" /> Nuevo caso

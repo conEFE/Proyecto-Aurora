@@ -197,7 +197,7 @@ function RequestsView() {
           Solo con el plazo vencido
         </label>
         <p className="text-xs text-muted-foreground pb-2">
-          Plazo legal: 30 días corridos desde la recepción. Para registrar una solicitud, busque al paciente.
+          Plazo legal: 30 días corridos.
         </p>
       </div>
       {error && <div className={errorBox}>{error}</div>}
@@ -592,11 +592,8 @@ export default function PrivacyPanel({ me }: { me: Me }) {
   return (
     <div className={cn(pageClass, "space-y-6")}>
       <div>
-        <h1 className={pageTitle}>Privacidad y derechos de los titulares</h1>
-        <p className={cn(pageSubtitle, "max-w-[80ch]")}>
-          Consentimiento, bloqueo, copia de los datos y solicitudes de acceso, rectificación, supresión, oposición y
-          portabilidad (Ley 19.628 y Ley 21.719). Todas las acciones quedan en la auditoría.
-        </p>
+        <h1 className={pageTitle}>Privacidad</h1>
+        <p className={pageSubtitle}>Consentimiento, bloqueo y solicitudes de los titulares.</p>
       </div>
       <div role="group" aria-label="Vista" className="inline-flex p-1 rounded-lg bg-muted">
         {([['requests', 'Solicitudes', FileText], ['patient', 'Por paciente', ShieldCheck]] as const).map(([id, label, Icon]) => (
