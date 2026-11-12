@@ -1,7 +1,13 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 11-11-2026 (noche). Desplegado: **2.9.2 + `9a3a942`** (Mi perfil, historia del paciente y textos de la IA),
-imágenes `sha-9a3a942…` de `main`. **Modelo real conectado** (PC de Juan por Tailscale).
+Actualizado: 12-11-2026. Desplegado: **`566d51c`** de `main` (imágenes `sha-566d51c…`), aún sin número de versión
+(propuesta: cerrarlo como **2.10.0**). **Modelo real conectado** (PC de Juan por Tailscale; si está apagado, IA simulada).
+
+**Rediseño del 12-11-2026 (en producción):** landing compacta con el producto como protagonista y carrusel de funciones
+(`3000a41`); interior con el mismo tono, sin textos de informe (`f24c8f1`); Casos y Pacientes como lista a todo el ancho
+con página propia para cada caso o ficha (`51dc80c`, `566d51c`). Propuesta de diseño en Figma:
+https://www.figma.com/design/LwQX5jMjXDEw4h7FvOmDVz (cuenta de Figma del equipo). Guion de presentación:
+`docs/GUION_PRESENTACION.md`.
 Sin migraciones nuevas desde la 2.6.0. Lo que trajo cada versión está en `docs/CHANGELOG_SPRINTS.md`:
 
 - **2.8.0:** eliminar pacientes sin casos (con casos, bloqueo por la Ley 20.584), informe de gestión en PDF y

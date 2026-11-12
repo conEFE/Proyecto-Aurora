@@ -707,6 +707,17 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## Sin número de versión — rediseño desplegado el 12-11-2026 (`566d51c`)
+
+- **Landing** compacta (`3000a41`): titular, una frase, la cola de triage en una ventana de navegador y un carrusel de
+  funciones con avance automático (adaptado de «Feature List Showcase» de 21st.dev). Capturas en `src/assets/landing`.
+- **Interior sin textos de informe** (`f24c8f1`): subtítulos cortos; fuera notas técnicas, códigos K5/K9 y citas de leyes;
+  reglas de escalamiento legibles; desglose del triage en lista con barras; Inicio sin cajas explicativas.
+- **Casos** (`51dc80c`): pestañas por nivel con conteo, tabla a todo el ancho y cada caso en su propia página (imágenes a
+  la izquierda; revisión, triage y síntomas a la derecha).
+- **Pacientes** (`566d51c`): tabla a todo el ancho y ficha propia (datos y casos a la izquierda; historia a la derecha).
+- Sin cambios de esquema ni de backend.
+
 ## Sin número de versión — desplegado el 11-11-2026 (`9a3a942`), con el modelo real conectado
 
 - **Textos de la IA alineados con el modelo** (CNN + YOLO): «Sospecha de malignidad» / «Baja probabilidad de
