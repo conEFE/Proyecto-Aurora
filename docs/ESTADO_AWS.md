@@ -111,10 +111,9 @@ desde 40.000.000 y se puede repetir sin efecto.
 ### Orden y limpieza
 12. Borrar la rama `claude/bold-maxwell-13fkwp` en GitHub (su contenido ya está en `main`):
     `git push origin --delete claude/bold-maxwell-13fkwp`.
-13. Tags de versión desde un PC (desde las sesiones en la nube no se pueden subir tags):
-    en GitHub solo están `v2.0.0` y `v2.1.0`. Los comandos para crear el resto (2.2.0 a 2.10.0) están en
-    `docs/CHANGELOG_SPRINTS.md`, en la entrada de la 2.10.0. Subir un tag `vX.Y.Z` vuelve a publicar las imágenes con ese
-    nombre.
+13. ~~Tags de versión~~: **hechos (13-11-2026)**, `v2.0.0` a `v2.10.0` en GitHub. Las próximas versiones se etiquetan
+    desde un PC (la nube no puede subir tags), un tag por vez para que se publiquen sus imágenes. En PowerShell 5 no
+    existe `&&`: separar los comandos con `;`.
 14. Sacar del repositorio los pesos del modelo (≈63 MB) y llevarlos a un almacenamiento de artefactos.
 
 ### Dominio propio: `auroracare.cl` (listo; antes se pensó en `aurorahealth.cl`)
