@@ -4,7 +4,8 @@ Actualizado: 13-11-2026. Desplegado: el último commit de `main` (imágenes `sha
 servidor), aún sin número de versión (propuesta: cerrarlo como **2.10.0**). **Modelo real conectado** (PC de Juan por
 Tailscale; si está apagado, IA simulada).
 
-**13-11-2026 (en `main`, sin desplegar):** Ingreso al estilo de la landing; Mi perfil, Parámetros, Privacidad y
+**13-11-2026 (desplegado `18183f5`, respaldo previo `backups/aurora-20261113T123005Z.sql.gz`; versión anterior
+`sha-49f1bd4…`):** Administración con resumen, filtros y bitácora legible (`GET /admin/overview`); Ingreso al estilo de la landing; Mi perfil, Parámetros, Privacidad y
 Administración con el patrón de Casos y Pacientes; Dashboard con períodos y comparación; PDF con lámina de imágenes y
 gráfico por nivel (detalle en `docs/CHANGELOG_SPRINTS.md`).
 
@@ -196,6 +197,9 @@ una falla pasajera del registro `public.ecr.aws`, no del código. Se resuelve co
   `$AURORA_IMAGE_PREFIX-web:sha-…` y `-backend:sha-…`, `git pull --ff-only`, cambiar `AURORA_VERSION`,
   `dc pull backend web && dc up -d backend web`, y probar `https://demo.auroracare.cl/api/health` y el `<title>`.
   Un despliegue a producción necesita la confirmación explícita de Felipe en el chat (el modo automático lo bloquea).
+- **`dc exec` dentro de un script de SSM** (`bash -s <<EOF`) se come el resto del script por la entrada estándar:
+  agregar `</dev/null` a cada `dc exec` y `dc logs`. Pasó el 13-11-2026: el despliegue salió bien, pero las
+  comprobaciones finales no corrieron.
 - **El estado de SSM puede decir `Success` aunque el script falle:** el último comando (`rm -f`) define el estado.
   Leer siempre `StandardOutputContent` y `StandardErrorContent` (p. ej., `manifest unknown` = imagen aún no publicada).
 - **Nivel de ayuda en AWS:** el usuario eligió **alto** (explicar cada paso, proponer alternativas y buenas
