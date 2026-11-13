@@ -11,6 +11,7 @@ import type {
   TriageResult,
 } from '../types';
 import { AI_VERDICT_LABELS, EXAM_TYPE_LABELS, RECOMMENDATION_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
+import { RULE_LABELS } from '../constants';
 import {
   C,
   MARGIN,
@@ -58,8 +59,39 @@ interface ReportInput {
   metadata: DicomMetadata;
   medicoName: string;
   images?: CaseImage[];
+  /** Miniaturas JPEG de las imágenes, por id (las que no se pudieron cargar se omiten). */
+  thumbnails?: Record<number, Thumbnail>;
   assets: Awaited<ReturnType<typeof loadPdfAssets>>;
 }
+
+export interface Thumbnail {
+  data: string;
+  width: number;
+  height: number;
+}
+
+const VIEWER: [number, number, number] = [16, 10, 20]; // Negatoscopio
+const BOX: [number, number, number] = [245, 166, 35]; // marca del hallazgo, como en el visor
+
+/** Reduce una imagen a JPEG (lado mayor 900 px) para incluirla en el PDF sin inflarlo. */
+export async function makeThumbnail(blob: Blob, maxSide = 900): Promise<Thumbnail | null> {
+  try {
+    const bitmap = await createImageBitmap(blob);
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    return { data: canvas.toDataURL('image/jpeg', 0.82), width: canvas.width, height: canvas.height };
+  } catch {
+    return null;
+  }
+}
+
+const sideName = (l?: string | null) => (l === 'L' ? 'Izquierda' : l === 'R' ? 'Derecha' : 'Sin lado');
 
 const STATUS_LABEL: Record<string, string> = {
   ABIERTO: 'Abierto',
@@ -69,7 +101,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 /** Construye el PDF con el sistema visual de la interfaz. Identifica el caso solo por su código anónimo. */
-export function buildCaseReport({ caseData, triage, review, metadata, medicoName, images = [], assets }: ReportInput): jsPDF {
+export function buildCaseReport({ caseData, triage, review, metadata, medicoName, images = [], thumbnails = {}, assets }: ReportInput): jsPDF {
   const doc = new jsPDF();
   applyAssets(doc, assets);
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -80,7 +112,7 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
   const prototype = metadata.AIIsPrototype === true;
   const fmt = (v?: string | null) => (v ? new Date(v).toLocaleString('es-CL') : '—');
 
-  // Metadatos tipo DICOM (SC-02) incrustados en las propiedades del documento
+  // Metadatos tipo DICOM incrustados en las propiedades del documento
   doc.setProperties({
     title: `Reporte ${caseData.code}`,
     subject: 'Aurora Care - apoyo a la priorización',
@@ -153,7 +185,7 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
     y += 3;
     text(doc, C.muted, 8.5);
     let line = `Puntaje ${triage.score.toFixed(1).replace('.', ',')} / 100 · parámetros v${triage.config_version}`;
-    if (triage.escalation_rule) line += ` · regla de escalamiento ${triage.escalation_rule}`;
+    if (triage.escalation_rule) line += ` · ALTA por escalamiento: ${RULE_LABELS[triage.escalation_rule] ?? 'regla clínica'}`;
     doc.text(line, MARGIN, y + 2);
     // Barra de puntaje: pista rubor y relleno del color del nivel
     const barY = y + 5;
@@ -226,6 +258,76 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
   });
   y = lastY(doc) + 8;
 
+  // Lámina del examen: Derecha a la izquierda e Izquierda a la derecha, como en la orden y en la interfaz
+  const withThumb = images.filter((img) => thumbnails[img.id]);
+  if (withThumb.length > 0) {
+    const cellW = (contentWidth - 8) / 2;
+    const imgH = 62;
+    const sides: Array<[string, CaseImage[]]> = [
+      ['Derecha', withThumb.filter((i) => i.laterality === 'R')],
+      ['Izquierda', withThumb.filter((i) => i.laterality === 'L')],
+    ];
+    const other = withThumb.filter((i) => i.laterality !== 'R' && i.laterality !== 'L');
+    if (other.length) sides.push(['Sin lado', other]);
+    const rows = Math.max(...sides.map(([, list]) => list.length));
+    ensureSpace(imgH + 30);
+    y = sectionTitle(doc, y + 2, 'Imágenes del examen') + 3;
+    sides.slice(0, 2).forEach(([name], i) => {
+      text(doc, C.ink, 9, 'bold');
+      doc.text(name, MARGIN + i * (cellW + 8), y + 2);
+    });
+    y += 5;
+    const drawCell = (img: CaseImage, x: number, top: number) => {
+      const t = thumbnails[img.id];
+      doc.setFillColor(...VIEWER);
+      doc.roundedRect(x, top, cellW, imgH, 1.5, 1.5, 'F');
+      const scale = Math.min((cellW - 4) / t.width, (imgH - 4) / t.height);
+      const w = t.width * scale;
+      const h = t.height * scale;
+      const ix = x + (cellW - w) / 2;
+      const iy = top + (imgH - h) / 2;
+      doc.addImage(t.data, 'JPEG', ix, iy, w, h);
+      for (const d of img.inference?.detections ?? []) {
+        doc.setDrawColor(...BOX);
+        doc.setLineWidth(0.5);
+        doc.rect(ix + d.x * w, iy + d.y * h, d.width * w, d.height * h, 'S');
+      }
+      const inf = img.inference;
+      text(doc, C.ink, 8, 'bold');
+      doc.text(`${EXAM_TYPE_LABELS[img.exam_type]} · ${sideName(img.laterality)}`, x, top + imgH + 4.5);
+      text(doc, C.muted, 7.5);
+      doc.text(
+        inf
+          ? `${inf.detected ? 'Sospecha' : 'Baja probabilidad'} · ${inf.confidence.toFixed(1).replace('.', ',')} %` +
+              (inf.detections?.length ? ` · ${inf.detections.length} ${inf.detections.length === 1 ? 'marca' : 'marcas'}` : '') +
+              (inf.is_simulated ? ' · IA SIMULADA' : inf.clinically_validated ? '' : ' · PROTOTIPO')
+          : 'Sin resultado de IA',
+        x,
+        top + imgH + 8.5,
+        { maxWidth: cellW },
+      );
+    };
+    for (let r = 0; r < rows; r++) {
+      ensureSpace(imgH + 14);
+      sides.slice(0, 2).forEach(([, list], i) => {
+        if (list[r]) drawCell(list[r], MARGIN + i * (cellW + 8), y);
+      });
+      y += imgH + 14;
+    }
+    if (other.length) {
+      for (let r = 0; r < other.length; r += 2) {
+        ensureSpace(imgH + 14);
+        other.slice(r, r + 2).forEach((img, i) => drawCell(img, MARGIN + i * (cellW + 8), y));
+        y += imgH + 14;
+      }
+    }
+    if (withThumb.some((i) => i.inference?.detections?.length)) {
+      text(doc, C.muted, 7);
+      doc.text('Los recuadros marcan las zonas señaladas por la IA. El médico revisó cada imagen.', MARGIN, y + 1);
+      y += 6;
+    }
+  }
+
   const signature = metadata.MedicalSignature as MedicalSignatureBlock | undefined;
   if (signature) {
     ensureSpace(52);
@@ -257,7 +359,7 @@ export function buildCaseReport({ caseData, triage, review, metadata, medicoName
     y = boxY + 34 + 8;
   }
 
-  section('Metadatos tipo DICOM (SC-02)');
+  section('Metadatos del estudio');
   autoTable(doc, {
     ...kvStyle(y + 1, 62),
     styles: { ...kvStyle(y + 1).styles, fontSize: 7.5, cellPadding: { top: 1.5, bottom: 1.5, left: 2.5, right: 2.5 } },
@@ -286,7 +388,18 @@ export async function generateAndRegisterReport(
   const [triage, images] = await Promise.all([apiClient.getTriage(caseData.id), apiClient.listImages(caseData.id)]);
 
   const assets = await loadPdfAssets();
+  // Miniaturas de las imágenes (se descifran en el servidor y se reducen aquí); si una falla, se omite
+  const list = images.data ?? [];
+  const thumbs = await Promise.all(
+    list.map(async (img) => {
+      const blob = await apiClient.fetchImageBlob(caseData.id, img.id);
+      return [img.id, blob ? await makeThumbnail(blob) : null] as const;
+    }),
+  );
+  const thumbnails: Record<number, Thumbnail> = {};
+  for (const [id, t] of thumbs) if (t) thumbnails[id] = t;
   const doc = buildCaseReport({
+    thumbnails,
     assets,
     caseData,
     triage: triage.data ?? null,

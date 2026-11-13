@@ -25,7 +25,7 @@ export function LevelBadge({ level, size = 'md' }: { level?: TriageLevel | null;
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 font-extrabold tracking-wide',
+        'relative inline-flex items-center gap-1.5 font-extrabold tracking-wide',
         size === 'lg' ? 'text-base' : 'text-xs',
         LEVEL_TEXT[level],
       )}

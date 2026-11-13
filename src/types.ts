@@ -418,7 +418,7 @@ export interface DashboardMetrics {
   override_ratio: number | null;
   triage_total: number;
   triage_overrides: number;
-  cases_per_week: Array<{ week_start: string; cases: number }>;
+  cases_per_week: Array<{ week_start: string; cases: number; by_level?: Record<TriageLevel, number> }>;
   ai_validations_total: number;
   ai_validations_by_verdict: Record<AIVerdict, number>;
   ai_agreement_rate: number | null;

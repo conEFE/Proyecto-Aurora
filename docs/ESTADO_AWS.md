@@ -4,6 +4,10 @@ Actualizado: 13-11-2026. Desplegado: el último commit de `main` (imágenes `sha
 servidor), aún sin número de versión (propuesta: cerrarlo como **2.10.0**). **Modelo real conectado** (PC de Juan por
 Tailscale; si está apagado, IA simulada).
 
+**13-11-2026 (en `main`, sin desplegar):** Ingreso al estilo de la landing; Mi perfil, Parámetros, Privacidad y
+Administración con el patrón de Casos y Pacientes; Dashboard con períodos y comparación; PDF con lámina de imágenes y
+gráfico por nivel (detalle en `docs/CHANGELOG_SPRINTS.md`).
+
 **13-11-2026:** una dirección por pantalla con React Router (`/cola`, `/casos/AUR-…`, `/pacientes/<id>`, etc.; detalle
 en `docs/CHANGELOG_SPRINTS.md`) y **`aurora-admin` versión 1** (ver punto 20; aún no probado en AWS).
 

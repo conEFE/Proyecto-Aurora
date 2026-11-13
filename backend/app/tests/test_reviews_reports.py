@@ -235,6 +235,9 @@ def test_metrics_with_controlled_data(client, tokens, db):
     assert m.triage_overrides == 1
     assert m.override_ratio == round(1 / m.triage_total, 4)
     assert sum(p.cases for p in m.cases_per_week) == 4
+    # Desglose semanal por nivel vigente: suma lo mismo que el conteo por nivel
+    week_levels = {lvl: sum(p.by_level[lvl] for p in m.cases_per_week) for lvl in ("ALTA", "MEDIA", "BAJA")}
+    assert week_levels == m.cases_by_level
 
     # Filtro de fechas: nada creado en el futuro
     empty = metrics(db, date_from=now + timedelta(days=1), now=now)

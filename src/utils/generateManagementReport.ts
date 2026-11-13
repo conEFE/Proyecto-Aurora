@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { AIVerdict, CaseStatus, DashboardMetrics, ModelPerformanceReport, TriageAssessment } from '../types';
+import type { AIVerdict, CaseStatus, DashboardMetrics, InferenceStatus, ModelPerformanceReport, QueueItem, TriageAssessment } from '../types';
 import { AI_VERDICT_LABELS, CASE_STATUS_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
 import {
   C,
@@ -70,7 +70,7 @@ interface Story {
   platform: string;
 }
 
-function tell(data: DashboardMetrics, model: ModelPerformanceReport | null): Story {
+function tell(data: DashboardMetrics, model: ModelPerformanceReport | null, previous: DashboardMetrics | null, inference: InferenceStatus | null): Story {
   const total = data.total_cases;
   const closed = data.cases_by_status.CERRADO ?? 0;
   const pending = total - closed;
@@ -192,12 +192,13 @@ function tell(data: DashboardMetrics, model: ModelPerformanceReport | null): Sto
   if (real.length > 0) {
     const v = real[real.length - 1];
     modelText = `El modelo ${v.model_version} tiene ${v.evaluable} imágenes evaluables, con exactitud ${pct(v.accuracy, 0)}, sensibilidad ${pct(v.sensitivity, 0)} y especificidad ${pct(v.specificity, 0)}. `;
+    const goal = `la meta de exactitud (${pct(model!.k5_target, 0)})`;
     modelText +=
       v.meets_k5 === null
-        ? `Aún no alcanza la muestra mínima de ${model!.min_sample} para evaluar la meta K5.`
+        ? `Aún no alcanza la muestra mínima de ${model!.min_sample} imágenes para evaluar ${goal}.`
         : v.meets_k5
-          ? 'Cumple la meta K5.'
-          : 'No cumple la meta K5.';
+          ? `Cumple ${goal}.`
+          : `No cumple ${goal}.`;
   }
   if (sim) {
     modelText +=
@@ -208,9 +209,19 @@ function tell(data: DashboardMetrics, model: ModelPerformanceReport | null): Sto
       title: 'Las métricas de IA provienen de la IA simulada',
       text: 'Miden el flujo, no el desempeño clínico de un modelo.',
     });
-    recs.push('Conectar el modelo real y acumular validaciones médicas antes de evaluar la meta K5 de exactitud.');
+    recs.push('Conectar el modelo real y acumular validaciones médicas antes de evaluar la meta de exactitud.');
   }
   if (!modelText) modelText = 'No hay validaciones del modelo en el período.';
+  if (inference) {
+    const online = inference.provider === 'http' && inference.reachable === true;
+    modelText +=
+      ' ' +
+      (online
+        ? `Al generar el informe, el modelo ${inference.model_version ?? ''} estaba conectado${inference.clinically_validated ? '' : ' (prototipo sin validación clínica)'}.`
+        : inference.provider === 'http'
+          ? 'Al generar el informe, el modelo no respondía y los resultados nuevos usaban la IA simulada.'
+          : 'Al generar el informe no había un modelo conectado: los resultados usan la IA simulada.');
+  }
 
   // Plataforma
   const p95 = data.api_p95_ms;
@@ -235,6 +246,15 @@ function tell(data: DashboardMetrics, model: ModelPerformanceReport | null): Sto
           : '. ') +
         (data.triage_agreement_rate !== null
           ? `Los médicos aprobaron el nivel asignado en ${pct(data.triage_agreement_rate, 0)} de las revisiones.`
+          : '') +
+        (previous && previous.total_cases > 0
+          ? ` Frente al período anterior de igual duración (${int(previous.total_cases)} casos), el volumen ${
+              Math.abs(total - previous.total_cases) / previous.total_cases < 0.05
+                ? 'se mantuvo'
+                : total > previous.total_cases
+                  ? `subió ${pct((total - previous.total_cases) / previous.total_cases, 0)}`
+                  : `bajó ${pct((previous.total_cases - total) / previous.total_cases, 0)}`
+            }.`
           : '');
 
   if (recs.length === 0) recs.push('Mantener el monitoreo semanal: todos los indicadores están dentro de sus metas.');
@@ -251,27 +271,53 @@ function paragraph(doc: jsPDF, y: number, body: string, width: number, size = 9.
   return y + lines.length * lh;
 }
 
-function statTile(doc: jsPDF, x: number, y: number, w: number, value: string, label: string, caption: string) {
-  doc.setDrawColor(...C.rule);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(x, y, w, 26, 2, 2, 'S');
-  text(doc, C.muted, 7.5, 'bold');
-  doc.text(label, x + 4, y + 6);
-  text(doc, C.ink, 18, 'extrabold');
-  doc.text(value, x + 4, y + 15.5);
-  text(doc, C.muted, 7);
-  doc.text(doc.splitTextToSize(caption, w - 8) as string[], x + 4, y + 20.5);
+/** Cifras principales en una franja con reglas finas (sin tarjetas), como en el Dashboard. */
+function statStrip(doc: jsPDF, y: number, items: Array<{ label: string; value: string; caption: string }>): number {
+  const width = doc.internal.pageSize.getWidth() - 2 * MARGIN;
+  const colW = width / items.length;
+  rule(doc, y);
+  items.forEach((it, i) => {
+    const x = MARGIN + i * colW + (i ? 4 : 0);
+    if (i) {
+      doc.setDrawColor(...C.rule);
+      doc.setLineWidth(0.3);
+      doc.line(MARGIN + i * colW, y + 3, MARGIN + i * colW, y + 23);
+    }
+    text(doc, C.muted, 7.5);
+    doc.text(it.label, x, y + 7);
+    text(doc, C.ink, 17, 'extrabold');
+    doc.text(it.value, x, y + 15.5);
+    text(doc, C.muted, 7);
+    doc.text(doc.splitTextToSize(it.caption, colW - 6) as string[], x, y + 20.5);
+  })
+  rule(doc, y + 26);
+  return y + 32;
 }
 
-/** Columnas de una sola serie: un tono, extremos redondeados, eje recesivo y rótulos selectivos. */
-function columnChart(doc: jsPDF, y: number, points: Array<{ label: string; value: number }>, height = 46): number {
+function change(now: number | null, before: number | null | undefined, kind: 'count' | 'rate' = 'count'): string {
+  if (now === null || before === null || before === undefined) return '';
+  if (kind === 'rate') {
+    const d = (now - before) * 100;
+    return Math.abs(d) < 0.5 ? 'igual al período anterior' : `${d > 0 ? '+' : '−'}${dec(Math.abs(d), 0)} pts vs. período anterior`;
+  }
+  if (before === 0) return '';
+  const c = (now - before) / before;
+  return Math.abs(c) < 0.005 ? 'igual al período anterior' : `${c > 0 ? '+' : '−'}${dec(Math.abs(c) * 100, 0)} % vs. período anterior`;
+}
+
+/** Columnas apiladas por nivel vigente (ALTA abajo), con la escala fija de colores de nivel. */
+function stackedChart(
+  doc: jsPDF,
+  y: number,
+  points: Array<{ label: string; total: number; levels: Record<Level, number> | null }>,
+  height = 46,
+): number {
   const width = doc.internal.pageSize.getWidth() - 2 * MARGIN;
   const plotX = MARGIN + 8;
   const plotW = width - 8;
-  const max = Math.max(1, ...points.map((p) => p.value));
+  const max = Math.max(1, ...points.map((p) => p.total));
   const niceMax = Math.ceil(max / 5) * 5;
   const base = y + height;
-  // Grilla recesiva: base y dos referencias
   text(doc, C.muted, 6.5);
   for (const t of [0, niceMax / 2, niceMax]) {
     const gy = base - (t / niceMax) * height;
@@ -282,24 +328,37 @@ function columnChart(doc: jsPDF, y: number, points: Array<{ label: string; value
   }
   const slot = plotW / points.length;
   const barW = Math.min(9, slot * 0.6);
-  const peakIndex = points.reduce((m, p, i) => (p.value > points[m].value ? i : m), 0);
-  points.forEach((p, i) => {
-    const h = (p.value / niceMax) * height;
-    const x = plotX + i * slot + (slot - barW) / 2;
-    if (h > 0) {
-      doc.setFillColor(...C.rose);
-      doc.roundedRect(x, base - h, barW, h, 0.8, 0.8, 'F');
-      doc.rect(x, base - Math.min(h, 0.8), barW, Math.min(h, 0.8), 'F'); // base recta
+  points.forEach((p) => {
+    const x = plotX + points.indexOf(p) * slot + (slot - barW) / 2;
+    let acc = 0;
+    const segments: Array<[RGB, number]> = p.levels
+      ? LEVELS.map((l) => [C.level[l], p.levels![l] ?? 0] as [RGB, number])
+      : [[C.rose, p.total]];
+    const rest = p.total - segments.reduce((a, [, n]) => a + n, 0);
+    if (rest > 0) segments.push([C.rule, rest]);
+    for (const [color, n] of segments) {
+      if (!n) continue;
+      const h = (n / niceMax) * height;
+      doc.setFillColor(...color);
+      doc.rect(x, base - ((acc + n) / niceMax) * height, barW, Math.max(0.1, h - 0.35), 'F');
+      acc += n;
     }
     text(doc, C.muted, 6.5);
     doc.text(p.label, x + barW / 2, base + 4, { align: 'center' });
-    // Rótulos selectivos: máximo y última semana
-    if (i === peakIndex || i === points.length - 1) {
-      text(doc, C.ink, 7.5, 'bold');
-      doc.text(String(p.value), x + barW / 2, base - h - 1.5, { align: 'center' });
-    }
+    text(doc, C.ink, 7, 'bold');
+    if (p.total) doc.text(String(p.total), x + barW / 2, base - (p.total / niceMax) * height - 1.5, { align: 'center' });
   });
-  return base + 8;
+  // Leyenda con el nombre del nivel (el color nunca va solo)
+  let lx = MARGIN;
+  const ly = base + 10;
+  for (const l of LEVELS) {
+    doc.setFillColor(...C.level[l]);
+    doc.rect(lx, ly - 2.4, 2.6, 2.6, 'F');
+    text(doc, C.muted, 7);
+    doc.text(l, lx + 4, ly);
+    lx += 4 + doc.getTextWidth(l) + 7;
+  }
+  return ly + 6;
 }
 
 /** Barras horizontales por nivel, rotuladas con el timbre del nivel (el color nunca va solo). */
@@ -337,13 +396,26 @@ function levelBars(
 
 interface ManagementReportInput {
   data: DashboardMetrics;
+  /** Mismas métricas en el período anterior de igual duración, si el informe tiene un período. */
+  previous?: DashboardMetrics | null;
   model: ModelPerformanceReport | null;
+  inference?: InferenceStatus | null;
+  /** Casos ALTA que esperan más que el umbral al generar el informe (solo códigos anónimos). */
+  altaWaiting?: QueueItem[] | null;
   generatedBy: string;
   assets: Awaited<ReturnType<typeof loadPdfAssets>>;
 }
 
 /** Informe de gestión con relato: resumen, hallazgos, gráficos, lectura por sección y recomendaciones. */
-export function buildManagementReport({ data, model, generatedBy, assets }: ManagementReportInput): jsPDF {
+export function buildManagementReport({
+  data,
+  previous = null,
+  model,
+  inference = null,
+  altaWaiting = null,
+  generatedBy,
+  assets,
+}: ManagementReportInput): jsPDF {
   const doc = new jsPDF();
   applyAssets(doc, assets);
   const pageW = doc.internal.pageSize.getWidth();
@@ -351,7 +423,7 @@ export function buildManagementReport({ data, model, generatedBy, assets }: Mana
   const contentW = pageW - 2 * MARGIN;
   const table = tableStyle(0);
   const generatedAt = new Date();
-  const story = tell(data, model);
+  const story = tell(data, model, previous, inference);
   const period =
     data.date_from || data.date_to
       ? `${day(data.date_from) || 'inicio'} – ${day(data.date_to) || 'hoy'}`
@@ -383,29 +455,29 @@ export function buildManagementReport({ data, model, generatedBy, assets }: Mana
   y = paragraph(doc, y, story.summary, contentW, 10) + 5;
 
   // Cifras principales
-  const tileW = (contentW - 3 * 4) / 4;
   const rt = data.avg_triage_to_review_hours_by_level;
-  statTile(doc, MARGIN, y, tileW, int(data.total_cases), 'CASOS', `${int(data.cases_by_status.CERRADO ?? 0)} con revisión médica`);
-  statTile(
-    doc,
-    MARGIN + (tileW + 4),
-    y,
-    tileW,
-    int(data.cases_by_level.ALTA ?? 0),
-    'CASOS ALTA',
-    `${pct(data.total_cases ? (data.cases_by_level.ALTA ?? 0) / data.total_cases : 0, 0)} del total`,
-  );
-  statTile(doc, MARGIN + 2 * (tileW + 4), y, tileW, hours(rt.ALTA), 'ALTA A REVISIÓN', 'promedio desde el triage');
-  statTile(
-    doc,
-    MARGIN + 3 * (tileW + 4),
-    y,
-    tileW,
-    pct(data.triage_agreement_rate, 0),
-    'TRIAGE APROBADO',
-    'por el médico al cerrar el caso',
-  );
-  y += 34;
+  y = statStrip(doc, y, [
+    {
+      label: 'Casos',
+      value: int(data.total_cases),
+      caption: change(data.total_cases, previous?.total_cases) || `${int(data.cases_by_status.CERRADO ?? 0)} con revisión médica`,
+    },
+    {
+      label: 'Casos ALTA',
+      value: int(data.cases_by_level.ALTA ?? 0),
+      caption: `${pct(data.total_cases ? (data.cases_by_level.ALTA ?? 0) / data.total_cases : 0, 0)} del total`,
+    },
+    {
+      label: 'ALTA: triage a revisión',
+      value: hours(rt.ALTA),
+      caption: change(rt.ALTA, previous?.avg_triage_to_review_hours_by_level.ALTA) || 'promedio',
+    },
+    {
+      label: 'Triage aprobado',
+      value: pct(data.triage_agreement_rate, 0),
+      caption: change(data.triage_agreement_rate, previous?.triage_agreement_rate, 'rate') || 'por el médico al cerrar',
+    },
+  ]);
 
   // Hallazgos clave: etiqueta de estado (texto + color), nunca solo color
   y = sectionTitle(doc, y, 'Hallazgos clave') + 4;
@@ -426,6 +498,26 @@ export function buildManagementReport({ data, model, generatedBy, assets }: Mana
     y += 7;
   }
 
+  // Notas metodológicas, al pie de la portada
+  ensure(26);
+  y += 4;
+  rule(doc, y);
+  y += 5;
+  text(doc, C.ink, 8, 'bold');
+  doc.text('Cómo leer este informe', MARGIN, y);
+  y += 4;
+  paragraph(
+    doc,
+    y,
+    'El nivel vigente es el del último cálculo, incluidos los ajustes médicos. Los tiempos de revisión se miden desde el ' +
+      'primer triage hasta el registro de la revisión. La concordancia IA - médico usa la validación médica de cada imagen ' +
+      'como referencia; las imágenes no evaluables no cuentan. El relato y las recomendaciones se generan con reglas fijas ' +
+      'a partir de estas cifras y no reemplazan el análisis del equipo.',
+    contentW,
+    7.5,
+    C.muted,
+  );
+
   // 1. Volumen
   doc.addPage();
   y = 40;
@@ -434,10 +526,14 @@ export function buildManagementReport({ data, model, generatedBy, assets }: Mana
   doc.text('Casos creados por semana', MARGIN, y + 2);
   text(doc, C.muted, 7);
   doc.text('(la última columna puede ser una semana en curso)', MARGIN + 41, y + 2);
-  y = columnChart(
+  y = stackedChart(
     doc,
     y + 8,
-    data.cases_per_week.slice(-12).map((w) => ({ label: day(w.week_start).slice(0, 5), value: w.cases })),
+    data.cases_per_week.slice(-12).map((w) => ({
+      label: day(w.week_start).slice(0, 5),
+      total: w.cases,
+      levels: (w.by_level as Record<Level, number> | undefined) ?? null,
+    })),
   );
   y += 4;
 
@@ -457,7 +553,30 @@ export function buildManagementReport({ data, model, generatedBy, assets }: Mana
     MARGIN,
     y,
   );
-  y += 10;
+  y += 8;
+  if (altaWaiting) {
+    ensure(24);
+    text(doc, C.ink, 8.5, 'bold');
+    doc.text(`Casos ALTA con más de ${data.alta_pending_threshold_hours} h de espera al generar el informe`, MARGIN, y);
+    y += 2;
+    if (altaWaiting.length === 0) {
+      text(doc, C.muted, 8.5);
+      doc.text('Ninguno.', MARGIN, y + 4);
+      y += 12;
+    } else {
+      autoTable(doc, {
+        ...table,
+        startY: y + 1,
+        head: [['Código', 'Estado', 'Espera']],
+        body: [...altaWaiting]
+          .sort((a, b) => b.waiting_hours - a.waiting_hours)
+          .slice(0, 15)
+          .map((q) => [q.code, CASE_STATUS_LABELS[q.status], hours(q.waiting_hours)]),
+        columnStyles: { 0: { fontStyle: 'bold' }, 2: { halign: 'right', textColor: C.level.ALTA, fontStyle: 'bold' } },
+      });
+      y = lastY(doc) + 10;
+    }
+  } else y += 2;
 
   // 3. Calidad
   section(3, 'Calidad de las decisiones', story.quality);
@@ -492,7 +611,7 @@ export function buildManagementReport({ data, model, generatedBy, assets }: Mana
     autoTable(doc, {
       ...table,
       startY: y,
-      head: [['Modelo', 'Evaluables', 'Exactitud', 'Sensibilidad', 'Especificidad', `Meta K5 (${pct(model.k5_target, 0)})`]],
+      head: [['Modelo', 'Evaluables', 'Exactitud', 'Sensibilidad', 'Especificidad', `Meta (≥ ${pct(model.k5_target, 0)})`]],
       body: model.versions.map((v) => [
         `${v.model_version}${v.is_simulated ? ' · IA SIMULADA' : ''}`,
         String(v.evaluable),
@@ -559,26 +678,6 @@ export function buildManagementReport({ data, model, generatedBy, assets }: Mana
     doc.text(lines, MARGIN + 7, y, { lineHeightFactor: 1.4 });
     y += lines.length * 4.7 + 2.5;
   });
-
-  // Notas metodológicas
-  ensure(30);
-  y += 4;
-  rule(doc, y);
-  y += 5;
-  text(doc, C.ink, 8, 'bold');
-  doc.text('Cómo leer este informe', MARGIN, y);
-  y += 4;
-  paragraph(
-    doc,
-    y,
-    'El nivel vigente es el del último cálculo, incluidos los ajustes médicos. Los tiempos de revisión se miden desde el ' +
-      'primer triage hasta el registro de la revisión. La concordancia IA - médico usa la validación médica de cada imagen ' +
-      'como referencia; las imágenes no evaluables no cuentan. El relato y las recomendaciones se generan con reglas fijas ' +
-      'a partir de estas cifras y no reemplazan el análisis del equipo.',
-    contentW,
-    7.5,
-    C.muted,
-  );
 
   drawFooter(doc, `Informe de gestión · ${period} · Generado el ${generatedAt.toLocaleString('es-CL')} por ${generatedBy}`, {
     assets,

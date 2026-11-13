@@ -220,14 +220,16 @@ def metrics(
     weeks: list[WeekPoint] = []
     if case_ids:
         week_col = func.date_trunc("week", Case.created_at).label("week")
-        rows = (
-            db.query(week_col, func.count(Case.id))
-            .filter(Case.id.in_(case_ids))
-            .group_by(week_col)
-            .order_by(week_col)
-            .all()
-        )
-        weeks = [WeekPoint(week_start=w.date().isoformat(), cases=n) for w, n in rows]
+        rows = db.query(week_col, Case.id).filter(Case.id.in_(case_ids)).order_by(week_col).all()
+        per_week: dict[str, dict] = {}
+        for w, case_id in rows:
+            point = per_week.setdefault(
+                w.date().isoformat(), {"cases": 0, "by_level": {lvl.value: 0 for lvl in TriageLevel}}
+            )
+            point["cases"] += 1
+            if case_id in current:
+                point["by_level"][current[case_id].final_level.value] += 1
+        weeks = [WeekPoint(week_start=k, **v) for k, v in per_week.items()]
 
     # Validación médica de la IA (por imagen) y del triage (por revisión)
     verdicts = {v: 0 for v in AI_VERDICTS}

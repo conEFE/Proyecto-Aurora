@@ -707,6 +707,30 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## Sin número de versión — pantallas con el patrón de Casos, Dashboard y PDF ampliados
+
+Sin migraciones. Un cambio en la API, compatible hacia atrás: `cases_per_week[].by_level` en `GET /dashboard`.
+
+- **Ingreso** con el encabezado y el pie de la landing y la captura de la cola de triage.
+- **Mi perfil, Parámetros, Privacidad y Administración** con el patrón de Casos y Pacientes (encabezado de ficha, lista
+  a todo el ancho y dos columnas). Páginas propias nuevas: `/privacidad/pacientes/<id>` (consentimiento como línea de
+  tiempo, solicitudes y acciones) y `/administracion/usuarios/<id>` (rol, activar o desactivar, contraseña temporal y
+  actividad reciente). Vistas y filtros en la dirección (`?vista=`, `?estado=`, `?vencidas=1`, `?q=`).
+- `/casos/nuevo?paciente=<id>`: recargar ya no pierde la paciente elegida.
+- Pantallas chicas: filtros segmentados desplazables y tablas sin desborde (el texto oculto del timbre de nivel ya no
+  escapa de su contenedor). Tema oscuro revisado en todas las pantallas.
+- **Dashboard**: períodos rápidos (7, 30 y 90 días, todo o un rango) en la dirección; franja de cifras con la
+  variación frente al período anterior de igual duración; casos por semana apilados por nivel vigente; barras de nivel
+  y estados que abren Casos filtrado; lista de casos ALTA atrasados con enlace (roles clínicos) y estado del modelo de
+  IA (conectado, sin conexión o simulado).
+- **Informe de gestión (PDF)**: comparación con el período anterior en el resumen y las cifras (franja con reglas en
+  vez de tarjetas), gráfico semanal por nivel, tabla de casos ALTA atrasados (solo códigos), estado del modelo al
+  generar el informe y sin códigos internos (K5).
+- **Reporte de caso (PDF)**: lámina «Imágenes del examen» (Derecha / Izquierda, sobre negatoscopio, con los recuadros
+  de la IA y su resultado); la regla de escalamiento con su nombre y «Metadatos del estudio» sin códigos internos.
+  `StudyDescription` no cambia.
+- Pruebas: el desglose semanal por nivel suma lo mismo que el conteo por nivel.
+
 ## Sin número de versión — direcciones (URL) por pantalla
 
 - Rutas con React Router: `/`, `/ingresar`, `/inicio`, `/cola`, `/pacientes`, `/pacientes/<id>`, `/casos`,

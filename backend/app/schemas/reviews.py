@@ -143,6 +143,8 @@ class LevelCount(BaseModel):
 class WeekPoint(BaseModel):
     week_start: str
     cases: int
+    # Casos de la semana según su nivel vigente (los que aún no tienen triage no cuentan)
+    by_level: dict[str, int] = {}
 
 
 class DashboardMetrics(BaseModel):
