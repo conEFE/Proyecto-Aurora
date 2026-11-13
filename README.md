@@ -1,10 +1,11 @@
-# Proyecto Aurora
+# Aurora Care
 
 Plataforma web de apoyo a la **detección temprana y priorización (triage)** de casos sospechosos de cáncer de mama.
 Proyecto de título — INACAP. **La plataforma apoya, no reemplaza, el criterio médico.**
 
-> **IA simulada.** El análisis de imágenes usa hoy un proveedor simulado. Todo resultado queda marcado
-> `is_simulated = true` y se muestra con el badge **«IA SIMULADA»**. No tiene valor clínico.
+> **IA.** El análisis de imágenes usa un modelo prototipo (CNN + YOLO, sin validación clínica) cuando está configurado
+> (`INFERENCE_PROVIDER=http`) y, si no responde, un proveedor simulado. Todo resultado simulado queda marcado
+> `is_simulated = true` y se muestra con el badge **«IA SIMULADA»**. Ninguno tiene valor clínico.
 
 ## Qué hace
 
@@ -74,7 +75,7 @@ Complete `backend/.env` (nunca se versiona):
 | `FILES_DIR` | | Carpeta de imágenes cifradas (`./data/images`) |
 | `MAX_UPLOAD_MB` | | Tamaño máximo de imagen (60) |
 | `INFERENCE_PROVIDER` | | `simulated` (por defecto) o `http` |
-| `INFERENCE_URL` | | URL del servicio YOLO si `INFERENCE_PROVIDER=http` |
+| `INFERENCE_URL` | | URL del servicio del modelo (CNN + YOLO) si `INFERENCE_PROVIDER=http` |
 | `ALTA_PENDING_HOURS` | | Umbral de casos ALTA pendientes en el dashboard (24) |
 | `PASSWORD_MIN_LENGTH` | | Largo mínimo de contraseña (10) |
 | `LOGIN_MAX_FAILED_ATTEMPTS` / `LOGIN_LOCKOUT_MINUTES` | | Bloqueo de la cuenta tras N fallos seguidos, por M minutos (5 / 15) |
@@ -132,6 +133,10 @@ cp deploy/.env.example deploy/.env     # complete POSTGRES_PASSWORD, SECRET_KEY,
 docker compose --env-file deploy/.env up -d --build
 docker compose --env-file deploy/.env exec backend python init_user.py
 ```
+
+Sin compilar: use las imágenes publicadas (son públicas). En `deploy/.env` ponga
+`AURORA_IMAGE_PREFIX=ghcr.io/conefe/proyecto-aurora` y `AURORA_VERSION=sha-<commit>` (o el tag de versión) y levante
+con `docker compose --env-file deploy/.env up -d`, sin `--build`. Las migraciones se aplican solas al arrancar.
 
 La API queda en `/api` (mismo dominio, sin CORS). Despliegue en AWS: `docs/despliegue_aws.md`.
 
