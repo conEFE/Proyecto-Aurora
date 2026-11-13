@@ -257,28 +257,40 @@ def _stored_key(aws: Aws) -> dict | None:
 
 
 def require_operator_key(aws: Aws) -> None:
+    """Pide la clave hasta que sea correcta. Cada error agrega una espera (hasta 30 s). Enter vacío cancela."""
     stored = _stored_key(aws)
     if stored is None:
         fail("todavía no hay clave de operador. Defínala en el menú o con: aurora-admin configurar-clave")
     salt = base64.b64decode(stored["salt"])
     expected = base64.b64decode(stored["hash"])
-    for attempt in range(3):
-        if hmac.compare_digest(_hash_key(_read_key("Clave de operador: "), salt), expected):
+    errors = 0
+    while True:
+        key = _read_key("Clave de operador (Enter vacío para salir): ")
+        if not key:
+            fail("cancelado.")
+        if hmac.compare_digest(_hash_key(key, salt), expected):
             return
-        time.sleep(2 * (attempt + 1))
-        print("Clave incorrecta.", file=sys.stderr)
-    fail("demasiados intentos.")
+        errors += 1
+        wait = min(30, 2 * errors)
+        print(f"Clave incorrecta. Espere {wait} s para intentar de nuevo.", file=sys.stderr)
+        time.sleep(wait)
 
 
 def cmd_configurar_clave(aws: Aws, a: argparse.Namespace) -> None:
     if _stored_key(aws) is not None:
         print("Ya hay una clave de operador: para cambiarla, ingrese primero la actual.")
         require_operator_key(aws)
-    new = _read_key(f"Nueva clave de operador (mínimo {OPERATOR_KEY_MIN} caracteres): ")
-    if len(new) < OPERATOR_KEY_MIN:
-        fail(f"la clave debe tener al menos {OPERATOR_KEY_MIN} caracteres.")
-    if _read_key("Repítala: ") != new:
-        fail("las claves no coinciden.")
+    while True:
+        new = _read_key(f"Nueva clave de operador (mínimo {OPERATOR_KEY_MIN} caracteres, Enter vacío para cancelar): ")
+        if not new:
+            fail("cancelado: no se cambió la clave.")
+        if len(new) < OPERATOR_KEY_MIN:
+            print(f"Muy corta: tiene {len(new)} caracteres y se necesitan al menos {OPERATOR_KEY_MIN}. Intente de nuevo.")
+            continue
+        if _read_key("Repítala: ") != new:
+            print("No coinciden. Intente de nuevo.")
+            continue
+        break
     salt = os.urandom(16)
     value = json.dumps({"alg": "scrypt", **{k: SCRYPT[k] for k in ("n", "r", "p")},
                         "salt": base64.b64encode(salt).decode(), "hash": base64.b64encode(_hash_key(new, salt)).decode()})
@@ -539,6 +551,7 @@ def menu(profile: str, region: str) -> None:
         cmd_configurar_clave(aws, argparse.Namespace())
     else:
         require_operator_key(aws)
+    print("Acceso concedido.")
     ns = argparse.Namespace
     while True:
         print(MENU)
