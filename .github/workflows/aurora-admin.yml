@@ -1,0 +1,74 @@
+# Compila aurora-admin como ejecutable independiente (Windows, macOS y Linux) y lo publica en el release
+# «aurora-admin». No hace falta el repositorio ni Python para usarlo. Se ejecuta al cambiar deploy/aurora-admin/ en
+# main o a mano (Actions → aurora-admin → Run workflow).
+name: aurora-admin
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["deploy/aurora-admin/**", ".github/workflows/aurora-admin.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            asset: aurora-admin-windows.exe
+          - os: macos-latest
+            asset: aurora-admin-macos
+          - os: ubuntu-24.04
+            asset: aurora-admin-linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dependencias
+        run: pip install boto3 "botocore[crt]" pyinstaller
+      - name: Compilar
+        run: >-
+          pyinstaller --onefile --name aurora-admin --clean --noconfirm
+          --add-data "deploy/aurora-admin/institucion.yaml:."
+          --collect-all awscrt
+          deploy/aurora-admin/aurora_admin.py
+      - name: Renombrar y probar
+        shell: bash
+        run: |
+          src=dist/aurora-admin
+          [ -f dist/aurora-admin.exe ] && src=dist/aurora-admin.exe
+          mv "$src" "dist/${{ matrix.asset }}"
+          "dist/${{ matrix.asset }}" --help > /dev/null
+          "dist/${{ matrix.asset }}" versiones --cantidad 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Publicar en el release «aurora-admin»
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          notes="Herramienta para inscribir y administrar instituciones (una instancia de Aurora Care por hospital).
+          Descargue el archivo de su sistema y ábralo. Requiere el AWS CLI para iniciar sesión (el menú lo lanza).
+          Compilado desde ${GITHUB_SHA::7}."
+          if gh release view aurora-admin --repo "$REPO" > /dev/null 2>&1; then
+            gh release edit aurora-admin --repo "$REPO" --notes "$notes"
+            gh release upload aurora-admin out/* --repo "$REPO" --clobber
+          else
+            gh release create aurora-admin out/* --repo "$REPO" --title "aurora-admin" --notes "$notes" --latest=false
+          fi

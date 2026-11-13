@@ -1,27 +1,20 @@
 #!/usr/bin/env python3
 """aurora-admin: administra una instancia de Aurora Care por institución (hospital o CESFAM).
 
-Cada institución es una pila de CloudFormation (institucion.yaml) con su servidor, IP fija, bucket cifrado, rol y
-registro DNS. Su configuración y sus secretos viven en Parameter Store bajo /aurora/<institución>/.
+Cada institución es una pila de CloudFormation (institucion.yaml, incluida en el ejecutable) con su servidor, IP fija,
+bucket cifrado, rol y registro DNS. Su configuración y sus secretos viven en Parameter Store bajo /aurora/<institución>/.
 
-Uso (desde la raíz del repositorio, con credenciales de AWS del equipo):
-    python deploy/aurora-admin/aurora_admin.py inscribir hospital-x --version sha-<commit> \\
-        --admin-rut 12345678-5 --admin-email admin@hospital-x.cl --admin-nombre "Nombre Apellido"
-    python deploy/aurora-admin/aurora_admin.py listar
-    python deploy/aurora-admin/aurora_admin.py clave-admin hospital-x
-    python deploy/aurora-admin/aurora_admin.py actualizar hospital-x --version sha-<commit>   (o --todas)
-    python deploy/aurora-admin/aurora_admin.py respaldar hospital-x
-    python deploy/aurora-admin/aurora_admin.py pausar hospital-x | reactivar hospital-x
-    python deploy/aurora-admin/aurora_admin.py baja hospital-x --confirmar hospital-x [--borrar-datos]
+Uso normal: abrir el ejecutable (aurora-admin.exe en Windows) y elegir en el menú. Pide la clave de operador una vez.
+También acepta comandos (aurora-admin --help): inscribir, listar, versiones, clave-admin, actualizar, respaldar,
+pausar, reactivar, baja y configurar-clave.
 
-Credenciales: perfil `aurora` (aws login --remote --region us-east-2 --profile aurora). Si boto3 no las encuentra:
-    eval "$(aws configure export-credentials --profile aurora --format env)"
+Versión de Aurora: por defecto, la última publicada (imágenes sha-<commit> en ghcr.io, una por commit de main).
+«versiones» muestra las disponibles.
 
-Clave de operador: todo comando la pide (sin mostrarla). La primera vez se define con
-    python deploy/aurora-admin/aurora_admin.py configurar-clave
-En Parameter Store solo queda su huella (scrypt con sal, cifrada) en /aurora-admin/clave-operador; la clave no se
-guarda en ningún lado. Protege la herramienta, no la cuenta de AWS: quien tenga credenciales con permisos completos
-podría usar la consola directamente, así que el acceso al proyecto de AWS debe estar igual de controlado.
+Credenciales de AWS: perfil `aurora`, con el inicio de sesión del AWS CLI (aws login). El menú lo lanza si hace falta.
+
+Clave de operador: en Parameter Store solo queda su huella (scrypt con sal, cifrada) en /aurora-admin/clave-operador.
+Protege la herramienta, no la cuenta de AWS: el acceso al proyecto de AWS debe estar igual de controlado.
 """
 
 from __future__ import annotations
@@ -35,15 +28,21 @@ import json
 import os
 import re
 import secrets
+import shutil
+import subprocess
 import sys
 import time
+import urllib.request
 from pathlib import Path
 
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
 
-HERE = Path(__file__).resolve().parent
-TEMPLATE = HERE / "institucion.yaml"
+# Dentro del ejecutable (PyInstaller) los archivos incluidos están en sys._MEIPASS
+BUNDLE = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+TEMPLATE = BUNDLE / "institucion.yaml"
+GITHUB_REPO = "conEFE/Proyecto-Aurora"
+GHCR_REPO = "conefe/proyecto-aurora"
 REGION = "us-east-2"
 ZONE_ID = "Z0628464DNWEOT5ICYNC"  # auroracare.cl
 BASE_DOMAIN = "auroracare.cl"
@@ -85,15 +84,19 @@ def rut_ok(rut: str) -> bool:
     return dv == {11: "0", 10: "K"}.get(expected, str(expected))
 
 
+class AuthError(Exception):
+    pass
+
+
 class Aws:
     def __init__(self, profile: str | None, region: str):
         try:
             session = boto3.Session(profile_name=profile, region_name=region) if profile else boto3.Session(region_name=region)
             self.account = session.client("sts").get_caller_identity()["Account"]
         except (NoCredentialsError, ClientError) as exc:
-            fail(f"sin credenciales de AWS válidas ({exc}). Vea el encabezado de este archivo.")
-        except Exception as exc:  # perfil inexistente u otro problema de configuración
-            fail(f"no se pudo abrir la sesión de AWS: {exc}")
+            raise AuthError(f"sin una sesión de AWS válida ({exc})") from exc
+        except Exception as exc:  # perfil inexistente, sesión vencida u otro problema de configuración
+            raise AuthError(f"no se pudo abrir la sesión de AWS: {exc}") from exc
         self.cfn = session.client("cloudformation")
         self.ssm = session.client("ssm")
         self.ec2 = session.client("ec2")
@@ -173,6 +176,65 @@ def as_ec2_user(script: str) -> str:
 DC = "docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml --env-file deploy/.env"
 
 
+# --- Versiones publicadas ----------------------------------------------------------------------
+_ghcr_token: str | None = None
+
+
+def _http(url: str, headers: dict | None = None, method: str = "GET"):
+    req = urllib.request.Request(url, headers={"User-Agent": "aurora-admin", **(headers or {})}, method=method)
+    return urllib.request.urlopen(req, timeout=20)
+
+
+def _image_exists(tag: str) -> bool:
+    global _ghcr_token
+    if _ghcr_token is None:
+        with _http(f"https://ghcr.io/token?scope=repository:{GHCR_REPO}-backend:pull") as r:
+            _ghcr_token = json.load(r)["token"]
+    accept = ", ".join([
+        "application/vnd.oci.image.index.v1+json",
+        "application/vnd.docker.distribution.manifest.list.v2+json",
+        "application/vnd.oci.image.manifest.v1+json",
+    ])
+    try:
+        with _http(f"https://ghcr.io/v2/{GHCR_REPO}-backend/manifests/{tag}",
+                   {"Authorization": f"Bearer {_ghcr_token}", "Accept": accept}, method="HEAD") as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
+def published_versions(limit: int = 8) -> list[tuple[str, str, str]]:
+    """(tag, fecha, mensaje) de los últimos commits de main con imágenes publicadas, del más reciente al más antiguo."""
+    with _http(f"https://api.github.com/repos/{GITHUB_REPO}/commits?sha=main&per_page=40",
+               {"Accept": "application/vnd.github+json"}) as r:
+        commits = json.load(r)
+    out = []
+    for c in commits:
+        tag = f"sha-{c['sha']}"
+        if _image_exists(tag):
+            msg = c["commit"]["message"].splitlines()[0]
+            out.append((tag, c["commit"]["committer"]["date"][:10], msg))
+            if len(out) >= limit:
+                break
+    return out
+
+
+def latest_version() -> str:
+    try:
+        versions = published_versions(1)
+    except Exception as exc:
+        fail(f"no se pudo consultar las versiones publicadas ({exc}). Indique --version.")
+    if not versions:
+        fail("no hay versiones publicadas en los últimos commits. Publique imágenes o indique --version.")
+    return versions[0][0]
+
+
+def cmd_versiones(aws, a: argparse.Namespace) -> None:
+    print("Versiones publicadas de Aurora (la primera es la que se usa por defecto):")
+    for i, (tag, date, msg) in enumerate(published_versions(a.cantidad if hasattr(a, "cantidad") else 8)):
+        print(f"  {'*' if i == 0 else ' '} {tag[:15]}…  {date}  {msg[:70]}")
+
+
 # --- Clave de operador ---------------------------------------------------------------------------
 def _hash_key(key: str, salt: bytes) -> bytes:
     return hashlib.scrypt(key.encode(), salt=salt, **SCRYPT)
@@ -197,7 +259,7 @@ def _stored_key(aws: Aws) -> dict | None:
 def require_operator_key(aws: Aws) -> None:
     stored = _stored_key(aws)
     if stored is None:
-        fail("todavía no hay clave de operador. Defínala con: aurora_admin.py configurar-clave")
+        fail("todavía no hay clave de operador. Defínala en el menú o con: aurora-admin configurar-clave")
     salt = base64.b64decode(stored["salt"])
     expected = base64.b64decode(stored["hash"])
     for attempt in range(3):
@@ -237,6 +299,9 @@ def cmd_inscribir(aws: Aws, a: argparse.Namespace) -> None:
     if aws.params(inst):
         fail(f"ya hay parámetros en {param_path(inst)}. Si quedaron de una baja incompleta, bórrelos antes.")
     domain = a.dominio or f"{inst}.{BASE_DOMAIN}"
+    if not a.version:
+        a.version = latest_version()
+    print(f"Versión de Aurora: {a.version}")
 
     print(f"1/3 Guardando configuración y secretos en Parameter Store ({param_path(inst)})…")
     fernet_key = base64.urlsafe_b64encode(os.urandom(32)).decode()
@@ -293,13 +358,13 @@ def cmd_inscribir(aws: Aws, a: argparse.Namespace) -> None:
         events = aws.cfn.describe_stack_events(StackName=stack_name(inst))["StackEvents"]
         reasons = [f"{e['LogicalResourceId']}: {e.get('ResourceStatusReason', '')}" for e in events if "FAILED" in e["ResourceStatus"]]
         print("La creación falló:", *reasons[:5], sep="\n  ")
-        print(f"Los parámetros de {param_path(inst)} quedaron; use «baja {inst} --confirmar {inst}» para limpiar.")
+        print(f"Los parámetros de {param_path(inst)} quedaron; use «Dar de baja» en el menú para limpiar.")
         sys.exit(1)
 
     out = aws.outputs(inst)
     print(f"\nListo: {out.get('Url')}  (IP {out.get('PublicIp')}, servidor {out.get('InstanceId')}, bucket {out.get('Bucket')})")
     print("El certificado HTTPS se emite en los primeros minutos, cuando el DNS ya resuelve.")
-    print(f"Contraseña temporal del ADMIN: python deploy/aurora-admin/aurora_admin.py clave-admin {inst}")
+    print("Contraseña temporal del ADMIN: opción 7 del menú (o aurora-admin clave-admin " + inst + ").")
     print("Entréguela por un canal privado; el ADMIN debe cambiarla en su primer ingreso.")
 
 
@@ -339,6 +404,9 @@ def cmd_actualizar(aws: Aws, a: argparse.Namespace) -> None:
     targets = aws.institutions() if a.todas else [a.institucion]
     if not targets or targets == [None]:
         fail("indique una institución o --todas.")
+    if not a.version:
+        a.version = latest_version()
+    print(f"Versión de Aurora: {a.version}")
     for inst in targets:
         iid = instance_of(aws, inst)
         aws.put(inst, "AURORA_VERSION", a.version, secret=False, overwrite=True)
@@ -402,6 +470,132 @@ def cmd_baja(aws: Aws, a: argparse.Namespace) -> None:
     print("Baja completa.")
 
 
+# --- Menú interactivo ----------------------------------------------------------------------------
+def ask(prompt: str, default: str | None = None, check=None) -> str:
+    while True:
+        suffix = f" [{default}]" if default else ""
+        value = input(f"{prompt}{suffix}: ").strip() or (default or "")
+        if not value:
+            print("  Este dato es obligatorio.")
+            continue
+        error = check(value) if check else None
+        if error:
+            print(f"  {error}")
+            continue
+        return value
+
+
+def confirm(prompt: str) -> bool:
+    return input(f"{prompt} (s/n): ").strip().lower() in ("s", "si", "sí")
+
+
+def pick_institution(aws: Aws) -> str | None:
+    insts = aws.institutions()
+    if not insts:
+        print("No hay instituciones inscritas.")
+        return None
+    for i, inst in enumerate(insts, 1):
+        print(f"  {i}. {inst}")
+    choice = input("Número de la institución (Enter para volver): ").strip()
+    if choice.isdigit() and 1 <= int(choice) <= len(insts):
+        return insts[int(choice) - 1]
+    return None
+
+
+def connect(profile: str, region: str) -> Aws:
+    while True:
+        try:
+            return Aws(profile, region)
+        except AuthError as exc:
+            print(f"\nNo hay una sesión de AWS activa ({str(exc)[:160]}).")
+            if not shutil.which("aws"):
+                print("Instale el AWS CLI (https://aws.amazon.com/cli/) y vuelva a abrir aurora-admin.")
+                raise SystemExit(1)
+            if not confirm("¿Iniciar sesión en AWS ahora? Se abrirá el navegador"):
+                raise SystemExit(1)
+            subprocess.run(["aws", "login", "--region", region, "--profile", profile])
+
+
+MENU = """
+  1. Inscribir una institución nueva
+  2. Ver instituciones
+  3. Actualizar la versión de Aurora
+  4. Respaldar la base de datos ahora
+  5. Pausar un servidor
+  6. Reactivar un servidor
+  7. Ver la contraseña temporal del primer ADMIN
+  8. Dar de baja una institución
+  9. Ver versiones publicadas
+ 10. Cambiar la clave de operador
+  0. Salir
+"""
+
+
+def menu(profile: str, region: str) -> None:
+    print("\nAurora Care · administración de instituciones")
+    aws = connect(profile, region)
+    if _stored_key(aws) is None:
+        print("Primera vez: defina su clave de operador. Solo usted debe conocerla.")
+        cmd_configurar_clave(aws, argparse.Namespace())
+    else:
+        require_operator_key(aws)
+    ns = argparse.Namespace
+    while True:
+        print(MENU)
+        try:
+            option = input("Opción: ").strip()
+        except EOFError:
+            return
+        try:
+            if option == "0":
+                return
+            if option == "1":
+                inst = ask("Identificador (minúsculas, p. ej. hospital-x)",
+                           check=lambda v: None if ID_RE.match(v) and v not in RESERVED else "3 a 30 caracteres: minúsculas, números y guiones.")
+                dominio = ask("Dominio", f"{inst}.{BASE_DOMAIN}")
+                rut = ask("RUT del primer ADMIN", check=lambda v: None if rut_ok(v) else "RUT no válido.")
+                email = ask("Email del primer ADMIN", check=lambda v: None if re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", v) else "Email no válido.")
+                nombre = ask("Nombre del primer ADMIN")
+                version = latest_version()
+                print(f"\nSe creará {inst} en https://{dominio} con la versión {version[:15]}… (IA simulada, t4g.micro).")
+                print("Costo aproximado: USD 10 al mes por institución.")
+                if confirm("¿Continuar?"):
+                    cmd_inscribir(aws, ns(institucion=inst, version=version, admin_rut=rut, admin_email=email,
+                                          admin_nombre=nombre, dominio=dominio, zona=ZONE_ID, tipo="t4g.micro", ref="main",
+                                          imagenes=IMAGE_PREFIX, modelo="simulated", modelo_url=None, conservar_si_falla=False))
+            elif option == "2":
+                cmd_listar(aws, ns())
+            elif option == "3":
+                todas = confirm("¿Actualizar todas las instituciones?")
+                inst = None if todas else pick_institution(aws)
+                if todas or inst:
+                    cmd_actualizar(aws, ns(institucion=inst, todas=todas, version=None, ref="main"))
+            elif option in ("4", "5", "6", "7"):
+                inst = pick_institution(aws)
+                if inst:
+                    {"4": cmd_respaldar, "5": cmd_pausar, "6": cmd_reactivar, "7": cmd_clave_admin}[option](aws, ns(institucion=inst))
+            elif option == "8":
+                inst = pick_institution(aws)
+                if inst:
+                    borrar = confirm("¿Borrar también las imágenes y los respaldos (irreversible)?")
+                    if input(f"Para confirmar, escriba el identificador «{inst}»: ").strip() == inst:
+                        cmd_baja(aws, ns(institucion=inst, confirmar=inst, borrar_datos=borrar, sin_respaldo=False))
+                    else:
+                        print("No coincide: no se dio de baja.")
+            elif option == "9":
+                cmd_versiones(None, ns(cantidad=8))
+            elif option == "10":
+                cmd_configurar_clave(aws, ns())
+            else:
+                print("Opción no válida.")
+        except SystemExit:
+            pass  # el error ya se mostró; se vuelve al menú
+        except KeyboardInterrupt:
+            print("\nCancelado.")
+        except Exception as exc:
+            print(f"Error inesperado: {exc}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="aurora-admin", description="Instancias de Aurora Care por institución")
     ap.add_argument("--perfil", default=os.environ.get("AWS_PROFILE", "aurora"), help="perfil de AWS (vacío: variables de entorno)")
@@ -413,7 +607,7 @@ def main() -> None:
 
     p = sub.add_parser("inscribir", help="crea la instancia de una institución")
     p.add_argument("institucion")
-    p.add_argument("--version", required=True, help="tag de imagen publicado (sha-<commit> o vX.Y.Z)")
+    p.add_argument("--version", help="tag de imagen publicado (sha-<commit>); por defecto, el último")
     p.add_argument("--admin-rut", required=True)
     p.add_argument("--admin-email", required=True)
     p.add_argument("--admin-nombre", required=True)
@@ -427,6 +621,10 @@ def main() -> None:
     p.add_argument("--conservar-si-falla", action="store_true", help="no revertir la pila si falla (para diagnosticar)")
     p.set_defaults(fn=cmd_inscribir)
 
+    p = sub.add_parser("versiones", help="versiones de Aurora publicadas")
+    p.add_argument("--cantidad", type=int, default=8)
+    p.set_defaults(fn=cmd_versiones)
+
     p = sub.add_parser("listar", help="instituciones con su estado y versión")
     p.set_defaults(fn=cmd_listar)
 
@@ -437,7 +635,7 @@ def main() -> None:
     p = sub.add_parser("actualizar", help="cambia la versión de una institución o de todas")
     p.add_argument("institucion", nargs="?")
     p.add_argument("--todas", action="store_true")
-    p.add_argument("--version", required=True)
+    p.add_argument("--version", help="por defecto, la última publicada")
     p.add_argument("--ref", default="main")
     p.set_defaults(fn=cmd_actualizar)
 
@@ -457,12 +655,33 @@ def main() -> None:
     p.add_argument("--sin-respaldo", action="store_true")
     p.set_defaults(fn=cmd_baja)
 
+    if len(sys.argv) == 1:
+        menu(profile="aurora", region=REGION)
+        return
     a = ap.parse_args()
-    aws = Aws(a.perfil or None, a.region)
+    if a.fn is cmd_versiones:
+        a.fn(None, a)
+        return
+    try:
+        aws = Aws(a.perfil or None, a.region)
+    except AuthError as exc:
+        fail(f"{exc}. Inicie sesión con: aws login --region {REGION} --profile {a.perfil or 'aurora'}")
     if a.fn is not cmd_configurar_clave:
         require_operator_key(aws)
     a.fn(aws, a)
 
 
 if __name__ == "__main__":
-    main()
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nCancelado.")
+    finally:
+        # Al abrirlo con doble clic, la ventana no se cierra sin que la persona lo vea
+        if getattr(sys, "frozen", False) and len(sys.argv) == 1:
+            try:
+                input("\nPresione Enter para cerrar…")
+            except EOFError:
+                pass
