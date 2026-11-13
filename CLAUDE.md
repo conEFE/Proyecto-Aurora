@@ -2,16 +2,18 @@
 
 Plataforma web de apoyo a la **detección temprana y priorización (triage)** de casos sospechosos de cáncer de mama. Es un proyecto de título (INACAP). La plataforma **apoya, no reemplaza**, el criterio médico.
 
-## Estado actual (11-11-2026)
-- **Versión 2.9.2 («Aurora Care») en `main` y desplegada en AWS** (us-east-2, plan gratuito): https://demo.auroracare.cl (también https://13-184-207-158.sslip.io)
+## Estado actual (13-11-2026)
+- **`main` desplegado en AWS** (us-east-2, plan gratuito): https://demo.auroracare.cl (también https://13-184-207-158.sslip.io).
+  Sobre la 2.9.2: rediseño, Mi perfil, historia del paciente, Casos y Pacientes con página propia y una dirección por
+  pantalla (React Router). Sin número de versión todavía (propuesta: 2.10.0).
 - Estado del despliegue, recursos, comandos de operación y **plan para continuar**: **`docs/ESTADO_AWS.md`**.
   Léelo antes de tocar la infraestructura.
 - Sprints S1–S7 cerrados. S8: modelo de IA integrado como prototipo (opción B: PC con GPU vía Tailscale); quedan
   pruebas de carga y DICOM.
 - Commits en `main` con la autoría del equipo y **sin coautoría de Claude** (pedido del equipo).
 - Dominio `auroracare.cl` activo (NIC Chile + Route 53). **Modelo de Juan conectado** por Tailscale desde el
-  11-11-2026 (`INFERENCE_PROVIDER=http`, con respaldo simulado; `docs/guia_modelo_juan.md`). En curso: la herramienta `aurora-admin` para vender a varias instituciones (una instancia por
-  institución). Detalle y orden en `docs/ESTADO_AWS.md`, sección 2.
+  11-11-2026 (`INFERENCE_PROVIDER=http`, con respaldo simulado; `docs/guia_modelo_juan.md`). `aurora-admin` v1 (una instancia por institución; ejecutable con menú y clave de
+  operador de Felipe) está hecho y falta probarlo en AWS. Detalle y orden en `docs/ESTADO_AWS.md`, sección 2.
 - Rediseño visual «Orden de mamografía» (modo claro rosado/blanco y oscuro morado/negro) integrado: el sistema
   visual está en **`DESIGN.md`** y el contexto de producto en **`PRODUCT.md`**. Toda pantalla nueva usa esos tokens.
 

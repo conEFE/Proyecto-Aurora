@@ -1,7 +1,11 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 12-11-2026. Desplegado: **`566d51c`** de `main` (imágenes `sha-566d51c…`), aún sin número de versión
-(propuesta: cerrarlo como **2.10.0**). **Modelo real conectado** (PC de Juan por Tailscale; si está apagado, IA simulada).
+Actualizado: 13-11-2026. Desplegado: el último commit de `main` (imágenes `sha-<commit>`; ver `AURORA_VERSION` en el
+servidor), aún sin número de versión (propuesta: cerrarlo como **2.10.0**). **Modelo real conectado** (PC de Juan por
+Tailscale; si está apagado, IA simulada).
+
+**13-11-2026:** una dirección por pantalla con React Router (`/cola`, `/casos/AUR-…`, `/pacientes/<id>`, etc.; detalle
+en `docs/CHANGELOG_SPRINTS.md`) y **`aurora-admin` versión 1** (ver punto 20; aún no probado en AWS).
 
 **Rediseño del 12-11-2026 (en producción):** landing compacta con el producto como protagonista y carrusel de funciones
 (`3000a41`); interior con el mismo tono, sin textos de informe (`f24c8f1`); Casos y Pacientes como lista a todo el ancho
@@ -117,11 +121,19 @@ desde 40.000.000 y se puede repetir sin efecto.
 18. **Marca:** antes de usar «Aurora Care» comercialmente, revisar en **INAPI** que no haya una marca igual en
     salud o software.
 
-### Venta a varias instituciones (decisión del 11-11-2026, aún no implementado)
+### Venta a varias instituciones (decisión del 11-11-2026; `aurora-admin` v1 hecho el 13-11-2026, sin probar en AWS)
 19. **Modelo elegido:** **una instancia por institución**, todo en **una cuenta de AWS del equipo** (cobran una
     mensualidad que incluye la infraestructura). Cada hospital: su EC2, base de datos, bucket, secretos y subdominio
     (`<hospital>.auroracare.cl`). Aislamiento total y **sin cambios al código**.
-20. **Herramienta a construir: `aurora-admin`** (menú en terminal; plantilla de CloudFormation + script en Python).
+20. **`aurora-admin` (versión 1, 13-11-2026):** `deploy/aurora-admin/` (plantilla `institucion.yaml`, script
+    `aurora_admin.py`, guía `README.md`). Ejecutable con menú para Windows, macOS y Linux en el release **aurora-admin**
+    (https://github.com/conEFE/Proyecto-Aurora/releases/tag/aurora-admin), recompilado por el workflow `aurora-admin`
+    al cambiar esa carpeta. Pide una **clave de operador** que define Felipe (en AWS solo queda su huella, en
+    `/aurora-admin/clave-operador`); por eso **un agente no puede ejecutarlo**: la prueba la hace Felipe (opción 1,
+    institución `prueba`; después opción 8 para darla de baja). Instala la última versión publicada (`sha-<commit>`)
+    y deja configuración y secretos en Parameter Store (`/aurora/<institución>/`). Validado con `cfn-lint`,
+    `validate-template` y pruebas sin AWS; **la creación real de una institución está pendiente**.
+    Plan original:
     Opciones: inscribir institución (≈ 15 min: servidor, IP, bucket, rol, secretos en Parameter Store, registro DNS,
     instalación, respaldo y primer administrador), listar con estado, versión y costo (etiquetas por institución),
     actualizar una o todas, respaldar o restaurar, pausar o reactivar, y dar de baja exportando los datos. Más
