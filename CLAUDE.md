@@ -4,8 +4,8 @@ Plataforma web de apoyo a la **detección temprana y priorización (triage)** de
 
 ## Estado actual (13-11-2026)
 - **`main` desplegado en AWS** (us-east-2, plan gratuito): https://demo.auroracare.cl (también https://13-184-207-158.sslip.io).
-  Sobre la 2.9.2: rediseño, Mi perfil, historia del paciente, Casos y Pacientes con página propia y una dirección por
-  pantalla (React Router). Sin número de versión todavía (propuesta: 2.10.0).
+  Versión **2.10.0** (13-11-2026): rediseño completo con una dirección por pantalla, Dashboard y PDF ampliados y
+  Administración con resumen y bitácora legible. Detalle en `docs/CHANGELOG_SPRINTS.md`.
 - Estado del despliegue, recursos, comandos de operación y **plan para continuar**: **`docs/ESTADO_AWS.md`**.
   Léelo antes de tocar la infraestructura.
 - Sprints S1–S7 cerrados. S8: modelo de IA integrado como prototipo (opción B: PC con GPU vía Tailscale); quedan

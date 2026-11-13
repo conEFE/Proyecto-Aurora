@@ -707,7 +707,29 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
-## Sin número de versión — Administración con resumen, filtros y bitácora legible
+## 2.10.0 — Rediseño completo, una dirección por pantalla, Dashboard y PDF ampliados y Administración
+
+Cerrada el 13-11-2026 y desplegada en https://demo.auroracare.cl (`18183f5`). Agrupa lo hecho desde la 2.9.2.
+**Sin migraciones** (la última sigue siendo la de la 2.6.0). Cambios de API, todos compatibles hacia atrás:
+`GET /auth/me` con fechas y `PUT /auth/me/email`; `GET /patients/{id}/timeline`; `GET /cases?code=`;
+`cases_per_week[].by_level` en `GET /dashboard`; `GET /admin/overview`, y varias acciones en `GET /admin/audit?action=`.
+`docker-compose.yml` pasa `AURORA_VERSION` al backend.
+
+**Tags de versión** (desde un PC; las sesiones en la nube no pueden subir tags). En GitHub solo están `v2.0.0` y
+`v2.1.0`. Primero los anteriores, juntos: con más de tres tags en un mismo push GitHub no lanza la publicación de
+imágenes, que para esas versiones no hace falta:
+
+```bash
+git fetch origin main && git tag v2.2.0 9e04d73 && git tag v2.3.0 9363bfc && git tag v2.4.0 bfa2ef8 && git tag v2.5.0 87b0a85 && git tag v2.5.1 64db341 && git tag v2.6.0 9175cfe && git tag v2.7.0 2f5bbdc && git tag v2.8.0 43e0d1c && git tag v2.9.0 3bdaeb9 && git tag v2.9.1 85318b7 && git tag v2.9.2 d986618 && git push origin v2.2.0 v2.3.0 v2.4.0 v2.5.0 v2.5.1 v2.6.0 v2.7.0 v2.8.0 v2.9.0 v2.9.1 v2.9.2
+```
+
+Después la 2.10.0 sola, que sí publica sus imágenes (`v2.10.0`):
+
+```bash
+git tag v2.10.0 $(git log origin/main --format=%h --grep='^2.10.0:' -1) && git push origin v2.10.0
+```
+
+### Administración con resumen, filtros y bitácora legible
 
 Sin migraciones. API nueva: `GET /admin/overview` (solo ADMIN). `GET /admin/audit?action=` acepta varias acciones
 separadas por comas. El backend recibe `AURORA_VERSION` desde docker compose para mostrar la versión instalada.
@@ -725,7 +747,7 @@ separadas por comas. El backend recibe `AURORA_VERSION` desde docker compose par
 - Pruebas: permisos, conteos de cuentas y seguridad, días sin movimiento, registros antiguos y filtro de varias
   acciones.
 
-## Sin número de versión — pantallas con el patrón de Casos, Dashboard y PDF ampliados
+### Pantallas con el patrón de Casos, Dashboard y PDF ampliados
 
 Sin migraciones. Un cambio en la API, compatible hacia atrás: `cases_per_week[].by_level` en `GET /dashboard`.
 
@@ -749,7 +771,7 @@ Sin migraciones. Un cambio en la API, compatible hacia atrás: `cases_per_week[]
   `StudyDescription` no cambia.
 - Pruebas: el desglose semanal por nivel suma lo mismo que el conteo por nivel.
 
-## Sin número de versión — direcciones (URL) por pantalla
+### Direcciones (URL) por pantalla
 
 - Rutas con React Router: `/`, `/ingresar`, `/inicio`, `/cola`, `/pacientes`, `/pacientes/<id>`, `/casos`,
   `/casos/nuevo`, `/casos/<código>`, `/dashboard`, `/parametros`, `/privacidad`, `/perfil`, `/administracion`.
@@ -759,7 +781,7 @@ Sin migraciones. Un cambio en la API, compatible hacia atrás: `cases_per_week[]
   inicio del rol. «Salir» vuelve a la landing.
 - API: `GET /cases?code=AUR-…` (filtro por código exacto) para abrir un caso por su código. Test nuevo.
 
-## Sin número de versión — rediseño desplegado el 12-11-2026 (`566d51c`)
+### Rediseño desplegado el 12-11-2026 (`566d51c`)
 
 - **Landing** compacta (`3000a41`): titular, una frase, la cola de triage en una ventana de navegador y un carrusel de
   funciones con avance automático (adaptado de «Feature List Showcase» de 21st.dev). Capturas en `src/assets/landing`.
@@ -770,7 +792,7 @@ Sin migraciones. Un cambio en la API, compatible hacia atrás: `cases_per_week[]
 - **Pacientes** (`566d51c`): tabla a todo el ancho y ficha propia (datos y casos a la izquierda; historia a la derecha).
 - Sin cambios de esquema ni de backend.
 
-## Sin número de versión — desplegado el 11-11-2026 (`9a3a942`), con el modelo real conectado
+### Desplegado el 11-11-2026 (`9a3a942`), con el modelo real conectado
 
 - **Textos de la IA alineados con el modelo** (CNN + YOLO): «Sospecha de malignidad» / «Baja probabilidad de
   malignidad» en vez de «Hallazgo» / «Sin hallazgos», «probabilidad de malignidad X %» en vez de «confianza», y en las

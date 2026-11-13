@@ -1,8 +1,8 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 13-11-2026. Desplegado: el último commit de `main` (imágenes `sha-<commit>`; ver `AURORA_VERSION` en el
-servidor), aún sin número de versión (propuesta: cerrarlo como **2.10.0**). **Modelo real conectado** (PC de Juan por
-Tailscale; si está apagado, IA simulada).
+Actualizado: 13-11-2026. Desplegada la **2.10.0** (imágenes `sha-18183f5…`, mismo código salvo el número de versión;
+ver `AURORA_VERSION` en el servidor). **Modelo real conectado** (PC de Juan por Tailscale; si está apagado, IA
+simulada).
 
 **13-11-2026 (desplegado `18183f5`, respaldo previo `backups/aurora-20261113T123005Z.sql.gz`; versión anterior
 `sha-49f1bd4…`):** Administración con resumen, filtros y bitácora legible (`GET /admin/overview`); Ingreso al estilo de la landing; Mi perfil, Parámetros, Privacidad y
@@ -27,7 +27,9 @@ Sin migraciones nuevas desde la 2.6.0. Lo que trajo cada versión está en `docs
 - **2.9.2:** informe de gestión con relato (resumen, hallazgos, gráficos, lectura por sección y recomendaciones).
 - **`702bf84`:** el `Dockerfile` del sitio compila el frontend sin emulación (`--platform=$BUILDPLATFORM`): con QEMU,
   `npm ci` para arm64 tardaba más de 40 minutos y la publicación quedaba colgada.
-- **`d082d4b` + `9a3a942` (sin número de versión aún):** textos de la IA alineados con el modelo (probabilidad de
+- **2.10.0:** rediseño completo con una dirección por pantalla, Dashboard con períodos y comparación, PDF con lámina de
+  imágenes y gráfico por nivel, y Administración con resumen, filtros y bitácora legible.
+- **`d082d4b` + `9a3a942` (dentro de la 2.10.0):** textos de la IA alineados con el modelo (probabilidad de
   malignidad de la CNN, confianza de detección de YOLO), **Mi perfil** e **historia del paciente**. Respaldo previo:
   `backups/aurora-20261111T193250Z.sql.gz`.
 
@@ -110,8 +112,9 @@ desde 40.000.000 y se puede repetir sin efecto.
 12. Borrar la rama `claude/bold-maxwell-13fkwp` en GitHub (su contenido ya está en `main`):
     `git push origin --delete claude/bold-maxwell-13fkwp`.
 13. Tags de versión desde un PC (desde las sesiones en la nube no se pueden subir tags):
-    `git tag v2.6.0 9175cfe && git tag v2.7.0 2f5bbdc && git tag v2.8.0 43e0d1c && git tag v2.9.0 3bdaeb9 && git tag v2.9.1 85318b7 && git tag v2.9.2 d986618 && git push origin v2.6.0 v2.7.0 v2.8.0 v2.9.0 v2.9.1 v2.9.2`. Las imágenes ya se publicaron
-    con `workflow_dispatch`.
+    en GitHub solo están `v2.0.0` y `v2.1.0`. Los comandos para crear el resto (2.2.0 a 2.10.0) están en
+    `docs/CHANGELOG_SPRINTS.md`, en la entrada de la 2.10.0. Subir un tag `vX.Y.Z` vuelve a publicar las imágenes con ese
+    nombre.
 14. Sacar del repositorio los pesos del modelo (≈63 MB) y llevarlos a un almacenamiento de artefactos.
 
 ### Dominio propio: `auroracare.cl` (listo; antes se pensó en `aurorahealth.cl`)
