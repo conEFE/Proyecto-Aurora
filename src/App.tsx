@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Header, { type Section } from './components/Header';
 import Home from './components/Home';
 import PatientsPanel from './components/PatientsPanel';
@@ -74,10 +74,24 @@ function CasesRoute({ me, creating = false }: { me: Me; creating?: boolean }) {
   const { ref } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const patient = (location.state as { patient?: Patient } | null)?.patient ?? null;
+  const statePatient = (location.state as { patient?: Patient } | null)?.patient ?? null;
+  // La paciente elegida también va en la dirección (?paciente=<id>), para no perderla al recargar
+  const [searchParams] = useSearchParams();
+  const paramId = creating ? Number(searchParams.get('paciente')) || null : null;
+  const [loaded, setLoaded] = useState<Patient | null | undefined>(undefined);
+  useEffect(() => {
+    if (!paramId || statePatient?.id === paramId) return;
+    let active = true;
+    apiClient.getPatient(paramId).then((r) => active && setLoaded(r.data ?? null));
+    return () => {
+      active = false;
+    };
+  }, [paramId, statePatient?.id]);
+  const patient = statePatient ?? loaded ?? null;
+  if (paramId && !statePatient && loaded === undefined) return <Loading label="Cargando paciente…" />;
   return (
     <CaseManagement
-      key={creating ? 'nuevo' : ref ?? 'lista'}
+      key={creating ? `nuevo-${patient?.id ?? ''}` : ref ?? 'lista'}
       me={me}
       caseRef={ref ?? null}
       creating={creating}
@@ -99,7 +113,38 @@ function PatientsRoute({ onOpenCase }: { onOpenCase: (caseId: number) => void })
       onOpenPatient={(pid) => navigate(`/pacientes/${pid}`)}
       onBack={() => navigate('/pacientes')}
       onOpenCase={onOpenCase}
-      onNewCase={(p) => navigate('/casos/nuevo', { state: { patient: p } })}
+      onNewCase={(p) => navigate(`/casos/nuevo?paciente=${p.id}`, { state: { patient: p } })}
+    />
+  );
+}
+
+function PrivacyRoute({ me }: { me: Me }) {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const patientId = id && /^\d+$/.test(id) ? Number(id) : null;
+  // Al volver, se recuperan la vista y los filtros con que se abrió la ficha
+  const back = (location.state as { back?: string } | null)?.back ?? '';
+  return (
+    <PrivacyPanel
+      me={me}
+      patientId={patientId}
+      onOpenPatient={(pid) => navigate(`/privacidad/pacientes/${pid}`, { state: { back: location.search } })}
+      onBack={() => navigate(`/privacidad${back}`)}
+    />
+  );
+}
+
+function AdminRoute({ me }: { me: Me }) {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const userId = id && /^\d+$/.test(id) ? Number(id) : null;
+  return (
+    <AdminPanel
+      meId={me.id}
+      userId={userId}
+      onOpenUser={(uid) => navigate(`/administracion/usuarios/${uid}`)}
+      onBack={() => navigate('/administracion')}
     />
   );
 }
@@ -195,9 +240,11 @@ function App() {
           <Route path="/casos/:ref" element={<Guard me={me} section="cases"><CasesRoute me={me} /></Guard>} />
           <Route path="/dashboard" element={<Guard me={me} section="dashboard"><Dashboard me={me} /></Guard>} />
           <Route path="/parametros" element={<Guard me={me} section="config"><TriageConfigPanel me={me} /></Guard>} />
-          <Route path="/privacidad" element={<Guard me={me} section="privacy"><PrivacyPanel me={me} /></Guard>} />
+          <Route path="/privacidad" element={<Guard me={me} section="privacy"><PrivacyRoute me={me} /></Guard>} />
+          <Route path="/privacidad/pacientes/:id" element={<Guard me={me} section="privacy"><PrivacyRoute me={me} /></Guard>} />
           <Route path="/perfil" element={<Guard me={me} section="profile"><Profile me={me} onUpdated={setMe} /></Guard>} />
-          <Route path="/administracion" element={<Guard me={me} section="panel"><AdminPanel /></Guard>} />
+          <Route path="/administracion" element={<Guard me={me} section="panel"><AdminRoute me={me} /></Guard>} />
+          <Route path="/administracion/usuarios/:id" element={<Guard me={me} section="panel"><AdminRoute me={me} /></Guard>} />
           <Route path="*" element={<Navigate to={homePath(me)} replace />} />
         </Routes>
       </main>

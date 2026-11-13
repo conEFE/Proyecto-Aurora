@@ -5,7 +5,8 @@ import { apiClient } from '../services/api';
 import type { Me, TriageConfig, TriageParams } from '../types';
 import { cn } from '../lib/cn';
 import { ErrorMessage, Loading } from './Feedback';
-import { cardClass, formatDateTime, inputClass, labelClass, pageClass, pageSubtitle, pageTitle, primaryButton, sectionTitle, textareaClass } from './ui';
+import { DetailHeader } from './PageHeader';
+import { cardClass, formatDateTime, inputClass, labelClass, pageClass, primaryButton, sectionTitle, textareaClass } from './ui';
 
 const WEIGHT_LABELS: Record<keyof TriageParams['weights'], string> = {
   ai: 'IA',
@@ -97,16 +98,20 @@ export default function TriageConfigPanel({ me }: { me: Me }) {
     } else setError(r.error || 'No se pudo guardar la configuración.');
   };
 
+  const activeSince = history.find((c) => c.is_active)?.created_at ?? active.created_at;
+
   return (
     <div className={pageClass}>
-      <h1 className={pageTitle}>Parámetros de triage</h1>
-      <p className={pageSubtitle}>
-        Versión activa v{active.version}{canEdit ? ' · cada cambio crea una versión nueva' : ' · solo lectura'}
-      </p>
+      <DetailHeader
+        title="Parámetros de triage"
+        status={<span className="text-sm font-semibold text-brand tabular-nums">Versión {active.version} activa</span>}
+        meta={<>Desde el {formatDateTime(activeSince)}{canEdit ? ' · cada cambio crea una versión nueva' : ' · solo lectura'}</>}
+      />
 
       <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
-      <div className="mt-6 grid xl:grid-cols-2 gap-6 items-start">
+      <div className="mt-6 grid xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-6 items-start">
+      <div className="space-y-6 min-w-0">
         <section aria-labelledby="weights-title" className={cn(cardClass, 'p-6 space-y-5')}>
           <div>
             <h2 id="weights-title" className={sectionTitle}>Pesos del puntaje</h2>
@@ -214,10 +219,9 @@ export default function TriageConfigPanel({ me }: { me: Me }) {
             </p>
           </div>
         </section>
-      </div>
 
       {canEdit && (
-        <section aria-labelledby="save-title" className={cn(cardClass, 'mt-6 p-6 space-y-3')}>
+        <section aria-labelledby="save-title" className={cn(cardClass, 'p-6 space-y-3')}>
           <h2 id="save-title" className="sr-only">Guardar cambios</h2>
           <label className={labelClass} htmlFor="cfg-reason">Motivo del cambio</label>
           <textarea id="cfg-reason" rows={2} className={textareaClass} value={reason} onChange={(e) => setReason(e.target.value)} />
@@ -233,21 +237,31 @@ export default function TriageConfigPanel({ me }: { me: Me }) {
         </section>
       )}
 
-      <section aria-labelledby="hist-title" className={cn(cardClass, 'mt-6 p-6')}>
-        <h2 id="hist-title" className={cn(sectionTitle, 'mb-2')}>Historial de versiones</h2>
-        <ul>
+      </div>
+
+      <section aria-labelledby="hist-title" className={cn(cardClass, 'p-6')}>
+        <h2 id="hist-title" className={sectionTitle}>Versiones</h2>
+        <ol className="mt-4 relative border-l border-border ml-3">
           {history.map((c) => (
-            <li key={c.id} className="grid grid-cols-[5rem_1fr_auto] gap-4 py-2.5 border-b border-border last:border-0 text-sm">
-              <span className="font-bold">
-                v{c.version}
-                {c.is_active && <span className="block text-xs font-bold text-brand">activa</span>}
-              </span>
-              <span className="text-muted-foreground">{c.change_reason}</span>
-              <span className="text-muted-foreground tabular-nums">{formatDateTime(c.created_at)}</span>
+            <li key={c.id} className="relative pl-6 pb-5 last:pb-0">
+              <span
+                aria-hidden
+                className={cn(
+                  'absolute -left-[5px] top-2 w-2.5 h-2.5 rounded-full ring-2 ring-card',
+                  c.is_active ? 'bg-brand' : 'bg-border',
+                )}
+              />
+              <p className="text-sm font-bold leading-6 tabular-nums">
+                Versión {c.version}
+                {c.is_active && <span className="ml-2 text-xs font-bold text-brand">activa</span>}
+              </p>
+              <p className="text-sm text-foreground/90">{c.change_reason}</p>
+              <p className="text-xs text-muted-foreground tabular-nums">{formatDateTime(c.created_at)}</p>
             </li>
           ))}
-        </ul>
+        </ol>
       </section>
+      </div>
     </div>
   );
 }

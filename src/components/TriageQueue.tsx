@@ -4,7 +4,7 @@ import { apiClient } from '../services/api';
 import type { Me, QueueItem, TriageLevel } from '../types';
 import { usePolling } from '../lib/usePolling';
 import { cn } from '../lib/cn';
-import { LEVEL_RING, LEVEL_TEXT, RULE_LABELS } from '../constants';
+import { RULE_LABELS } from '../constants';
 import { LevelBadge, ScoreBar, StatusBadge } from './Badges';
 import { EmptyState, ErrorMessage, Loading } from './Feedback';
 import { cardClass, pageClass, pageSubtitle, pageTitle, secondaryButton, tdClass, thClass } from './ui';
@@ -71,21 +71,18 @@ export default function TriageQueue({ me, onOpenCase }: TriageQueueProps) {
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div role="group" aria-label="Filtrar por nivel" className="inline-flex p-1 rounded-lg bg-muted">
+        <div role="group" aria-label="Filtrar por nivel" className="inline-flex max-w-full overflow-x-auto p-1 rounded-lg bg-muted">
           {filters.map((f) => (
             <button
               key={f.id}
               onClick={() => setFilter(f.id)}
               aria-pressed={filter === f.id}
               className={cn(
-                'inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm transition-colors',
+                'inline-flex shrink-0 items-center gap-2 h-8 px-3 rounded-md text-sm transition-colors whitespace-nowrap',
                 filter === f.id ? 'bg-card text-foreground font-bold ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              {f.id !== 'TODOS' && (
-                <span aria-hidden className={cn('w-3 h-3 rounded-full border-current', LEVEL_TEXT[f.id], LEVEL_RING[f.id])} />
-              )}
-              {f.label}
+              {f.id === 'TODOS' ? f.label : <LevelBadge level={f.id} />}
               <span className="tabular-nums text-muted-foreground">{items ? f.n : ''}</span>
             </button>
           ))}
@@ -106,7 +103,7 @@ export default function TriageQueue({ me, onOpenCase }: TriageQueueProps) {
             {items.length === 0 ? 'Los casos nuevos aparecen aquí apenas se calcula su triage.' : 'Pruebe con otro filtro.'}
           </EmptyState>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full">
               <caption className="sr-only">Casos pendientes ordenados por prioridad</caption>
               <thead className="bg-muted/60">

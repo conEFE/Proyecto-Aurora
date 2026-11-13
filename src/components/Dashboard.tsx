@@ -177,7 +177,7 @@ function ModelPerformanceTable({ report }: { report: ModelPerformanceReport }) {
       {report.versions.length === 0 ? (
         <p className="px-6 pb-6 text-sm text-muted-foreground">Aún no hay validaciones médicas de resultados de IA.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted/60">
               <tr>

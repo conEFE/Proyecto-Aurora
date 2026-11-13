@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { ArrowLeft, Loader2, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Moon, Sun } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useTheme } from '../lib/theme';
+import { cn } from '../lib/cn';
+import colaImg from '../assets/landing/cola.webp';
 import BrandMark from './BrandMark';
 import { ErrorMessage } from './Feedback';
 import { ghostButton, iconButton, inputClass, labelClass, primaryButton } from './ui';
@@ -11,6 +13,8 @@ interface LoginProps {
   /** Vuelve a la página de presentación */
   onBack?: () => void;
 }
+
+const container = 'mx-auto max-w-6xl px-4 sm:px-6';
 
 export default function Login({ onLogin, onBack }: LoginProps) {
   const [rut, setRut] = useState('');
@@ -35,34 +39,36 @@ export default function Login({ onLogin, onBack }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-      <div className="flex flex-col px-6 sm:px-12 py-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <BrandMark />
-            <span className="text-base font-extrabold">Aurora Care</span>
-          </div>
-          <div className="flex items-center gap-1">
-          {onBack && (
-            <button onClick={onBack} className={ghostButton}>
-              <ArrowLeft aria-hidden className="w-4 h-4" /> Volver al inicio
-            </button>
-          )}
-          <button
-            onClick={toggleTheme}
-            className={iconButton}
-            aria-label={theme === 'dark' ? 'Usar tema claro' : 'Usar tema oscuro'}
-          >
-            {theme === 'dark' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <header className="border-b border-border/70">
+        <div className={cn(container, 'h-16 flex items-center justify-between gap-4')}>
+          <button onClick={onBack} className="flex items-center gap-2.5 rounded-md" aria-label="Aurora Care, volver al inicio">
+            <BrandMark alt="" />
+            <span className="text-lg font-extrabold">Aurora Care</span>
           </button>
+          <div className="flex items-center gap-1">
+            {onBack && (
+              <button onClick={onBack} className={cn(ghostButton, 'hidden sm:inline-flex')}>
+                <ArrowLeft aria-hidden className="w-4 h-4" /> Volver al inicio
+              </button>
+            )}
+            <button
+              onClick={toggleTheme}
+              className={iconButton}
+              aria-label={theme === 'dark' ? 'Usar tema claro' : 'Usar tema oscuro'}
+            >
+              {theme === 'dark' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
+            </button>
           </div>
         </div>
+      </header>
 
-        <div className="flex-1 flex items-center">
-          <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto lg:mx-0 lg:ml-[12%] space-y-5" noValidate>
+      <main className="flex-1">
+        <div className={cn(container, 'py-12 sm:py-20 grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-12 lg:gap-16 items-center')}>
+          <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto lg:mx-0 space-y-5" noValidate>
             <div>
-              <h1 className="text-3xl font-extrabold">Iniciar sesión</h1>
-              <p className="mt-2 text-sm text-muted-foreground">Ingrese con el RUT y la contraseña que le entregó el administrador.</p>
+              <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.05]">Ingresar</h1>
+              <p className="mt-3 text-muted-foreground">Con el RUT y la contraseña que le entregó el administrador.</p>
             </div>
 
             <ErrorMessage>{error}</ErrorMessage>
@@ -76,7 +82,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 autoComplete="username"
                 value={rut}
                 onChange={(e) => setRut(e.target.value)}
-                className={inputClass}
+                className={cn(inputClass, 'h-11')}
                 placeholder="12.345.678-9"
                 aria-invalid={error ? true : undefined}
                 required
@@ -91,34 +97,48 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
+                className={cn(inputClass, 'h-11')}
                 aria-invalid={error ? true : undefined}
                 required
               />
             </div>
 
-            <button type="submit" className={`${primaryButton} w-full h-11`} disabled={submitting || !rut || !password}>
-              {submitting && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
-              {submitting ? 'Ingresando…' : 'Ingresar'}
+            <button type="submit" className={cn(primaryButton, 'w-full h-12 text-base')} disabled={submitting || !rut || !password}>
+              {submitting ? <Loader2 aria-hidden className="w-4 h-4 animate-spin" /> : null}
+              {submitting ? 'Ingresando…' : <>Ingresar <ArrowRight aria-hidden className="w-4 h-4" /></>}
             </button>
 
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               ¿Sin cuenta o la olvidó? Pídasela al administrador de su centro.
             </p>
           </form>
-        </div>
 
-      </div>
-
-      <div className="hidden lg:flex items-center justify-center bg-sidebar border-l border-border px-14 py-12">
-        <div className="max-w-sm text-center">
-          <BrandMark alt="Aurora Care" size="lg" className="w-72 h-48 mx-auto" />
-          <p className="mt-6 text-3xl font-extrabold tracking-tight">Aurora Care</p>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Los casos urgentes, primero.
-          </p>
+          <div aria-hidden className="hidden lg:block relative">
+            <div className="absolute -inset-x-6 top-10 -bottom-6 rounded-3xl bg-muted border border-border" />
+            <div className="relative rounded-2xl border border-border bg-card overflow-hidden shadow-[0_30px_60px_-30px_hsl(var(--shadow)/0.35)]">
+              <div className="h-9 flex items-center gap-2 px-4 border-b border-border">
+                <span className="w-2.5 h-2.5 rounded-full bg-border" />
+                <span className="w-2.5 h-2.5 rounded-full bg-border" />
+                <span className="w-2.5 h-2.5 rounded-full bg-border" />
+                <span className="ml-3 text-xs text-muted-foreground">Cola de triage</span>
+              </div>
+              <img src={colaImg} alt="" className="block w-full h-auto" />
+            </div>
+            <p className="relative mt-10 px-2 text-2xl font-extrabold tracking-tight">Los casos urgentes, primero.</p>
+          </div>
         </div>
-      </div>
+      </main>
+
+      <footer className="border-t border-border">
+        <div className={cn(container, 'py-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-muted-foreground')}>
+          <div className="flex items-center gap-2">
+            <BrandMark alt="" />
+            <span className="font-bold text-foreground">Aurora Care</span>
+            <span>© 2026</span>
+          </div>
+          <p>Apoya, no reemplaza, el criterio médico.</p>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -288,7 +288,7 @@ export default function CaseManagement({
       <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="Filtrar por nivel de triage" className="inline-flex p-1 rounded-lg bg-muted">
+        <div role="tablist" aria-label="Filtrar por nivel de triage" className="inline-flex max-w-full overflow-x-auto p-1 rounded-lg bg-muted">
           {LEVEL_TABS.map((l) => {
             const on = level === l;
             return (
@@ -298,7 +298,7 @@ export default function CaseManagement({
                 aria-selected={on}
                 onClick={() => setLevel(l)}
                 className={cn(
-                  'inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm transition-colors',
+                  'inline-flex shrink-0 items-center gap-2 h-8 px-3 rounded-md text-sm transition-colors whitespace-nowrap',
                   on ? 'bg-card text-foreground font-bold ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
@@ -331,7 +331,7 @@ export default function CaseManagement({
             {level !== 'TODOS' || statusFilter ? 'No hay casos con estos filtros.' : 'Cree el primero con «Nuevo caso».'}
           </EmptyState>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full">
               <caption className="sr-only">Lista de casos</caption>
               <thead className="bg-muted/60">

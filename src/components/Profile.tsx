@@ -7,18 +7,8 @@ import { ROLE_LABELS } from '../types';
 import { cn } from '../lib/cn';
 import ChangePassword from './ChangePassword';
 import { ErrorMessage } from './Feedback';
-import {
-  cardClass,
-  formatDateTime,
-  hintClass,
-  inputClass,
-  labelClass,
-  pageClass,
-  pageSubtitle,
-  pageTitle,
-  primaryButton,
-  sectionTitle,
-} from './ui';
+import { DetailHeader } from './PageHeader';
+import { cardClass, formatDateTime, inputClass, labelClass, pageClass, primaryButton, sectionTitle } from './ui';
 
 interface ProfileProps {
   me: Me;
@@ -49,37 +39,21 @@ export default function Profile({ me, onUpdated }: ProfileProps) {
   };
 
   const rows: [string, string][] = [
-    ['Nombre', me.full_name],
-    ['RUT', me.rut],
-    ['Rol', ROLE_LABELS[me.role]],
-    ['Email', me.email],
     ['Cuenta creada', formatDateTime(me.created_at)],
-    ['Último inicio de sesión', formatDateTime(me.last_login_at)],
-    ['Último cambio de contraseña', formatDateTime(me.password_changed_at)],
+    ['Último ingreso', formatDateTime(me.last_login_at)],
+    ['Contraseña cambiada', formatDateTime(me.password_changed_at)],
   ];
 
   return (
     <div className={pageClass}>
-      <h1 className={pageTitle}>Mi perfil</h1>
-      <p className={pageSubtitle}>El nombre, el RUT y el rol los cambia un administrador.</p>
+      <DetailHeader
+        title={me.full_name}
+        status={<span className="text-sm font-semibold text-brand">{ROLE_LABELS[me.role]}</span>}
+        meta={<>RUT {me.rut} · {me.email}</>}
+      />
 
-      <div className="mt-6 grid xl:grid-cols-2 gap-6 items-start">
-        <div className="space-y-6">
-          <section className={cn(cardClass, 'p-6')} aria-labelledby="pf-account">
-            <h2 id="pf-account" className={sectionTitle}>Cuenta</h2>
-            <dl className="mt-4 grid sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
-              {rows.map(([label, value]) => (
-                <div key={label} className="contents">
-                  <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="font-medium tabular-nums break-words">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-
-        </div>
-
-        <div className="space-y-6">
+      <div className="mt-6 grid xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-6 items-start">
+        <div className="space-y-6 min-w-0">
           <section className={cn(cardClass, 'p-6')} aria-labelledby="pf-email">
             <h2 id="pf-email" className={sectionTitle}>Email</h2>
             <form onSubmit={saveEmail} className="mt-4 space-y-4" noValidate>
@@ -88,7 +62,6 @@ export default function Profile({ me, onUpdated }: ProfileProps) {
                 <label className={labelClass} htmlFor="pf-email-input">Email</label>
                 <input id="pf-email-input" type="email" className={inputClass} value={email} autoComplete="email"
                   onChange={(e) => setEmail(e.target.value)} />
-                <p className={hintClass}>Se usa para identificarle en la plataforma. No se publica.</p>
               </div>
               {changed && (
                 <div>
@@ -97,12 +70,10 @@ export default function Profile({ me, onUpdated }: ProfileProps) {
                     autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} />
                 </div>
               )}
-              <div className="flex justify-end">
-                <button type="submit" disabled={!canSave} className={primaryButton}>
-                  {saving ? <Loader2 aria-hidden className="w-4 h-4 animate-spin" /> : <Mail aria-hidden className="w-4 h-4" />}
-                  Guardar email
-                </button>
-              </div>
+              <button type="submit" disabled={!canSave} className={primaryButton}>
+                {saving ? <Loader2 aria-hidden className="w-4 h-4 animate-spin" /> : <Mail aria-hidden className="w-4 h-4" />}
+                Guardar email
+              </button>
             </form>
           </section>
 
@@ -112,6 +83,21 @@ export default function Profile({ me, onUpdated }: ProfileProps) {
             <ChangePassword embedded />
           </section>
         </div>
+
+        <section className={cn(cardClass, 'p-6')} aria-labelledby="pf-account">
+          <h2 id="pf-account" className={sectionTitle}>Cuenta</h2>
+          <dl className="mt-4 divide-y divide-border text-sm">
+            {rows.map(([label, value]) => (
+              <div key={label} className="flex items-baseline justify-between gap-4 py-2.5 first:pt-0">
+                <dt className="text-muted-foreground">{label}</dt>
+                <dd className="font-medium tabular-nums text-right">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-4 pt-4 border-t border-border text-sm text-muted-foreground">
+            El nombre, el RUT y el rol los cambia un administrador.
+          </p>
+        </section>
       </div>
     </div>
   );

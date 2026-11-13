@@ -1,5 +1,6 @@
-import { Fragment, useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, KeyRound, Loader2, ScrollText, ServerCrash, Unlock, UserPlus, Users } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Loader2, ScrollText, ServerCrash, Unlock, UserCheck, UserPlus, Users, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type {
@@ -18,7 +19,8 @@ import { isValidRut, normalizeRut } from '../utils/rut';
 import { PASSWORD_MIN_LENGTH, passwordHints } from '../utils/password';
 import { cn } from '../lib/cn';
 import Dialog from './Dialog';
-import { ErrorMessage, Loading } from './Feedback';
+import { EmptyState, ErrorMessage, Loading } from './Feedback';
+import { DetailHeader, ListHeader, Segmented } from './PageHeader';
 import {
   cardClass,
   dangerButton,
@@ -27,8 +29,6 @@ import {
   inputClass,
   labelClass,
   pageClass,
-  pageSubtitle,
-  pageTitle,
   primaryButton,
   secondaryButton,
   sectionTitle,
@@ -202,7 +202,7 @@ function AuditViewer({ users }: { users: UserAccount[] }) {
       {data === null ? (
         <Loading label="Cargando auditoría…" />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full">
             <caption className="sr-only">Registros de auditoría</caption>
             <thead className="bg-muted/60">
@@ -262,7 +262,10 @@ function ResetPasswordForm({ user, onDone }: { user: UserAccount; onDone: (error
     setSaving(true);
     const r = await apiClient.updateUser(user.id, { password });
     setSaving(false);
-    if (!r.error) toast.success(`Contraseña temporal asignada a ${user.full_name}`);
+    if (!r.error) {
+      toast.success(`Contraseña temporal asignada a ${user.full_name}`);
+      setPassword('');
+    }
     onDone(r.error);
   };
 
@@ -270,7 +273,7 @@ function ResetPasswordForm({ user, onDone }: { user: UserAccount; onDone: (error
   return (
     <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
       <div>
-        <label htmlFor={inputId} className={labelClass}>Contraseña temporal para {user.full_name}</label>
+        <label htmlFor={inputId} className={labelClass}>Contraseña temporal</label>
         <input
           id={inputId}
           type="password"
@@ -286,7 +289,6 @@ function ResetPasswordForm({ user, onDone }: { user: UserAccount; onDone: (error
         {saving && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
         Restablecer
       </button>
-      <button type="button" className={secondaryButton} onClick={() => onDone()}>Cancelar</button>
       <p className="w-full text-xs text-muted-foreground">Cierra sus sesiones y le exige cambiarla al ingresar.</p>
     </form>
   );
@@ -363,7 +365,7 @@ function ErrorViewer({ users }: { users: UserAccount[] }) {
       ) : data.items.length === 0 ? (
         <p className="px-6 pb-8 text-sm text-muted-foreground">No hay errores registrados con estos filtros.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full">
             <caption className="sr-only">Errores del servidor</caption>
             <thead className="bg-muted/60">
@@ -408,16 +410,262 @@ function ErrorViewer({ users }: { users: UserAccount[] }) {
   );
 }
 
-export default function AdminPanel() {
+function UserState({ u }: { u: UserAccount }) {
+  if (!u.is_active) return <span className="text-sm font-semibold text-muted-foreground">Inactivo</span>;
+  if (isLocked(u)) return <span className="text-sm font-semibold text-media">Bloqueado</span>;
+  return <span className="text-sm text-baja">Activo</span>;
+}
+
+const ENTITY_LABELS: Record<string, string> = {
+  case: 'caso',
+  patient: 'paciente',
+  user: 'usuario',
+  image: 'imagen',
+  triage: 'triage',
+  triage_config: 'parámetros',
+  data_subject_request: 'solicitud de titular',
+  report: 'reporte',
+  review: 'revisión',
+  inference: 'resultado de IA',
+  ai_validation: 'validación de IA',
+  consent: 'consentimiento',
+};
+
+/** Acción legible para la actividad reciente; el inicio de sesión no necesita la entidad. */
+function describeAudit(e: AuditEntry): string {
+  const label = ACTION_LABELS[e.action] ?? e.action;
+  if (e.action.startsWith('LOGIN') || e.action.startsWith('PASSWORD')) return label;
+  return `${label} de ${ENTITY_LABELS[e.entity] ?? e.entity}`;
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  LOGIN_OK: 'Inicio de sesión',
+  LOGIN_FAIL: 'Inicio de sesión fallido',
+  VIEW: 'Consulta',
+  CREATE: 'Creación',
+  UPDATE: 'Modificación',
+  DELETE: 'Eliminación',
+  DOWNLOAD: 'Descarga',
+  OVERRIDE: 'Ajuste de nivel',
+  CONFIG_CHANGE: 'Cambio de parámetros',
+  SIGN: 'Firma',
+  SIGN_FAIL: 'Firma fallida',
+  EXPORT: 'Exportación',
+  PASSWORD_CHANGE: 'Cambio de contraseña',
+  PASSWORD_CHANGE_FAIL: 'Cambio de contraseña fallido',
+  CONSENT_GRANT: 'Consentimiento otorgado',
+  CONSENT_WITHDRAW: 'Consentimiento retirado',
+  BLOCK: 'Bloqueo de datos',
+  UNBLOCK: 'Desbloqueo de datos',
+};
+
+/** Página propia de un usuario: rol, estado, contraseña temporal y actividad reciente. */
+function UserPage({ userId, meId, onBack }: { userId: number; meId: number; onBack: () => void }) {
+  const [user, setUser] = useState<UserAccount | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [activity, setActivity] = useState<AuditEntry[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [role, setRole] = useState<Role>('MEDICO');
+  const [confirmOff, setConfirmOff] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const self = userId === meId;
+
+  const load = useCallback(async () => {
+    const [u, a] = await Promise.all([apiClient.listUsers(), apiClient.listAudit({ user_id: userId, page: 1, size: 10 })]);
+    if (u.data) {
+      const found = u.data.find((x) => x.id === userId) ?? null;
+      setUser(found);
+      setNotFound(!found);
+      if (found) setRole(found.role);
+    }
+    if (a.data) setActivity(a.data.items);
+    setError(u.error || a.error || null);
+  }, [userId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const update = async (change: { role?: Role; is_active?: boolean }, ok: string) => {
+    setBusy(true);
+    const r = await apiClient.updateUser(userId, change);
+    setBusy(false);
+    if (r.error) setError(r.error);
+    else toast.success(ok);
+    load();
+  };
+
+  const unlock = async () => {
+    const r = await apiClient.unlockUser(userId);
+    if (r.error) setError(r.error);
+    else toast.success('Usuario desbloqueado');
+    load();
+  };
+
+  if (notFound) {
+    return (
+      <>
+        <button className={cn(ghostButton, '-ml-3 mb-4')} onClick={onBack}>
+          <ChevronLeft aria-hidden className="w-4 h-4" /> Administración
+        </button>
+        <EmptyState title="No existe el usuario" icon={<Users aria-hidden className="w-8 h-8" />}>
+          No hay un usuario con ese número.
+        </EmptyState>
+      </>
+    );
+  }
+  if (!user) return error ? <ErrorMessage>{error}</ErrorMessage> : <Loading label="Cargando usuario…" />;
+
+  const rows: [string, string][] = [
+    ['Cuenta creada', formatDateTime(user.created_at)],
+    ['Último ingreso', formatDateTime(user.last_login_at)],
+    ['Contraseña', user.must_change_password ? 'Cambio pendiente' : 'Definida por la persona'],
+  ];
+  if (isLocked(user)) rows.push(['Bloqueada hasta', formatDateTime(user.locked_until)]);
+
+  return (
+    <div className="space-y-6">
+      <DetailHeader
+        backLabel="Administración"
+        onBack={onBack}
+        title={user.full_name}
+        status={<UserState u={user} />}
+        meta={<>RUT {user.rut} · {ROLE_LABELS[user.role]} · {user.email}</>}
+        actions={
+          <>
+            {isLocked(user) && (
+              <button className={secondaryButton} onClick={unlock}>
+                <Unlock aria-hidden className="w-4 h-4" /> Desbloquear
+              </button>
+            )}
+            {!self &&
+              (user.is_active ? (
+                <button className={secondaryButton} disabled={busy} onClick={() => setConfirmOff(true)}>
+                  <UserX aria-hidden className="w-4 h-4" /> Desactivar
+                </button>
+              ) : (
+                <button className={primaryButton} disabled={busy}
+                  onClick={() => update({ is_active: true }, `${user.full_name} activado`)}>
+                  <UserCheck aria-hidden className="w-4 h-4" /> Activar
+                </button>
+              ))}
+          </>
+        }
+      />
+
+      <ErrorMessage>{error}</ErrorMessage>
+
+      <div className="grid xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-6 items-start">
+        <div className="space-y-6 min-w-0">
+          <section className={cn(cardClass, 'p-6 space-y-4')} aria-labelledby="up-role">
+            <h2 id="up-role" className={sectionTitle}>Rol</h2>
+            {self ? (
+              <p className="text-sm text-muted-foreground">No puede cambiar su propio rol.</p>
+            ) : (
+              <div className="flex flex-wrap items-end gap-3">
+                <div>
+                  <label htmlFor="up-role-select" className={labelClass}>Rol en la plataforma</label>
+                  <select id="up-role-select" className={cn(inputClass, 'w-56')} value={role}
+                    onChange={(e) => setRole(e.target.value as Role)}>
+                    {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                  </select>
+                </div>
+                <button className={primaryButton} disabled={busy || role === user.role}
+                  onClick={() => update({ role }, `Rol de ${user.full_name}: ${ROLE_LABELS[role]}`)}>
+                  Guardar rol
+                </button>
+              </div>
+            )}
+          </section>
+
+          <section className={cn(cardClass, 'p-6 space-y-4')} aria-labelledby="up-password">
+            <h2 id="up-password" className={sectionTitle}>Restablecer contraseña</h2>
+            <ResetPasswordForm
+              user={user}
+              onDone={(err) => {
+                if (err) setError(err);
+                load();
+              }}
+            />
+          </section>
+
+          <section className={cn(cardClass, 'overflow-hidden')} aria-labelledby="up-activity">
+            <h2 id="up-activity" className={cn(sectionTitle, 'px-6 pt-5 pb-3')}>Actividad reciente</h2>
+            {activity === null ? (
+              <Loading label="Cargando actividad…" />
+            ) : activity.length === 0 ? (
+              <p className="px-6 pb-5 text-sm text-muted-foreground">Sin registros.</p>
+            ) : (
+              <ul>
+                {activity.map((e) => (
+                  <li key={e.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 px-6 py-2.5 border-t border-border text-sm">
+                    <span>{describeAudit(e)}</span>
+                    <span className="text-muted-foreground tabular-nums">{formatDateTime(e.created_at)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        <section className={cn(cardClass, 'p-6')} aria-labelledby="up-account">
+          <h2 id="up-account" className={sectionTitle}>Cuenta</h2>
+          <dl className="mt-4 divide-y divide-border text-sm">
+            {rows.map(([label, value]) => (
+              <div key={label} className="flex items-baseline justify-between gap-4 py-2.5 first:pt-0">
+                <dt className="text-muted-foreground">{label}</dt>
+                <dd className="font-medium tabular-nums text-right">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      </div>
+
+      <Dialog
+        open={confirmOff}
+        onOpenChange={setConfirmOff}
+        title={`¿Desactivar a ${user.full_name}?`}
+        description="No podrá iniciar sesión hasta que se vuelva a activar. Sus registros se conservan."
+        footer={
+          <>
+            <button className={secondaryButton} onClick={() => setConfirmOff(false)}>Cancelar</button>
+            <button
+              className={dangerButton}
+              onClick={() => {
+                setConfirmOff(false);
+                update({ is_active: false }, `${user.full_name} desactivado`);
+              }}
+            >
+              Desactivar
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted-foreground">Esta acción queda registrada en la bitácora de auditoría.</p>
+      </Dialog>
+    </div>
+  );
+}
+
+type AdminView = 'usuarios' | 'auditoria' | 'errores';
+
+interface AdminPanelProps {
+  meId: number;
+  /** Usuario abierto, tomado de la dirección /administracion/usuarios/:id */
+  userId?: number | null;
+  onOpenUser: (userId: number) => void;
+  onBack: () => void;
+}
+
+export default function AdminPanel({ meId, userId = null, onOpenUser, onBack }: AdminPanelProps) {
+  const [params, setParams] = useSearchParams();
+  const raw = params.get('vista');
+  const view: AdminView = raw === 'auditoria' || raw === 'errores' ? raw : 'usuarios';
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [privacy, setPrivacy] = useState<DataRequestSummary | null>(null);
-  const [users, setUsers] = useState<UserAccount[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<UserAccount[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [tab, setTab] = useState<'users' | 'audit' | 'errors'>('users');
-  const [resetFor, setResetFor] = useState<number | null>(null);
-  const [confirmUser, setConfirmUser] = useState<UserAccount | null>(null);
 
   const loadData = useCallback(async () => {
     const [s, u, pr] = await Promise.all([apiClient.getAdminStats(), apiClient.listUsers(), apiClient.dataRequestsSummary()]);
@@ -425,189 +673,123 @@ export default function AdminPanel() {
     if (pr.data) setPrivacy(pr.data);
     if (u.data) setUsers(u.data);
     setError(s.error || u.error || null);
-    setLoading(false);
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (userId === null) loadData();
+  }, [loadData, userId]);
 
-  const updateUser = async (user: UserAccount, change: { role?: Role; is_active?: boolean }) => {
-    const r = await apiClient.updateUser(user.id, change);
-    if (r.error) setError(r.error);
-    else if (change.is_active !== undefined) toast.success(`${user.full_name} ${change.is_active ? 'activado' : 'desactivado'}`);
-    else if (change.role) toast.success(`Rol de ${user.full_name}: ${ROLE_LABELS[change.role]}`);
-    loadData();
-  };
-
-  const unlockUser = async (user: UserAccount) => {
-    const r = await apiClient.unlockUser(user.id);
-    if (r.error) setError(r.error);
-    else toast.success(`${user.full_name} desbloqueado`);
-    loadData();
-  };
-
-  if (loading) return <Loading label="Cargando administración…" className="h-64" />;
+  if (userId !== null) {
+    return (
+      <div className={pageClass}>
+        <UserPage key={userId} userId={userId} meId={meId} onBack={onBack} />
+      </div>
+    );
+  }
 
   const statItems = [
-    { label: 'Usuarios', value: stats?.total_users ?? 0 },
-    { label: 'Usuarios activos', value: stats?.active_users ?? 0 },
-    { label: 'Casos', value: stats?.total_cases ?? 0 },
-    { label: 'Pacientes', value: stats?.total_patients ?? 0 },
+    { label: 'Usuarios activos', value: stats ? `${stats.active_users} de ${stats.total_users}` : '—' },
+    { label: 'Pacientes', value: stats ? stats.total_patients.toLocaleString('es-CL') : '—' },
+    { label: 'Casos', value: stats ? stats.total_cases.toLocaleString('es-CL') : '—' },
+    {
+      label: 'Solicitudes abiertas',
+      value: privacy ? String(privacy.open_total) : '—',
+      alert: privacy && privacy.overdue > 0 ? `${privacy.overdue} vencidas` : null,
+    },
   ];
-
-  const tabClass = (active: boolean) =>
-    cn(
-      'inline-flex items-center gap-2 h-9 px-3 rounded-md text-sm transition-colors',
-      active ? 'bg-card text-foreground font-bold ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
-    );
 
   return (
     <div className={pageClass}>
-      <h1 className={pageTitle}>Administración</h1>
-      <p className={pageSubtitle}>Usuarios, auditoría y errores del servidor.</p>
+      <ListHeader
+        title="Administración"
+        actions={
+          view === 'usuarios' && (
+            <button className={primaryButton} onClick={() => setShowForm(true)}>
+              <UserPlus aria-hidden className="w-4 h-4" /> Nuevo usuario
+            </button>
+          )
+        }
+      />
 
       <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
       <dl className={cn(cardClass, 'mt-6 grid grid-cols-2 lg:grid-cols-4 divide-x divide-border')}>
-        {statItems.map(({ label, value }) => (
+        {statItems.map(({ label, value, alert }) => (
           <div key={label} className="px-6 py-4">
-            <dd className="text-2xl font-extrabold tabular-nums">{value.toLocaleString('es-CL')}</dd>
+            <dd className="text-2xl font-extrabold tabular-nums">
+              {value}
+              {alert && <span className="ml-2 text-sm font-bold text-alta">{alert}</span>}
+            </dd>
             <dt className="text-sm text-muted-foreground">{label}</dt>
           </div>
         ))}
       </dl>
 
-      {privacy && (
-        <div className={cn(cardClass, 'mt-4 px-6 py-4 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm')}>
-          <span className="font-bold">Solicitudes de titulares</span>
-          <span><strong className="tabular-nums">{privacy.open_total}</strong> <span className="text-muted-foreground">abiertas</span></span>
-          <span className={privacy.overdue > 0 ? 'font-bold text-alta' : 'text-muted-foreground'}>
-            <span className="tabular-nums">{privacy.overdue}</span> con el plazo de 30 días vencido
-          </span>
-          <span className="text-muted-foreground">
-            <span className="tabular-nums">{privacy.by_status.RESUELTA}</span> resueltas, <span className="tabular-nums">{privacy.by_status.RECHAZADA}</span> rechazadas
-          </span>
-        </div>
-      )}
-
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label="Sección" className="inline-flex p-1 rounded-lg bg-muted">
-          <button className={tabClass(tab === 'users')} aria-pressed={tab === 'users'} onClick={() => setTab('users')}>
-            <Users aria-hidden className="w-4 h-4" /> Usuarios
-          </button>
-          <button className={tabClass(tab === 'audit')} aria-pressed={tab === 'audit'} onClick={() => setTab('audit')}>
-            <ScrollText aria-hidden className="w-4 h-4" /> Auditoría
-          </button>
-          <button className={tabClass(tab === 'errors')} aria-pressed={tab === 'errors'} onClick={() => setTab('errors')}>
-            <ServerCrash aria-hidden className="w-4 h-4" /> Errores
-          </button>
-        </div>
-        {tab === 'users' && (
-          <button className={primaryButton} onClick={() => setShowForm(true)}>
-            <UserPlus aria-hidden className="w-4 h-4" /> Nuevo usuario
-          </button>
-        )}
-      </div>
+      <Segmented
+        className="mt-6"
+        label="Sección"
+        value={view}
+        onChange={(v) => setParams(v === 'usuarios' ? {} : { vista: v }, { replace: true })}
+        options={[
+          { value: 'usuarios', label: <><Users aria-hidden className="w-4 h-4" /> Usuarios</>, count: users ? users.length : null },
+          { value: 'auditoria', label: <><ScrollText aria-hidden className="w-4 h-4" /> Auditoría</> },
+          { value: 'errores', label: <><ServerCrash aria-hidden className="w-4 h-4" /> Errores</> },
+        ]}
+      />
 
       <div className="mt-4">
-        {tab === 'users' ? (
-          <section aria-label="Usuarios y roles" className={cn(cardClass, 'overflow-hidden')}>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <caption className="sr-only">Usuarios y roles</caption>
-                <thead className="bg-muted/60">
-                  <tr>
-                    <th scope="col" className={thClass}>Usuario</th>
-                    <th scope="col" className={thClass}>Correo</th>
-                    <th scope="col" className={thClass}>Rol</th>
-                    <th scope="col" className={thClass}>Último acceso</th>
-                    <th scope="col" className={thClass}>Estado</th>
-                    <th scope="col" className={thClass}>Acceso</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <Fragment key={u.id}>
+        {view === 'usuarios' ? (
+          <section aria-label="Usuarios" className={cn(cardClass, 'overflow-hidden')}>
+            {users === null ? (
+              <Loading label="Cargando usuarios…" />
+            ) : (
+              <div className="relative overflow-x-auto">
+                <table className="w-full">
+                  <caption className="sr-only">Usuarios</caption>
+                  <thead className="bg-muted/60">
                     <tr>
-                      <td className={tdClass}>
-                        <span className="block font-semibold">{u.full_name}</span>
-                        <span className="block text-xs text-muted-foreground tabular-nums">{u.rut}</span>
-                      </td>
-                      <td className={cn(tdClass, 'text-muted-foreground')}>{u.email}</td>
-                      <td className={tdClass}>
-                        <select
-                          className={cn(inputClass, 'h-9 w-40')}
-                          value={u.role}
-                          onChange={(e) => updateUser(u, { role: e.target.value as Role })}
-                          aria-label={`Rol de ${u.full_name}`}
-                        >
-                          {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-                        </select>
-                      </td>
-                      <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{formatDateTime(u.last_login_at)}</td>
-                      <td className={tdClass}>
-                        <span className="inline-flex items-center gap-3">
-                          <span className="inline-flex items-center gap-1.5 text-sm">
-                            <span aria-hidden className={cn('w-2 h-2 rounded-full', u.is_active ? 'bg-baja' : 'bg-muted-foreground')} />
-                            {u.is_active ? 'Activo' : 'Inactivo'}
-                          </span>
-                          <button
-                            className={cn(secondaryButton, 'h-8 px-3 text-xs')}
-                            onClick={() => (u.is_active ? setConfirmUser(u) : updateUser(u, { is_active: true }))}
-                          >
-                            {u.is_active ? 'Desactivar' : 'Activar'}
-                          </button>
-                        </span>
-                      </td>
-                      <td className={tdClass}>
-                        <span className="flex flex-wrap items-center gap-2">
-                          {isLocked(u) && (
-                            <button
-                              onClick={() => unlockUser(u)}
-                              className={cn(secondaryButton, 'h-8 px-3 text-xs text-media border-media/40')}
-                              title={`Bloqueado hasta ${formatDateTime(u.locked_until)} por intentos fallidos`}
-                            >
-                              <Unlock aria-hidden className="w-3.5 h-3.5" /> Bloqueado: desbloquear
-                            </button>
-                          )}
-                          {u.must_change_password && (
-                            <span className="text-xs font-semibold text-muted-foreground">Cambio de contraseña pendiente</span>
-                          )}
-                          <button
-                            onClick={() => setResetFor(resetFor === u.id ? null : u.id)}
-                            aria-expanded={resetFor === u.id}
-                            className={cn(ghostButton, 'h-8 px-2 text-xs')}
-                          >
-                            <KeyRound aria-hidden className="w-3.5 h-3.5" /> Restablecer
-                          </button>
-                        </span>
-                      </td>
+                      <th scope="col" className={cn(thClass, 'pl-5')}>Usuario</th>
+                      <th scope="col" className={thClass}>RUT</th>
+                      <th scope="col" className={thClass}>Rol</th>
+                      <th scope="col" className={thClass}>Estado</th>
+                      <th scope="col" className={cn(thClass, 'pr-5')}>Último ingreso</th>
                     </tr>
-                    {resetFor === u.id && (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-4 bg-muted border-b border-border">
-                          <ResetPasswordForm
-                            user={u}
-                            onDone={(err) => {
-                              setResetFor(null);
-                              if (err) setError(err);
-                              loadData();
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id} onClick={() => onOpenUser(u.id)} className="cursor-pointer hover:bg-accent/60 transition-colors">
+                        <td className={cn(tdClass, 'pl-5')}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenUser(u.id);
                             }}
-                          />
+                            className="font-semibold hover:text-brand hover:underline text-left"
+                          >
+                            {u.full_name}
+                          </button>
+                          <span className="block text-xs text-muted-foreground">{u.email}</span>
                         </td>
+                        <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{u.rut}</td>
+                        <td className={tdClass}>{ROLE_LABELS[u.role]}</td>
+                        <td className={tdClass}>
+                          <UserState u={u} />
+                          {u.must_change_password && u.is_active && (
+                            <span className="block text-xs text-muted-foreground">Cambio de contraseña pendiente</span>
+                          )}
+                        </td>
+                        <td className={cn(tdClass, 'pr-5 text-muted-foreground tabular-nums')}>{formatDateTime(u.last_login_at)}</td>
                       </tr>
-                    )}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
-        ) : tab === 'audit' ? (
-          <AuditViewer users={users} />
+        ) : view === 'auditoria' ? (
+          <AuditViewer users={users ?? []} />
         ) : (
-          <ErrorViewer users={users} />
+          <ErrorViewer users={users ?? []} />
         )}
       </div>
 
@@ -619,29 +801,6 @@ export default function AdminPanel() {
             loadData();
           }}
         />
-      </Dialog>
-
-      <Dialog
-        open={confirmUser !== null}
-        onOpenChange={(open) => !open && setConfirmUser(null)}
-        title={`¿Desactivar a ${confirmUser?.full_name ?? ''}?`}
-        description="No podrá iniciar sesión hasta que se vuelva a activar. Sus registros se conservan."
-        footer={
-          <>
-            <button className={secondaryButton} onClick={() => setConfirmUser(null)}>Cancelar</button>
-            <button
-              className={dangerButton}
-              onClick={() => {
-                if (confirmUser) updateUser(confirmUser, { is_active: false });
-                setConfirmUser(null);
-              }}
-            >
-              Desactivar
-            </button>
-          </>
-        }
-      >
-        <p className="text-sm text-muted-foreground">Esta acción queda registrada en la bitácora de auditoría.</p>
       </Dialog>
     </div>
   );

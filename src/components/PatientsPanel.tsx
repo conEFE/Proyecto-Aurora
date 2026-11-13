@@ -215,6 +215,7 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
         ) : cases.length === 0 ? (
           <p className="px-6 pb-5 text-sm text-muted-foreground">Sin casos. Cree uno con «Nuevo caso».</p>
         ) : (
+          <div className="relative overflow-x-auto">
           <table className="w-full">
             <caption className="sr-only">Casos del paciente</caption>
             <thead className="bg-muted/60">
@@ -242,6 +243,7 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
       </div>
@@ -422,7 +424,7 @@ export default function PatientsPanel({ patientId = null, onOpenPatient, onBack,
             {term ? 'No hay coincidencias.' : 'Registre la primera con «Nuevo paciente».'}
           </EmptyState>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full">
               <caption className="sr-only">Lista de pacientes</caption>
               <thead className="bg-muted/60">

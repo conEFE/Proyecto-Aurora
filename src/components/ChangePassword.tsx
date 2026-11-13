@@ -81,7 +81,7 @@ export default function ChangePassword({ forced = false, embedded = false, onDon
           onChange={(e) => setConfirm(e.target.value)} />
         {mismatch && <p id="cp-mismatch" className="mt-1 text-sm text-destructive">Las contraseñas no coinciden.</p>}
       </div>
-      <div className="flex flex-wrap justify-end gap-2 pt-1">
+      <div className={cn('flex flex-wrap gap-2 pt-1', !embedded && 'justify-end')}>
         {forced ? (
           <button
             type="button"
