@@ -707,6 +707,16 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## Sin número de versión — direcciones (URL) por pantalla
+
+- Rutas con React Router: `/`, `/ingresar`, `/inicio`, `/cola`, `/pacientes`, `/pacientes/<id>`, `/casos`,
+  `/casos/nuevo`, `/casos/<código>`, `/dashboard`, `/parametros`, `/privacidad`, `/perfil`, `/administracion`.
+- F5 conserva la pantalla; atrás y adelante del navegador funcionan; los filtros de Casos van en la dirección
+  (`?nivel=ALTA&estado=…&pagina=…`).
+- Sin sesión, una dirección interna pide ingresar y vuelve ahí después. Rutas de otro rol o desconocidas llevan al
+  inicio del rol. «Salir» vuelve a la landing.
+- API: `GET /cases?code=AUR-…` (filtro por código exacto) para abrir un caso por su código. Test nuevo.
+
 ## Sin número de versión — rediseño desplegado el 12-11-2026 (`566d51c`)
 
 - **Landing** compacta (`3000a41`): titular, una frase, la cola de triage en una ventana de navegador y un carrusel de

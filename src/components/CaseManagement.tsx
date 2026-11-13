@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, FolderOpen, Loader2, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
@@ -131,25 +132,107 @@ function NewCaseForm({
 
 interface CaseManagementProps {
   me: Me;
-  initialCaseId?: number | null;
-  /** Si viene, se abre «Nuevo caso» con este paciente ya elegido (desde Pacientes) */
+  /** Código del caso (AUR-…) o su número interno, tomado de la dirección /casos/:ref */
+  caseRef?: string | null;
+  creating?: boolean;
+  /** Si viene, «Nuevo caso» abre con este paciente ya elegido (desde Pacientes) */
   newCasePatient?: Patient | null;
+  onOpenCase: (ref: string, replace?: boolean) => void;
+  onNewCase: () => void;
+  onBack: () => void;
 }
 
 type LevelFilter = TriageLevel | 'TODOS';
 const LEVEL_TABS: LevelFilter[] = ['TODOS', 'ALTA', 'MEDIA', 'BAJA'];
 
-export default function CaseManagement({ me, initialCaseId = null, newCasePatient = null }: CaseManagementProps) {
+/** Abre un caso por su código o número; si llega por número, deja el código en la dirección. */
+function CaseByRef({ me, caseRef, onOpenCase, onBack }: { me: Me; caseRef: string; onOpenCase: CaseManagementProps['onOpenCase']; onBack: () => void }) {
+  const [caseId, setCaseId] = useState<number | null>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (/^\d+$/.test(caseRef)) {
+      apiClient.getCase(Number(caseRef)).then((r) => {
+        if (!active) return;
+        if (r.data) onOpenCase(r.data.code, true);
+        else setNotFound(true);
+      });
+    } else {
+      apiClient.getCases({ code: caseRef, size: 1 }).then((r) => {
+        if (!active) return;
+        const found = r.data?.items[0];
+        if (found) setCaseId(found.id);
+        else setNotFound(true);
+      });
+    }
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caseRef]);
+
+  // El siguiente caso de la cola queda a una acción de distancia al terminar una revisión
+  const openNextCase = async () => {
+    const r = await apiClient.getQueue(false);
+    const next = r.data?.find((q) => q.case_id && q.case_id !== caseId);
+    if (next?.case_id) onOpenCase(String(next.case_id));
+    else toast('No quedan casos pendientes en la cola.');
+  };
+
+  if (notFound) {
+    return (
+      <div className={cn(cardClass, 'border-dashed')}>
+        <EmptyState title="No existe el caso" icon={<FolderOpen aria-hidden className="w-8 h-8" />}>
+          No hay un caso {caseRef}.{' '}
+          <button className="font-semibold underline" onClick={onBack}>Volver a la lista</button>
+        </EmptyState>
+      </div>
+    );
+  }
+  if (caseId === null) return <Loading label="Cargando caso…" />;
+  return (
+    <CaseDetail
+      caseId={caseId}
+      me={me}
+      onChanged={() => {}}
+      onNextCase={me.role === 'MEDICO' ? openNextCase : undefined}
+    />
+  );
+}
+
+export default function CaseManagement({
+  me,
+  caseRef = null,
+  creating = false,
+  newCasePatient = null,
+  onOpenCase,
+  onNewCase,
+  onBack,
+}: CaseManagementProps) {
+  // Filtros en la dirección (?nivel=ALTA&estado=CERRADO&pagina=2): «atrás» vuelve a la misma vista
+  const [params, setParams] = useSearchParams();
+  const level = (LEVEL_TABS.includes(params.get('nivel') as LevelFilter) ? params.get('nivel') : 'TODOS') as LevelFilter;
+  const statusFilter = (params.get('estado') ?? '') as CaseStatus | '';
+  const page = Math.max(1, Number(params.get('pagina')) || 1);
+  const setFilters = (next: { nivel?: LevelFilter; estado?: CaseStatus | ''; pagina?: number }) => {
+    const merged = { nivel: level, estado: statusFilter, pagina: page, ...next };
+    const out: Record<string, string> = {};
+    if (merged.nivel !== 'TODOS') out.nivel = merged.nivel;
+    if (merged.estado) out.estado = merged.estado;
+    if (merged.pagina > 1) out.pagina = String(merged.pagina);
+    setParams(out);
+  };
+  const setLevel = (l: LevelFilter) => setFilters({ nivel: l, pagina: 1 });
+  const setStatusFilter = (st: CaseStatus | '') => setFilters({ estado: st, pagina: 1 });
+  const setPage = (fn: (n: number) => number) => setFilters({ pagina: fn(page) });
+
   const [data, setData] = useState<Page<ClinicalCase> | null>(null);
   const [counts, setCounts] = useState<Record<LevelFilter, number> | null>(null);
-  const [selectedId, setSelectedId] = useState<number | null>(initialCaseId);
-  const [level, setLevel] = useState<LevelFilter>('TODOS');
-  const [statusFilter, setStatusFilter] = useState<CaseStatus | ''>('');
-  const [page, setPage] = useState(1);
-  const [creating, setCreating] = useState(newCasePatient !== null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const size = 20;
+  const listMode = !caseRef && !creating;
 
   const loadCases = useCallback(async () => {
     setLoading(true);
@@ -167,53 +250,27 @@ export default function CaseManagement({ me, initialCaseId = null, newCasePatien
   }, [statusFilter, level, page]);
 
   useEffect(() => {
-    loadCases();
-  }, [loadCases]);
+    if (listMode) loadCases();
+  }, [loadCases, listMode]);
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / size)) : 1;
-
-  const openCase = (id: number) => {
-    setCreating(false);
-    setSelectedId(id);
+  const openCase = (code: string) => {
+    onOpenCase(code);
     window.scrollTo(0, 0);
   };
 
-  const backToList = () => {
-    setSelectedId(null);
-    setCreating(false);
-    loadCases();
-  };
-
-  // El siguiente caso de la cola queda a una acción de distancia al terminar una revisión
-  const openNextCase = async () => {
-    const r = await apiClient.getQueue(false);
-    const next = r.data?.find((q) => q.case_id && q.case_id !== selectedId);
-    if (next?.case_id) openCase(next.case_id);
-    else toast('No quedan casos pendientes en la cola.');
-  };
-
-  if (creating || selectedId) {
+  if (!listMode) {
     return (
       <div className={pageClass}>
-        <button className={cn(ghostButton, '-ml-3 mb-4')} onClick={backToList}>
+        <button className={cn(ghostButton, '-ml-3 mb-4')} onClick={onBack}>
           <ChevronLeft aria-hidden className="w-4 h-4" /> Casos
         </button>
         {creating ? (
           <div className="max-w-3xl">
-            <NewCaseForm
-              initialPatient={newCasePatient}
-              onCancel={backToList}
-              onCreated={(c) => openCase(c.id)}
-            />
+            <NewCaseForm initialPatient={newCasePatient} onCancel={onBack} onCreated={(c) => onOpenCase(c.code, true)} />
           </div>
         ) : (
-          <CaseDetail
-            key={selectedId}
-            caseId={selectedId!}
-            me={me}
-            onChanged={loadCases}
-            onNextCase={me.role === 'MEDICO' ? openNextCase : undefined}
-          />
+          <CaseByRef me={me} caseRef={caseRef!} onOpenCase={onOpenCase} onBack={onBack} />
         )}
       </div>
     );
@@ -223,7 +280,7 @@ export default function CaseManagement({ me, initialCaseId = null, newCasePatien
     <div className={pageClass}>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className={pageTitle}>Casos</h1>
-        <button className={primaryButton} onClick={() => setCreating(true)}>
+        <button className={primaryButton} onClick={onNewCase}>
           <Plus aria-hidden className="w-4 h-4" /> Nuevo caso
         </button>
       </div>
@@ -239,10 +296,7 @@ export default function CaseManagement({ me, initialCaseId = null, newCasePatien
                 key={l}
                 role="tab"
                 aria-selected={on}
-                onClick={() => {
-                  setPage(1);
-                  setLevel(l);
-                }}
+                onClick={() => setLevel(l)}
                 className={cn(
                   'inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm transition-colors',
                   on ? 'bg-card text-foreground font-bold ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
@@ -259,10 +313,7 @@ export default function CaseManagement({ me, initialCaseId = null, newCasePatien
           <select
             className={cn(inputClass, 'h-9 w-44')}
             value={statusFilter}
-            onChange={(e) => {
-              setPage(1);
-              setStatusFilter(e.target.value as CaseStatus | '');
-            }}
+            onChange={(e) => setStatusFilter(e.target.value as CaseStatus | '')}
           >
             <option value="">Todos</option>
             {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map((st) => (
@@ -295,12 +346,12 @@ export default function CaseManagement({ me, initialCaseId = null, newCasePatien
               </thead>
               <tbody>
                 {data.items.map((c) => (
-                  <tr key={c.id} onClick={() => openCase(c.id)} className="cursor-pointer hover:bg-accent/60 transition-colors">
+                  <tr key={c.id} onClick={() => openCase(c.code)} className="cursor-pointer hover:bg-accent/60 transition-colors">
                     <td className={cn(tdClass, 'pl-5')}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          openCase(c.id);
+                          openCase(c.code);
                         }}
                         className="font-bold tabular-nums hover:text-brand hover:underline"
                       >

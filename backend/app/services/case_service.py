@@ -105,6 +105,7 @@ def list_cases(
     page: int = 1,
     size: int = 20,
     level=None,
+    code: str | None = None,
 ) -> tuple[list[Case], int]:
     from app.db.models.triage import TriageResult
 
@@ -117,6 +118,8 @@ def list_cases(
         ).filter(TriageResult.final_level == level)
     if patient_id is not None:
         q = q.filter(Case.patient_id == patient_id)
+    if code:
+        q = q.filter(Case.code == code.strip().upper())
     total = q.count()
     items = q.order_by(Case.created_at.desc(), Case.id.desc()).offset((page - 1) * size).limit(size).all()
     return items, total

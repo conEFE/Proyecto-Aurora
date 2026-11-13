@@ -264,7 +264,7 @@ class ApiClient {
     return this.request<ClinicalCase>('/cases', { method: 'POST', body: JSON.stringify(data) });
   }
 
-  async getCases(filters: { status?: CaseStatus; level?: TriageLevel; patient_id?: number; page?: number; size?: number } = {}) {
+  async getCases(filters: { status?: CaseStatus; level?: TriageLevel; patient_id?: number; code?: string; page?: number; size?: number } = {}) {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => {
       if (v !== undefined) params.append(k, String(v));

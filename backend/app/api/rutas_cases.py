@@ -31,13 +31,14 @@ def list_cases(
     status: CaseStatus | None = None,
     level: TriageLevel | None = None,
     patient_id: int | None = None,
+    code: str | None = Query(None, max_length=20, description="Código exacto del caso (AUR-AAAA-NNNNNN)"),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     _: User = Depends(clinical_staff),
     db: Session = Depends(get_db),
 ):
-    """Lista casos con filtros por estado, nivel de triage vigente y paciente."""
-    items, total = case_service.list_cases(db, status, patient_id, page, size, level)
+    """Lista casos con filtros por estado, nivel de triage vigente, paciente y código."""
+    items, total = case_service.list_cases(db, status, patient_id, page, size, level, code)
     return CasePage(items=[case_service.to_out(db, c) for c in items], total=total, page=page, size=size)
 
 

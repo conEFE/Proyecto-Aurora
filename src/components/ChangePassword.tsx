@@ -88,7 +88,7 @@ export default function ChangePassword({ forced = false, embedded = false, onDon
             className={secondaryButton}
             onClick={() => {
               apiClient.setToken(null);
-              window.location.reload();
+              window.location.assign('/');
             }}
           >
             Salir

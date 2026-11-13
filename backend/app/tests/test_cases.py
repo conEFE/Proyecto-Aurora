@@ -165,3 +165,14 @@ def test_case_view_and_update_are_audited(client, tokens, db):
         for a in db.query(AuditLog).filter(AuditLog.entity == "case", AuditLog.entity_id == case["id"])
     }
     assert {"CREATE", "VIEW", "UPDATE"} <= actions
+
+
+def test_list_cases_by_code(client, tokens):
+    h = auth(tokens["MEDICO"])
+    first = create_case(client, h)
+    create_case(client, h)
+    r = client.get("/cases", params={"code": first["code"].lower()}, headers=h)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["total"] == 1 and body["items"][0]["id"] == first["id"]
+    assert client.get("/cases", params={"code": "AUR-1999-000000"}, headers=h).json()["total"] == 0

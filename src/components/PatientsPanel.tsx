@@ -292,12 +292,16 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
 }
 
 interface PatientsPanelProps {
+  /** Ficha abierta, tomada de la dirección /pacientes/:id */
+  patientId?: number | null;
+  onOpenPatient: (patientId: number) => void;
+  onBack: () => void;
   onOpenCase: (caseId: number) => void;
   onNewCase: (patient: Patient) => void;
 }
 
 /** Pacientes: buscar, registrar, editar, ver sus casos y eliminar (solo sin casos). */
-export default function PatientsPanel({ onOpenCase, onNewCase }: PatientsPanelProps) {
+export default function PatientsPanel({ patientId = null, onOpenPatient, onBack, onOpenCase, onNewCase }: PatientsPanelProps) {
   const [term, setTerm] = useState('');
   const [patients, setPatients] = useState<Patient[] | null>(null);
   const [selected, setSelected] = useState<Patient | null>(null);
@@ -313,8 +317,33 @@ export default function PatientsPanel({ onOpenCase, onNewCase }: PatientsPanelPr
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (patientId === null) load();
+  }, [load, patientId]);
+
+  // La ficha sale de la dirección: se busca en la lista cargada o se pide al servidor
+  const [notFound, setNotFound] = useState(false);
+  useEffect(() => {
+    setNotFound(false);
+    if (patientId === null) {
+      setSelected(null);
+      return;
+    }
+    const known = patients?.find((x) => x.id === patientId);
+    if (known) {
+      setSelected(known);
+      return;
+    }
+    let active = true;
+    apiClient.getPatient(patientId).then((r) => {
+      if (!active) return;
+      if (r.data) setSelected(r.data);
+      else setNotFound(true);
+    });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId]);
 
   const modal = (
     <PatientModal
@@ -322,18 +351,25 @@ export default function PatientsPanel({ onOpenCase, onNewCase }: PatientsPanelPr
       createOnly
       onClose={() => setCreating(false)}
       onSelectPatient={(p) => {
-        setSelected(p);
-        load(term);
+        setPatients((prev) => (prev ? [p, ...prev.filter((x) => x.id !== p.id)] : [p]));
+        onOpenPatient(p.id);
       }}
     />
   );
 
-  if (selected) {
+  if (patientId !== null) {
     return (
       <div className={pageClass}>
-        <button className={cn(ghostButton, '-ml-3 mb-4')} onClick={() => setSelected(null)}>
+        <button className={cn(ghostButton, '-ml-3 mb-4')} onClick={onBack}>
           <ChevronLeft aria-hidden className="w-4 h-4" /> Pacientes
         </button>
+        {notFound ? (
+          <EmptyState title="No existe la ficha" icon={<Users aria-hidden className="w-8 h-8" />}>
+            No hay una paciente con ese número.
+          </EmptyState>
+        ) : !selected || selected.id !== patientId ? (
+          <Loading label="Cargando ficha…" />
+        ) : (
         <PatientDetail
           key={selected.id}
           patient={selected}
@@ -344,10 +380,11 @@ export default function PatientsPanel({ onOpenCase, onNewCase }: PatientsPanelPr
             setPatients((prev) => prev?.map((x) => (x.id === p.id ? p : x)) ?? null);
           }}
           onDeleted={(id) => {
-            setSelected(null);
             setPatients((prev) => prev?.filter((x) => x.id !== id) ?? null);
+            onBack();
           }}
         />
+        )}
         {modal}
       </div>
     );
@@ -399,12 +436,12 @@ export default function PatientsPanel({ onOpenCase, onNewCase }: PatientsPanelPr
               </thead>
               <tbody>
                 {patients.map((p) => (
-                  <tr key={p.id} onClick={() => setSelected(p)} className="cursor-pointer hover:bg-accent/60 transition-colors">
+                  <tr key={p.id} onClick={() => onOpenPatient(p.id)} className="cursor-pointer hover:bg-accent/60 transition-colors">
                     <td className={cn(tdClass, 'pl-5')}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelected(p);
+                          onOpenPatient(p.id);
                         }}
                         className="font-semibold hover:text-brand hover:underline text-left"
                       >
