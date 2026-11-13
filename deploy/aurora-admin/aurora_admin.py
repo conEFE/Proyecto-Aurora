@@ -16,12 +16,22 @@ Uso (desde la raíz del repositorio, con credenciales de AWS del equipo):
 
 Credenciales: perfil `aurora` (aws login --remote --region us-east-2 --profile aurora). Si boto3 no las encuentra:
     eval "$(aws configure export-credentials --profile aurora --format env)"
+
+Clave de operador: todo comando la pide (sin mostrarla). La primera vez se define con
+    python deploy/aurora-admin/aurora_admin.py configurar-clave
+En Parameter Store solo queda su huella (scrypt con sal, cifrada) en /aurora-admin/clave-operador; la clave no se
+guarda en ningún lado. Protege la herramienta, no la cuenta de AWS: quien tenga credenciales con permisos completos
+podría usar la consola directamente, así que el acceso al proyecto de AWS debe estar igual de controlado.
 """
 
 from __future__ import annotations
 
 import argparse
 import base64
+import getpass
+import hashlib
+import hmac
+import json
 import os
 import re
 import secrets
@@ -44,6 +54,9 @@ ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$")
 # Nombres reservados: la demostración actual y nombres de infraestructura
 RESERVED = {"demo", "www", "api", "admin", "mail", "prod"}
 SECRET_KEYS = ("POSTGRES_PASSWORD", "SECRET_KEY", "ENCRYPTION_KEY", "AURORA_ADMIN_PASSWORD")
+OPERATOR_KEY_PARAM = "/aurora-admin/clave-operador"
+OPERATOR_KEY_MIN = 12
+SCRYPT = {"n": 2**15, "r": 8, "p": 1, "maxmem": 64 * 1024 * 1024, "dklen": 32}
 
 
 def fail(msg: str) -> None:
@@ -158,6 +171,58 @@ def as_ec2_user(script: str) -> str:
 
 
 DC = "docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml --env-file deploy/.env"
+
+
+# --- Clave de operador ---------------------------------------------------------------------------
+def _hash_key(key: str, salt: bytes) -> bytes:
+    return hashlib.scrypt(key.encode(), salt=salt, **SCRYPT)
+
+
+def _read_key(prompt: str) -> str:
+    if not sys.stdin.isatty():
+        fail("la clave de operador se ingresa en una terminal interactiva.")
+    return getpass.getpass(prompt)
+
+
+def _stored_key(aws: Aws) -> dict | None:
+    try:
+        raw = aws.ssm.get_parameter(Name=OPERATOR_KEY_PARAM, WithDecryption=True)["Parameter"]["Value"]
+    except ClientError as exc:
+        if "ParameterNotFound" in str(exc):
+            return None
+        raise
+    return json.loads(raw)
+
+
+def require_operator_key(aws: Aws) -> None:
+    stored = _stored_key(aws)
+    if stored is None:
+        fail("todavía no hay clave de operador. Defínala con: aurora_admin.py configurar-clave")
+    salt = base64.b64decode(stored["salt"])
+    expected = base64.b64decode(stored["hash"])
+    for attempt in range(3):
+        if hmac.compare_digest(_hash_key(_read_key("Clave de operador: "), salt), expected):
+            return
+        time.sleep(2 * (attempt + 1))
+        print("Clave incorrecta.", file=sys.stderr)
+    fail("demasiados intentos.")
+
+
+def cmd_configurar_clave(aws: Aws, a: argparse.Namespace) -> None:
+    if _stored_key(aws) is not None:
+        print("Ya hay una clave de operador: para cambiarla, ingrese primero la actual.")
+        require_operator_key(aws)
+    new = _read_key(f"Nueva clave de operador (mínimo {OPERATOR_KEY_MIN} caracteres): ")
+    if len(new) < OPERATOR_KEY_MIN:
+        fail(f"la clave debe tener al menos {OPERATOR_KEY_MIN} caracteres.")
+    if _read_key("Repítala: ") != new:
+        fail("las claves no coinciden.")
+    salt = os.urandom(16)
+    value = json.dumps({"alg": "scrypt", **{k: SCRYPT[k] for k in ("n", "r", "p")},
+                        "salt": base64.b64encode(salt).decode(), "hash": base64.b64encode(_hash_key(new, salt)).decode()})
+    aws.ssm.put_parameter(Name=OPERATOR_KEY_PARAM, Value=value, Type="SecureString", Overwrite=True)
+    print("Clave de operador guardada (solo su huella). Si la olvida, otra persona con acceso al proyecto de AWS")
+    print(f"puede borrar {OPERATOR_KEY_PARAM} y definir una nueva.")
 
 
 # --- Comandos ------------------------------------------------------------------------------------
@@ -343,6 +408,9 @@ def main() -> None:
     ap.add_argument("--region", default=REGION)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    p = sub.add_parser("configurar-clave", help="define o cambia la clave de operador")
+    p.set_defaults(fn=cmd_configurar_clave)
+
     p = sub.add_parser("inscribir", help="crea la instancia de una institución")
     p.add_argument("institucion")
     p.add_argument("--version", required=True, help="tag de imagen publicado (sha-<commit> o vX.Y.Z)")
@@ -390,7 +458,10 @@ def main() -> None:
     p.set_defaults(fn=cmd_baja)
 
     a = ap.parse_args()
-    a.fn(Aws(a.perfil or None, a.region), a)
+    aws = Aws(a.perfil or None, a.region)
+    if a.fn is not cmd_configurar_clave:
+        require_operator_key(aws)
+    a.fn(aws, a)
 
 
 if __name__ == "__main__":
