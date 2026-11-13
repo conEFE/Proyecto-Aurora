@@ -1,0 +1,250 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Aurora Care - una institucion (hospital o CESFAM): servidor, IP fija, bucket cifrado, rol con permisos minimos y
+  registro DNS. La configuracion y los secretos viven en Parameter Store (/aurora/<institucion>/) y los crea
+  aurora_admin.py antes de esta pila; aqui no hay secretos.
+
+Parameters:
+  InstitutionId:
+    Type: String
+    AllowedPattern: "^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$"
+    Description: Identificador corto en minusculas (p. ej. hospital-x)
+  DomainName:
+    Type: String
+    Description: Dominio del sitio (p. ej. hospital-x.auroracare.cl)
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: Zona de Route 53 del dominio
+  InstanceType:
+    Type: String
+    Default: t4g.micro
+    AllowedValues: [t4g.micro, t4g.small, t4g.medium]
+  AmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
+  RepoUrl:
+    Type: String
+    Default: https://github.com/conEFE/Proyecto-Aurora.git
+  RepoRef:
+    Type: String
+    Default: main
+    Description: Rama, tag o commit del repositorio (solo para los archivos de Compose y scripts)
+
+Resources:
+  DataBucket:
+    Type: AWS::S3::Bucket
+    # Se conserva al borrar la pila: la baja exporta y borra los datos de forma explicita
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: respaldos
+            Status: Enabled
+            Prefix: backups/
+            ExpirationInDays: 35
+            NoncurrentVersionExpirationInDays: 7
+      Tags:
+        - { Key: aurora:institucion, Value: !Ref InstitutionId }
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aurora/${InstitutionId}
+      RetentionInDays: 30
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ec2.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: aurora-institucion
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ImagenesYRespaldos
+                Effect: Allow
+                Action: [s3:GetObject, s3:PutObject, s3:DeleteObject]
+                Resource:
+                  - !Sub ${DataBucket.Arn}/images/*
+                  - !Sub ${DataBucket.Arn}/backups/*
+              - Sid: ListarPrefijos
+                Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt DataBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix: [images/*, backups/*]
+              - Sid: Logs
+                Effect: Allow
+                Action: [logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents, logs:DescribeLogStreams]
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aurora/${InstitutionId}
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aurora/${InstitutionId}:*
+              - Sid: SuConfiguracion
+                Effect: Allow
+                Action: [ssm:GetParametersByPath, ssm:GetParameter, ssm:GetParameters]
+                Resource: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/aurora/${InstitutionId}*
+      Tags:
+        - { Key: aurora:institucion, Value: !Ref InstitutionId }
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref InstanceRole]
+
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub Aurora ${InstitutionId} - HTTP y HTTPS, sin SSH
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: 0.0.0.0/0 }
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0 }
+        - { IpProtocol: udp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0 }
+      Tags:
+        - { Key: aurora:institucion, Value: !Ref InstitutionId }
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        MetadataOptions:
+          HttpTokens: required
+          HttpEndpoint: enabled
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs: { VolumeSize: 10, VolumeType: gp3, Encrypted: true, DeleteOnTermination: true }
+
+  Instance:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT30M
+    Properties:
+      ImageId: !Ref AmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      SecurityGroupIds: [!GetAtt WebSecurityGroup.GroupId]
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      Tags:
+        - { Key: Name, Value: !Sub "aurora-${InstitutionId}" }
+        - { Key: aurora:institucion, Value: !Ref InstitutionId }
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Instala Aurora Care para la institucion ${InstitutionId}. Sin secretos: los lee de Parameter Store.
+          exec > >(tee -a /var/log/aurora-bootstrap.log) 2>&1
+          set -euo pipefail
+          signal() { /opt/aws/bin/cfn-signal -e "$1" --stack ${AWS::StackName} --resource Instance --region ${AWS::Region} || true; }
+          trap 'signal 1' ERR
+
+          dnf install -y docker git cronie aws-cfn-bootstrap python3
+          systemctl enable --now docker crond
+          usermod -aG docker ec2-user
+          mkdir -p /usr/local/lib/docker/cli-plugins
+          curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" \
+            -o /usr/local/lib/docker/cli-plugins/docker-compose
+          chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+          if [ ! -f /swapfile ]; then
+            dd if=/dev/zero of=/swapfile bs=1M count=2048 && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+            echo '/swapfile swap swap defaults 0 0' >> /etc/fstab
+          fi
+
+          mkdir -p /opt/aurora && cd /opt/aurora
+          [ -d .git ] || git clone --quiet ${RepoUrl} .
+          git fetch --quiet origin ${RepoRef} && git checkout --quiet FETCH_HEAD
+
+          # deploy/.env a partir del ejemplo, con la configuracion de la pila y la de Parameter Store
+          aws ssm get-parameters-by-path --region ${AWS::Region} --path /aurora/${InstitutionId}/ --with-decryption \
+            --query 'Parameters[].[Name,Value]' --output json > /root/aurora-params.json
+          python3 - <<'PY'
+          import json, re
+          params = {n.rsplit('/', 1)[1]: v for n, v in json.load(open('/root/aurora-params.json'))}
+          fixed = {
+              'COMPOSE_PROFILES': 'db',
+              'SITE_ADDRESS': '${DomainName}',
+              'PUBLIC_URL': 'https://${DomainName}',
+              'STORAGE_BACKEND': 's3',
+              'S3_BUCKET': '${DataBucket}',
+              'BACKUP_BUCKET': '${DataBucket}',
+              'AWS_REGION': '${AWS::Region}',
+              'CLOUDWATCH_LOG_GROUP': '/aurora/${InstitutionId}',
+          }
+          # Parameter Store no admite valores vacios: '-' significa vacio
+          values = {k: ('' if v == '-' else v) for k, v in {**fixed, **params}.items()}
+          text = open('/opt/aurora/deploy/.env.example').read()
+          for key, value in values.items():
+              line = f'{key}={value}'
+              text, n = re.subn(rf'^{key}=.*$', lambda m: line, text, flags=re.M)
+              if n == 0:
+                  text += f'\n{line}\n'
+          open('/opt/aurora/deploy/.env', 'w').write(text)
+          PY
+          rm -f /root/aurora-params.json
+          chmod 600 deploy/.env
+          chown -R ec2-user:ec2-user /opt/aurora
+
+          dc() { sudo -u ec2-user docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml --env-file deploy/.env "$@"; }
+          dc pull --quiet
+          dc up -d
+          for i in $(seq 1 60); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' aurora-backend-1 2>/dev/null)" = healthy ] && break
+            sleep 5
+          done
+          [ "$(docker inspect -f '{{.State.Health.Status}}' aurora-backend-1)" = healthy ]
+          dc exec -T backend python init_user.py || echo "init_user: el ADMIN ya existia"
+          # La contrasena temporal del ADMIN ya no hace falta en el servidor (sigue en Parameter Store)
+          sed -i 's/^AURORA_ADMIN_PASSWORD=.*/AURORA_ADMIN_PASSWORD=/' deploy/.env
+
+          # Respaldo diario a las 03:15 hora de Chile
+          echo 'CRON_TZ=America/Santiago
+          15 3 * * * cd /opt/aurora && ./deploy/backup_db.sh >> /home/ec2-user/aurora-backup.log 2>&1' | sed 's/^ *//' | crontab -u ec2-user -
+          signal 0
+
+  PublicIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref Instance
+      Tags:
+        - { Key: aurora:institucion, Value: !Ref InstitutionId }
+
+  DnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      TTL: "300"
+      ResourceRecords: [!Ref PublicIp]
+
+Outputs:
+  InstanceId:
+    Value: !Ref Instance
+  PublicIp:
+    Value: !Ref PublicIp
+  Url:
+    Value: !Sub https://${DomainName}
+  Bucket:
+    Value: !Ref DataBucket
