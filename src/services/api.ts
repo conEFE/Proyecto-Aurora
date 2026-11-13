@@ -1,4 +1,5 @@
 import type {
+  AdminOverview,
   AdminStats,
   AIValidation,
   AIVerdict,
@@ -464,6 +465,10 @@ class ApiClient {
   }
 
   // --- Administración (solo ADMIN) ---------------------------------------
+  async getAdminOverview() {
+    return this.request<AdminOverview>('/admin/overview');
+  }
+
   async getAdminStats() {
     return this.request<AdminStats>('/admin/stats');
   }

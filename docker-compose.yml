@@ -33,6 +33,7 @@ services:
       DB_DSN: ${DB_DSN:-postgresql+psycopg2://aurora:${POSTGRES_PASSWORD}@db:5432/aurora}
       ROOT_PATH: /api
       ALLOWED_ORIGINS: ${PUBLIC_URL:-http://localhost:8080}
+      AURORA_VERSION: ${AURORA_VERSION:-local}
     volumes:
       - images:/data/images
     expose:

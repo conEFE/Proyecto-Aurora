@@ -10,10 +10,11 @@ from app.db.models.case import Case
 from app.db.models.patient import Patient
 from app.db.models.user import User, UserRole
 from app.deps import get_db
+from app.schemas.admin import AdminOverview
 from app.schemas.audit import AuditPage
 from app.schemas.errors import ErrorLogPage, ErrorTypeCount
 from app.schemas.users import UserCreate, UserOut, UserUpdate
-from app.services import error_log_service, user_service
+from app.services import admin_overview_service, error_log_service, user_service
 from app.services.audit_service import client_ip
 
 router = APIRouter()
@@ -36,6 +37,12 @@ def get_admin_stats(_: User = Depends(admin_only), db: Session = Depends(get_db)
         total_cases=db.query(Case).count(),
         total_patients=db.query(Patient).count(),
     )
+
+
+@router.get("/overview", response_model=AdminOverview)
+def get_overview(_: User = Depends(admin_only), db: Session = Depends(get_db)):
+    """Resumen del administrador: cuentas, seguridad, ingresos por día y actividad (sin datos clínicos)."""
+    return admin_overview_service.overview(db)
 
 
 @router.get("/users", response_model=list[UserOut])
@@ -122,7 +129,9 @@ def list_audit(
     if user_id is not None:
         q = q.filter(AuditLog.user_id == user_id)
     if action:
-        q = q.filter(AuditLog.action == action.upper())
+        # Una acción o varias separadas por comas (p. ej. los eventos de seguridad)
+        actions = [a.strip().upper() for a in action.split(",") if a.strip()]
+        q = q.filter(AuditLog.action.in_(actions))
     if entity:
         q = q.filter(AuditLog.entity == entity)
     if date_from:

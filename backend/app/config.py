@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     DB_DSN: str
+    # Versión instalada (tag de las imágenes, p. ej. sha-<commit> o vX.Y.Z); la entrega docker compose
+    AURORA_VERSION: str = "local"
     # Obligatorio y sin valor por defecto: la app no arranca si falta.
     SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"

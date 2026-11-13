@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Loader2, ScrollText, ServerCrash, Unlock, UserCheck, UserPlus, Users, UserX } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, LayoutDashboard, Loader2, ScrollText, ServerCrash, Unlock, UserCheck, UserPlus, Users, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type {
+  AdminOverview as Overview,
   AdminStats,
   AuditEntry,
   DataRequestSummary,
   ErrorLogEntry,
   ErrorTypeCount,
+  InferenceStatus,
   Page,
   Role,
   UserAccount,
@@ -21,6 +23,9 @@ import { cn } from '../lib/cn';
 import Dialog from './Dialog';
 import { EmptyState, ErrorMessage, Loading } from './Feedback';
 import { DetailHeader, ListHeader, Segmented } from './PageHeader';
+import AdminOverview, { type AdminView } from './admin/AdminOverview';
+import AuditLog from './admin/AuditLog';
+import { describeAudit, relativeTime } from '../utils/audit';
 import {
   cardClass,
   dangerButton,
@@ -37,26 +42,6 @@ import {
 } from './ui';
 
 const ROLES: Role[] = ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'];
-const ACTIONS = [
-  'LOGIN_OK',
-  'LOGIN_FAIL',
-  'VIEW',
-  'CREATE',
-  'UPDATE',
-  'DELETE',
-  'DOWNLOAD',
-  'OVERRIDE',
-  'CONFIG_CHANGE',
-  'SIGN',
-  'SIGN_FAIL',
-  'EXPORT',
-  'PASSWORD_CHANGE',
-  'PASSWORD_CHANGE_FAIL',
-  'CONSENT_GRANT',
-  'CONSENT_WITHDRAW',
-  'BLOCK',
-  'UNBLOCK',
-];
 const isLocked = (u: UserAccount) => !!u.locked_until && new Date(u.locked_until).getTime() > Date.now();
 
 const EMPTY_USER: UserCreateInput = { rut: '', email: '', full_name: '', password: '', role: 'MEDICO' };
@@ -129,125 +114,6 @@ function UserForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: ()
         </button>
       </div>
     </form>
-  );
-}
-
-function AuditViewer({ users }: { users: UserAccount[] }) {
-  const [filters, setFilters] = useState({ action: '', user_id: '', from: '', to: '' });
-  const [page, setPage] = useState(1);
-  const [data, setData] = useState<Page<AuditEntry> | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const size = 25;
-
-  const load = useCallback(async () => {
-    const r = await apiClient.listAudit({
-      action: filters.action || undefined,
-      user_id: filters.user_id ? Number(filters.user_id) : undefined,
-      from: filters.from ? `${filters.from}T00:00:00` : undefined,
-      to: filters.to ? `${filters.to}T23:59:59` : undefined,
-      page,
-      size,
-    });
-    if (r.data) {
-      setData(r.data);
-      setError(null);
-    } else setError(r.error || 'No se pudo cargar la auditoría.');
-  }, [filters, page]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const userName = (id: number | null) =>
-    id === null ? '— (sin usuario)' : users.find((u) => u.id === id)?.full_name ?? `#${id}`;
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / size)) : 1;
-
-  return (
-    <section aria-labelledby="audit-title" className={cn(cardClass, 'overflow-hidden')}>
-      <div className="p-6 pb-4 space-y-4">
-        <div className="flex items-baseline gap-3">
-          <h2 id="audit-title" className={sectionTitle}>Bitácora de auditoría</h2>
-          {data && <span className="text-sm text-muted-foreground tabular-nums">{data.total} registros</span>}
-        </div>
-        <div className="grid sm:grid-cols-4 gap-3">
-          <div>
-            <label htmlFor="a-action" className={labelClass}>Acción</label>
-            <select id="a-action" className={inputClass} value={filters.action}
-              onChange={(e) => { setPage(1); setFilters({ ...filters, action: e.target.value }); }}>
-              <option value="">Todas</option>
-              {ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="a-user" className={labelClass}>Usuario</label>
-            <select id="a-user" className={inputClass} value={filters.user_id}
-              onChange={(e) => { setPage(1); setFilters({ ...filters, user_id: e.target.value }); }}>
-              <option value="">Todos</option>
-              {users.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="a-from" className={labelClass}>Desde</label>
-            <input id="a-from" type="date" className={inputClass} value={filters.from}
-              onChange={(e) => { setPage(1); setFilters({ ...filters, from: e.target.value }); }} />
-          </div>
-          <div>
-            <label htmlFor="a-to" className={labelClass}>Hasta</label>
-            <input id="a-to" type="date" className={inputClass} value={filters.to}
-              onChange={(e) => { setPage(1); setFilters({ ...filters, to: e.target.value }); }} />
-          </div>
-        </div>
-        <ErrorMessage>{error}</ErrorMessage>
-      </div>
-      {data === null ? (
-        <Loading label="Cargando auditoría…" />
-      ) : (
-        <div className="relative overflow-x-auto">
-          <table className="w-full">
-            <caption className="sr-only">Registros de auditoría</caption>
-            <thead className="bg-muted/60">
-              <tr>
-                <th scope="col" className={thClass}>Fecha</th>
-                <th scope="col" className={thClass}>Usuario</th>
-                <th scope="col" className={thClass}>Acción</th>
-                <th scope="col" className={thClass}>Entidad</th>
-                <th scope="col" className={thClass}>IP</th>
-                <th scope="col" className={thClass}>Detalle</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((a) => (
-                <tr key={a.id}>
-                  <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{formatDateTime(a.created_at)}</td>
-                  <td className={tdClass}>{userName(a.user_id)}</td>
-                  <td className={tdClass}>
-                    <span className={cn('text-xs font-extrabold tracking-wide', a.action.endsWith('_FAIL') ? 'text-alta' : 'text-brand')}>
-                      {a.action}
-                    </span>
-                  </td>
-                  <td className={cn(tdClass, 'text-muted-foreground')}>
-                    {a.entity}{a.entity_id !== null ? ` #${a.entity_id}` : ''}
-                  </td>
-                  <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{a.ip_address ?? '—'}</td>
-                  <td className={cn(tdClass, 'text-muted-foreground max-w-xs truncate')} title={a.detail ? JSON.stringify(a.detail) : undefined}>
-                    {a.detail ? JSON.stringify(a.detail) : ''}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-        <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-          <ChevronLeft aria-hidden className="w-4 h-4" /> Anterior
-        </button>
-        <span className="text-sm text-muted-foreground tabular-nums">Página {page} de {totalPages}</span>
-        <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-          Siguiente <ChevronRight aria-hidden className="w-4 h-4" />
-        </button>
-      </div>
-    </section>
   );
 }
 
@@ -328,85 +194,88 @@ function ErrorViewer({ users }: { users: UserAccount[] }) {
   const totalPages = data ? Math.max(1, Math.ceil(data.total / size)) : 1;
 
   return (
-    <section aria-labelledby="errors-title" className={cn(cardClass, 'overflow-hidden')}>
-      <div className="p-6 pb-4 space-y-4">
-        <div>
-          <div className="flex items-baseline gap-3">
-            <h2 id="errors-title" className={sectionTitle}>Errores del servidor (5xx)</h2>
-            {data && <span className="text-sm text-muted-foreground tabular-nums">{data.total} registros</span>}
-          </div>
-        </div>
-        <div className="grid sm:grid-cols-3 gap-3">
-          <div>
-            <label htmlFor="e-type" className={labelClass}>Tipo</label>
-            <select id="e-type" className={inputClass} value={filters.error_type}
-              onChange={(e) => { setPage(1); setFilters({ ...filters, error_type: e.target.value }); }}>
-              <option value="">Todos</option>
-              {types.map((t) => (
-                <option key={t.error_type} value={t.error_type}>{t.error_type} ({t.count})</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="e-from" className={labelClass}>Desde</label>
-            <input id="e-from" type="date" className={inputClass} value={filters.from}
-              onChange={(e) => { setPage(1); setFilters({ ...filters, from: e.target.value }); }} />
-          </div>
-          <div>
-            <label htmlFor="e-to" className={labelClass}>Hasta</label>
-            <input id="e-to" type="date" className={inputClass} value={filters.to}
-              onChange={(e) => { setPage(1); setFilters({ ...filters, to: e.target.value }); }} />
-          </div>
-        </div>
-        <ErrorMessage>{error}</ErrorMessage>
+    <>
+      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <label htmlFor="e-type" className="sr-only">Tipo de error</label>
+        <select id="e-type" className={cn(inputClass, 'h-9 w-64')} value={filters.error_type}
+          onChange={(e) => { setPage(1); setFilters({ ...filters, error_type: e.target.value }); }}>
+          <option value="">Todos los tipos</option>
+          {types.map((t) => (
+            <option key={t.error_type} value={t.error_type}>{t.error_type} ({t.count})</option>
+          ))}
+        </select>
+        <label htmlFor="e-from" className="sr-only">Desde</label>
+        <input id="e-from" type="date" className={cn(inputClass, 'h-9 w-40')} value={filters.from}
+          onChange={(e) => { setPage(1); setFilters({ ...filters, from: e.target.value }); }} />
+        a
+        <label htmlFor="e-to" className="sr-only">Hasta</label>
+        <input id="e-to" type="date" className={cn(inputClass, 'h-9 w-40')} value={filters.to}
+          onChange={(e) => { setPage(1); setFilters({ ...filters, to: e.target.value }); }} />
       </div>
-      {data === null ? (
-        <Loading label="Cargando errores…" />
-      ) : data.items.length === 0 ? (
-        <p className="px-6 pb-8 text-sm text-muted-foreground">No hay errores registrados con estos filtros.</p>
-      ) : (
-        <div className="relative overflow-x-auto">
-          <table className="w-full">
-            <caption className="sr-only">Errores del servidor</caption>
-            <thead className="bg-muted/60">
-              <tr>
-                <th scope="col" className={thClass}>Fecha</th>
-                <th scope="col" className={thClass}>Código</th>
-                <th scope="col" className={thClass}>Ruta</th>
-                <th scope="col" className={thClass}>Tipo</th>
-                <th scope="col" className={thClass}>Mensaje</th>
-                <th scope="col" className={thClass}>Ubicación</th>
-                <th scope="col" className={thClass}>Usuario</th>
-                <th scope="col" className={thClass}>Solicitud</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((e) => (
-                <tr key={e.id}>
-                  <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{formatDateTime(e.occurred_at)}</td>
-                  <td className={tdClass}><span className="text-xs font-extrabold text-alta">{e.status_code}</span></td>
-                  <td className={tdClass}>{e.method} {e.path}</td>
-                  <td className={cn(tdClass, 'text-muted-foreground')}>{e.error_type}</td>
-                  <td className={cn(tdClass, 'text-muted-foreground max-w-xs truncate')} title={e.message ?? ''}>{e.message ?? '—'}</td>
-                  <td className={cn(tdClass, 'text-muted-foreground')}>{e.location ?? '—'}</td>
-                  <td className={cn(tdClass, 'text-muted-foreground')}>{userName(e.user_id)}</td>
-                  <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{e.request_id.slice(0, 8)}</td>
+      <ErrorMessage className="mt-4">{error}</ErrorMessage>
+      <section aria-label="Errores del servidor" className={cn(cardClass, 'mt-4 overflow-hidden')}>
+        {data === null ? (
+          <Loading label="Cargando errores…" />
+        ) : data.items.length === 0 ? (
+          <EmptyState title="Sin errores del servidor" icon={<CheckCircle2 aria-hidden className="w-8 h-8 text-baja" />}>
+            {filters.error_type || filters.from || filters.to
+              ? 'No hay errores con estos filtros.'
+              : 'Aquí aparecen las fallas internas (5xx), sin datos de pacientes, para avisar al equipo técnico.'}
+          </EmptyState>
+        ) : (
+          <div className="relative overflow-x-auto">
+            <table className="w-full">
+              <caption className="sr-only">Errores del servidor</caption>
+              <thead className="bg-muted/60">
+                <tr>
+                  <th scope="col" className={cn(thClass, 'pl-5')}>Cuándo</th>
+                  <th scope="col" className={thClass}>Solicitud</th>
+                  <th scope="col" className={thClass}>Tipo</th>
+                  <th scope="col" className={thClass}>Mensaje</th>
+                  <th scope="col" className={thClass}>Usuario</th>
+                  <th scope="col" className={cn(thClass, 'pr-5')}>Referencia</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-        <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-          <ChevronLeft aria-hidden className="w-4 h-4" /> Anterior
-        </button>
-        <span className="text-sm text-muted-foreground tabular-nums">Página {page} de {totalPages}</span>
-        <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-          Siguiente <ChevronRight aria-hidden className="w-4 h-4" />
-        </button>
-      </div>
-    </section>
+              </thead>
+              <tbody>
+                {data.items.map((e) => (
+                  <tr key={e.id} className="align-top">
+                    <td className={cn(tdClass, 'pl-5 tabular-nums')}>
+                      <span className="block">{relativeTime(e.occurred_at)}</span>
+                      <span className="block text-xs text-muted-foreground">{formatDateTime(e.occurred_at)}</span>
+                    </td>
+                    <td className={tdClass}>
+                      <span className="font-bold text-destructive tabular-nums">{e.status_code}</span>{' '}
+                      <span className="text-muted-foreground">{e.method} {e.path}</span>
+                    </td>
+                    <td className={tdClass}>{e.error_type}</td>
+                    <td className={cn(tdClass, 'text-muted-foreground max-w-xs whitespace-normal')}>
+                      {e.message ?? '—'}
+                      {e.location && <span className="block text-xs">{e.location}</span>}
+                    </td>
+                    <td className={cn(tdClass, 'text-muted-foreground')}>{userName(e.user_id)}</td>
+                    <td className={cn(tdClass, 'pr-5 text-muted-foreground tabular-nums')} title={e.request_id}>{e.request_id.slice(0, 8)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {data && data.total > 0 && (
+          <div className="px-5 py-3 border-t border-border flex flex-wrap items-center justify-between gap-3">
+            <span className="text-sm text-muted-foreground tabular-nums">{data.total} errores</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground tabular-nums">Página {page} de {totalPages}</span>
+              <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((p) => p - 1)} aria-label="Página anterior">
+                <ChevronLeft aria-hidden className="w-4 h-4" />
+              </button>
+              <button className={secondaryButton} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} aria-label="Página siguiente">
+                <ChevronRight aria-hidden className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+    </>
   );
 }
 
@@ -415,49 +284,6 @@ function UserState({ u }: { u: UserAccount }) {
   if (isLocked(u)) return <span className="text-sm font-semibold text-media">Bloqueado</span>;
   return <span className="text-sm text-baja">Activo</span>;
 }
-
-const ENTITY_LABELS: Record<string, string> = {
-  case: 'caso',
-  patient: 'paciente',
-  user: 'usuario',
-  image: 'imagen',
-  triage: 'triage',
-  triage_config: 'parámetros',
-  data_subject_request: 'solicitud de titular',
-  report: 'reporte',
-  review: 'revisión',
-  inference: 'resultado de IA',
-  ai_validation: 'validación de IA',
-  consent: 'consentimiento',
-};
-
-/** Acción legible para la actividad reciente; el inicio de sesión no necesita la entidad. */
-function describeAudit(e: AuditEntry): string {
-  const label = ACTION_LABELS[e.action] ?? e.action;
-  if (e.action.startsWith('LOGIN') || e.action.startsWith('PASSWORD')) return label;
-  return `${label} de ${ENTITY_LABELS[e.entity] ?? e.entity}`;
-}
-
-const ACTION_LABELS: Record<string, string> = {
-  LOGIN_OK: 'Inicio de sesión',
-  LOGIN_FAIL: 'Inicio de sesión fallido',
-  VIEW: 'Consulta',
-  CREATE: 'Creación',
-  UPDATE: 'Modificación',
-  DELETE: 'Eliminación',
-  DOWNLOAD: 'Descarga',
-  OVERRIDE: 'Ajuste de nivel',
-  CONFIG_CHANGE: 'Cambio de parámetros',
-  SIGN: 'Firma',
-  SIGN_FAIL: 'Firma fallida',
-  EXPORT: 'Exportación',
-  PASSWORD_CHANGE: 'Cambio de contraseña',
-  PASSWORD_CHANGE_FAIL: 'Cambio de contraseña fallido',
-  CONSENT_GRANT: 'Consentimiento otorgado',
-  CONSENT_WITHDRAW: 'Consentimiento retirado',
-  BLOCK: 'Bloqueo de datos',
-  UNBLOCK: 'Desbloqueo de datos',
-};
 
 /** Página propia de un usuario: rol, estado, contraseña temporal y actividad reciente. */
 function UserPage({ userId, meId, onBack }: { userId: number; meId: number; onBack: () => void }) {
@@ -599,7 +425,10 @@ function UserPage({ userId, meId, onBack }: { userId: number; meId: number; onBa
               <ul>
                 {activity.map((e) => (
                   <li key={e.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 px-6 py-2.5 border-t border-border text-sm">
-                    <span>{describeAudit(e)}</span>
+                    <span>
+                      {describeAudit(e).title}
+                      {describeAudit(e).detail && <span className="text-muted-foreground"> · {describeAudit(e).detail}</span>}
+                    </span>
                     <span className="text-muted-foreground tabular-nums">{formatDateTime(e.created_at)}</span>
                   </li>
                 ))}
@@ -647,7 +476,151 @@ function UserPage({ userId, meId, onBack }: { userId: number; meId: number; onBa
   );
 }
 
-type AdminView = 'usuarios' | 'auditoria' | 'errores';
+type UserFilter = 'activos' | 'inactivos' | 'bloqueados' | 'pendientes' | 'sin-uso';
+const USER_FILTERS: Array<{ value: UserFilter | 'todos'; label: string }> = [
+  { value: 'todos', label: 'Todos los estados' },
+  { value: 'activos', label: 'Activos' },
+  { value: 'inactivos', label: 'Desactivados' },
+  { value: 'bloqueados', label: 'Bloqueados' },
+  { value: 'pendientes', label: 'Contraseña temporal' },
+  { value: 'sin-uso', label: 'Sin uso en 30 días' },
+];
+
+function matchesFilter(u: UserAccount, f: UserFilter | null): boolean {
+  const idle = !u.last_login_at || Date.now() - new Date(u.last_login_at).getTime() > 30 * 86400000;
+  switch (f) {
+    case 'activos':
+      return u.is_active;
+    case 'inactivos':
+      return !u.is_active;
+    case 'bloqueados':
+      return u.is_active && isLocked(u);
+    case 'pendientes':
+      return u.is_active && !!u.must_change_password;
+    case 'sin-uso':
+      return u.is_active && idle;
+    default:
+      return true;
+  }
+}
+
+/** Lista de usuarios con filtros por rol, estado y búsqueda (en la dirección). */
+function UsersView({ users, onOpenUser }: { users: UserAccount[] | null; onOpenUser: (id: number) => void }) {
+  const [params, setParams] = useSearchParams();
+  const role = (ROLES as string[]).includes(params.get('rol') ?? '') ? (params.get('rol') as Role) : null;
+  const filter = USER_FILTERS.some((f) => f.value === params.get('estado')) ? (params.get('estado') as UserFilter) : null;
+  const query = params.get('q') ?? '';
+  const setParam = (k: string, v: string | null) => {
+    const next = new URLSearchParams(params);
+    if (v) next.set(k, v);
+    else next.delete(k);
+    setParams(next, { replace: true });
+  };
+  const term = query.trim().toLowerCase().replace(/\./g, '');
+  const shown = (users ?? []).filter(
+    (u) =>
+      (!role || u.role === role) &&
+      matchesFilter(u, filter) &&
+      (!term || `${u.full_name} ${u.rut} ${u.email}`.toLowerCase().replace(/\./g, '').includes(term)),
+  );
+  const count = (r: Role | null) => (users ?? []).filter((u) => !r || u.role === r).length;
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Segmented
+          label="Filtrar por rol"
+          value={role ?? 'todos'}
+          onChange={(v) => setParam('rol', v === 'todos' ? null : v)}
+          options={[
+            { value: 'todos', label: 'Todos', count: users ? count(null) : null },
+            ...ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r], count: users ? count(r) : null })),
+          ]}
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="u-filter" className="sr-only">Estado</label>
+          <select id="u-filter" className={cn(inputClass, 'h-9 w-52')} value={filter ?? 'todos'}
+            onChange={(e) => setParam('estado', e.target.value === 'todos' ? null : e.target.value)}>
+            {USER_FILTERS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+          </select>
+          <label htmlFor="u-search" className="sr-only">Buscar por nombre, RUT o email</label>
+          <input id="u-search" type="search" className={cn(inputClass, 'h-9 w-60')} placeholder="Buscar nombre, RUT o email"
+            value={query} onChange={(e) => setParam('q', e.target.value || null)} />
+        </div>
+      </div>
+
+      <section aria-label="Usuarios" className={cn(cardClass, 'mt-4 overflow-hidden')}>
+        {users === null ? (
+          <Loading label="Cargando usuarios…" />
+        ) : shown.length === 0 ? (
+          <EmptyState title="Sin usuarios" icon={<Users aria-hidden className="w-8 h-8" />}>
+            No hay usuarios con estos filtros.
+          </EmptyState>
+        ) : (
+          <div className="relative overflow-x-auto">
+            <table className="w-full">
+              <caption className="sr-only">Usuarios</caption>
+              <thead className="bg-muted/60">
+                <tr>
+                  <th scope="col" className={cn(thClass, 'pl-5')}>Usuario</th>
+                  <th scope="col" className={thClass}>RUT</th>
+                  <th scope="col" className={thClass}>Rol</th>
+                  <th scope="col" className={thClass}>Estado</th>
+                  <th scope="col" className={cn(thClass, 'pr-5')}>Último ingreso</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((u) => (
+                  <tr key={u.id} onClick={() => onOpenUser(u.id)} className="cursor-pointer hover:bg-accent/60 transition-colors">
+                    <td className={cn(tdClass, 'pl-5')}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenUser(u.id);
+                        }}
+                        className="font-semibold hover:text-brand hover:underline text-left"
+                      >
+                        {u.full_name}
+                      </button>
+                      <span className="block text-xs text-muted-foreground">{u.email}</span>
+                    </td>
+                    <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{u.rut}</td>
+                    <td className={tdClass}>{ROLE_LABELS[u.role]}</td>
+                    <td className={tdClass}>
+                      <UserState u={u} />
+                      {u.must_change_password && u.is_active && (
+                        <span className="block text-xs text-muted-foreground">Contraseña temporal sin cambiar</span>
+                      )}
+                    </td>
+                    <td className={cn(tdClass, 'pr-5 tabular-nums')}>
+                      {u.last_login_at ? (
+                        <>
+                          <span className="block">{relativeTime(u.last_login_at)}</span>
+                          {Date.now() - new Date(u.last_login_at).getTime() < 30 * 86400000 && (
+                            <span className="block text-xs text-muted-foreground">{formatDateTime(u.last_login_at)}</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">Nunca</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {users && users.length > 0 && (
+          <p className="px-5 py-3 border-t border-border text-sm text-muted-foreground tabular-nums">
+            {shown.length === users.length ? `${users.length} usuarios` : `${shown.length} de ${users.length} usuarios`}
+          </p>
+        )}
+      </section>
+    </>
+  );
+}
+
+const VIEWS: AdminView[] = ['resumen', 'usuarios', 'auditoria', 'errores'];
 
 interface AdminPanelProps {
   meId: number;
@@ -659,20 +632,33 @@ interface AdminPanelProps {
 
 export default function AdminPanel({ meId, userId = null, onOpenUser, onBack }: AdminPanelProps) {
   const [params, setParams] = useSearchParams();
-  const raw = params.get('vista');
-  const view: AdminView = raw === 'auditoria' || raw === 'errores' ? raw : 'usuarios';
+  const raw = params.get('vista') as AdminView | null;
+  const view: AdminView = raw && VIEWS.includes(raw) ? raw : 'resumen';
   const [stats, setStats] = useState<AdminStats | null>(null);
+  const [overview, setOverview] = useState<Overview | null>(null);
   const [privacy, setPrivacy] = useState<DataRequestSummary | null>(null);
+  const [inference, setInference] = useState<InferenceStatus | null>(null);
+  const [recent, setRecent] = useState<AuditEntry[] | null>(null);
   const [users, setUsers] = useState<UserAccount[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
   const loadData = useCallback(async () => {
-    const [s, u, pr] = await Promise.all([apiClient.getAdminStats(), apiClient.listUsers(), apiClient.dataRequestsSummary()]);
+    const [s, u, pr, ov, inf, rc] = await Promise.all([
+      apiClient.getAdminStats(),
+      apiClient.listUsers(),
+      apiClient.dataRequestsSummary(),
+      apiClient.getAdminOverview(),
+      apiClient.getInferenceStatus(),
+      apiClient.listAudit({ page: 1, size: 8 }),
+    ]);
     if (s.data) setStats(s.data);
     if (pr.data) setPrivacy(pr.data);
     if (u.data) setUsers(u.data);
-    setError(s.error || u.error || null);
+    if (ov.data) setOverview(ov.data);
+    setInference(inf.data ?? null);
+    setRecent(rc.data?.items ?? []);
+    setError(u.error || ov.error || null);
   }, []);
 
   useEffect(() => {
@@ -687,107 +673,61 @@ export default function AdminPanel({ meId, userId = null, onOpenUser, onBack }: 
     );
   }
 
-  const statItems = [
-    { label: 'Usuarios activos', value: stats ? `${stats.active_users} de ${stats.total_users}` : '—' },
-    { label: 'Pacientes', value: stats ? stats.total_patients.toLocaleString('es-CL') : '—' },
-    { label: 'Casos', value: stats ? stats.total_cases.toLocaleString('es-CL') : '—' },
-    {
-      label: 'Solicitudes abiertas',
-      value: privacy ? String(privacy.open_total) : '—',
-      alert: privacy && privacy.overdue > 0 ? `${privacy.overdue} vencidas` : null,
-    },
-  ];
+  /** Cambia de vista; los filtros de la vista anterior no se arrastran. */
+  const go = (v: AdminView, extra: Record<string, string> = {}) =>
+    setParams(v === 'resumen' ? {} : { vista: v, ...extra }, { replace: false });
 
   return (
     <div className={pageClass}>
       <ListHeader
         title="Administración"
         actions={
-          view === 'usuarios' && (
-            <button className={primaryButton} onClick={() => setShowForm(true)}>
-              <UserPlus aria-hidden className="w-4 h-4" /> Nuevo usuario
-            </button>
-          )
+          <button className={primaryButton} onClick={() => setShowForm(true)}>
+            <UserPlus aria-hidden className="w-4 h-4" /> Nuevo usuario
+          </button>
         }
       />
 
       <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
-      <dl className={cn(cardClass, 'mt-6 grid grid-cols-2 lg:grid-cols-4 divide-x divide-border')}>
-        {statItems.map(({ label, value, alert }) => (
-          <div key={label} className="px-6 py-4">
-            <dd className="text-2xl font-extrabold tabular-nums">
-              {value}
-              {alert && <span className="ml-2 text-sm font-bold text-alta">{alert}</span>}
-            </dd>
-            <dt className="text-sm text-muted-foreground">{label}</dt>
-          </div>
-        ))}
-      </dl>
-
       <Segmented
         className="mt-6"
         label="Sección"
         value={view}
-        onChange={(v) => setParams(v === 'usuarios' ? {} : { vista: v }, { replace: true })}
+        onChange={(v) => go(v)}
         options={[
+          { value: 'resumen', label: <><LayoutDashboard aria-hidden className="w-4 h-4" /> Resumen</> },
           { value: 'usuarios', label: <><Users aria-hidden className="w-4 h-4" /> Usuarios</>, count: users ? users.length : null },
-          { value: 'auditoria', label: <><ScrollText aria-hidden className="w-4 h-4" /> Auditoría</> },
-          { value: 'errores', label: <><ServerCrash aria-hidden className="w-4 h-4" /> Errores</> },
+          { value: 'auditoria', label: <><ScrollText aria-hidden className="w-4 h-4" /> Bitácora</> },
+          {
+            value: 'errores',
+            label: <><ServerCrash aria-hidden className="w-4 h-4" /> Errores</>,
+            count: overview ? overview.server_errors_7d || undefined : undefined,
+          },
         ]}
       />
 
       <div className="mt-4">
-        {view === 'usuarios' ? (
-          <section aria-label="Usuarios" className={cn(cardClass, 'overflow-hidden')}>
-            {users === null ? (
-              <Loading label="Cargando usuarios…" />
-            ) : (
-              <div className="relative overflow-x-auto">
-                <table className="w-full">
-                  <caption className="sr-only">Usuarios</caption>
-                  <thead className="bg-muted/60">
-                    <tr>
-                      <th scope="col" className={cn(thClass, 'pl-5')}>Usuario</th>
-                      <th scope="col" className={thClass}>RUT</th>
-                      <th scope="col" className={thClass}>Rol</th>
-                      <th scope="col" className={thClass}>Estado</th>
-                      <th scope="col" className={cn(thClass, 'pr-5')}>Último ingreso</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((u) => (
-                      <tr key={u.id} onClick={() => onOpenUser(u.id)} className="cursor-pointer hover:bg-accent/60 transition-colors">
-                        <td className={cn(tdClass, 'pl-5')}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onOpenUser(u.id);
-                            }}
-                            className="font-semibold hover:text-brand hover:underline text-left"
-                          >
-                            {u.full_name}
-                          </button>
-                          <span className="block text-xs text-muted-foreground">{u.email}</span>
-                        </td>
-                        <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{u.rut}</td>
-                        <td className={tdClass}>{ROLE_LABELS[u.role]}</td>
-                        <td className={tdClass}>
-                          <UserState u={u} />
-                          {u.must_change_password && u.is_active && (
-                            <span className="block text-xs text-muted-foreground">Cambio de contraseña pendiente</span>
-                          )}
-                        </td>
-                        <td className={cn(tdClass, 'pr-5 text-muted-foreground tabular-nums')}>{formatDateTime(u.last_login_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
+        {view === 'resumen' ? (
+          overview ? (
+            <AdminOverview
+              overview={overview}
+              stats={stats}
+              privacy={privacy}
+              inference={inference}
+              recent={recent}
+              users={users ?? []}
+              go={go}
+              onOpenUser={onOpenUser}
+              onNewUser={() => setShowForm(true)}
+            />
+          ) : (
+            <Loading label="Cargando resumen…" />
+          )
+        ) : view === 'usuarios' ? (
+          <UsersView users={users} onOpenUser={onOpenUser} />
         ) : view === 'auditoria' ? (
-          <AuditViewer users={users ?? []} />
+          <AuditLog users={users ?? []} onOpenUser={onOpenUser} />
         ) : (
           <ErrorViewer users={users ?? []} />
         )}

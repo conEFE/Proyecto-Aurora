@@ -428,6 +428,24 @@ export interface DashboardMetrics {
   triage_agreement_rate: number | null;
 }
 
+/** Resumen del administrador (GET /admin/overview). */
+export interface AdminOverview {
+  version: string;
+  users_total: number;
+  users_active: number;
+  users_by_role: Record<Role, number>;
+  users_locked: number;
+  users_pending_password: number;
+  users_idle_30d: number;
+  admins_active: number;
+  security_events_24h: number;
+  logins_per_day: Array<{ day: string; ok: number; failed: number }>;
+  actions_7d: Record<string, number>;
+  server_errors_7d: number;
+  last_server_error_at: string | null;
+  audit_total: number;
+}
+
 export interface AdminStats {
   total_users: number;
   active_users: number;

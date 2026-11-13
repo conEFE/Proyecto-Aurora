@@ -707,6 +707,24 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## Sin número de versión — Administración con resumen, filtros y bitácora legible
+
+Sin migraciones. API nueva: `GET /admin/overview` (solo ADMIN). `GET /admin/audit?action=` acepta varias acciones
+separadas por comas. El backend recibe `AURORA_VERSION` desde docker compose para mostrar la versión instalada.
+
+- **Resumen** (portada del administrador): versión instalada, estado del modelo de IA, errores del servidor en 7 días
+  y datos; **Requiere atención** con enlaces (cuentas bloqueadas, alertas de seguridad en 24 h, errores, solicitudes
+  de titulares vencidas, contraseñas temporales sin cambiar, cuentas sin uso en 30 días y un solo administrador
+  activo); ingresos correctos y fallidos de los últimos 14 días; actividad reciente; equipo por rol y uso en 7 días.
+- **Usuarios**: filtros por rol (con conteos), estado (activos, desactivados, bloqueados, contraseña temporal, sin uso
+  en 30 días) y búsqueda por nombre, RUT o email, en la dirección. Último ingreso relativo («hace 2 h»).
+- **Bitácora**: cada registro en lenguaje simple («Validó un resultado de IA · Concordante · caso n.º 23»), sin códigos
+  ni JSON; las fallas de seguridad destacadas; filtros por tipo (ingresos, alertas de seguridad, cambios, consultas),
+  usuario y fechas en la dirección; **Descargar CSV** (hasta 2.000 registros, con el código de cada acción).
+- **Errores**: filtros arriba y estado vacío explicado.
+- Pruebas: permisos, conteos de cuentas y seguridad, días sin movimiento, registros antiguos y filtro de varias
+  acciones.
+
 ## Sin número de versión — pantallas con el patrón de Casos, Dashboard y PDF ampliados
 
 Sin migraciones. Un cambio en la API, compatible hacia atrás: `cases_per_week[].by_level` en `GET /dashboard`.
