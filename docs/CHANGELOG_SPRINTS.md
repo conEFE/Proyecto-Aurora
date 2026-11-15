@@ -723,6 +723,8 @@ ignora tildes y diéresis.
   Privacidad, el selector de paciente de «Nuevo caso» y la búsqueda de usuarios de Administración.
 - **Meta de exactitud del modelo: ≥ 85 %** (antes 90 %), en el Dashboard y en el informe PDF.
 - Pruebas: búsqueda sin tildes, páginas con total y filtros, renovación de la sesión y la nueva meta.
+- **Seguridad de dependencias**: React Router 6.30.1 → 7.18.5 por avisos de redirección abierta publicados después de
+  la 2.10.0 (`npm audit` del CI fallaba desde el 13-11). Mismo uso, sin cambios de código; probado en todas las rutas.
 
 ## Sin número de versión — filtros y búsquedas pedidos por el equipo (15-11-2026)
 
