@@ -14,6 +14,7 @@ import { Loading } from './components/Feedback';
 import ChangePassword from './components/ChangePassword';
 import PrivacyPanel from './components/PrivacyPanel';
 import Profile from './components/Profile';
+import SessionKeeper from './components/SessionKeeper';
 import { apiClient } from './services/api';
 import type { Me, Patient, Role } from './types';
 
@@ -223,6 +224,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background lg:flex">
+      <SessionKeeper />
       <Header
         currentSection={section ?? (me.role === 'ADMIN' ? 'panel' : 'home')}
         onSectionChange={(s) => navigate(SECTION_PATHS[s])}

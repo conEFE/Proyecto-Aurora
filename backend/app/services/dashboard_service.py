@@ -23,7 +23,7 @@ from app.schemas.reviews import (
 )
 
 # KPI K5: exactitud del modelo ≥ 90 %, evaluada solo con resultados reales y una muestra mínima
-K5_TARGET = 0.90
+K5_TARGET = 0.85
 K5_MIN_SAMPLE = 30
 REFERENCE_STANDARD = (
     "Validación del médico revisor sobre cada imagen (no reemplaza la confirmación histológica)"

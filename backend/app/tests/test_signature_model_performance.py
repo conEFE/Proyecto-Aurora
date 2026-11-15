@@ -141,7 +141,7 @@ def test_model_performance_by_version(client, tokens, db):
     r = client.get("/dashboard/model-performance", headers=h)
     assert r.status_code == 200
     body = r.json()
-    assert body["k5_target"] == 0.9
+    assert body["k5_target"] == 0.85
     by_version = {v["model_version"]: v for v in body["versions"]}
     # Primero los resultados reales, después los simulados
     assert [v["model_version"] for v in body["versions"]] == ["yolo-v1", "simulado-v1"]
@@ -182,7 +182,7 @@ def test_k5_is_evaluated_only_for_real_results_with_enough_sample(client, tokens
         v["model_version"]: v
         for v in client.get("/dashboard/model-performance", headers=h).json()["versions"]
     }
-    assert versions["yolo-v1"]["meets_k5"] is False  # 71,4 % < 90 %
+    assert versions["yolo-v1"]["meets_k5"] is False  # 71,4 % < 85 %
     assert versions["simulado-v1"]["meets_k5"] is None  # nunca con IA simulada
 
 

@@ -1,4 +1,6 @@
-from sqlalchemy import or_
+import unicodedata
+
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.db.models.patient import Patient
@@ -51,15 +53,24 @@ def get_patient(db: Session, patient_id: int, actor: User, ip: str | None = None
     return with_version(db, patient)
 
 
-def search_patients(
-    db: Session,
-    actor: User,
-    search: str | None = None,
-    limit: int = 50,
-    ip: str | None = None,
-    include_blocked: bool = False,
-    status: str | None = None,
-) -> list[Patient]:
+# Tildes y diéresis que se ignoran al buscar: «Maria» encuentra «María» y «Nunez», «Núñez»
+# (mayúsculas incluidas: así no depende de cómo la BD pase a minúsculas los caracteres no ASCII)
+_ACCENTED = "áéíóúüàèìòùâêîôûäëïöñÁÉÍÓÚÜÀÈÌÒÙÂÊÎÔÛÄËÏÖÑ"
+_PLAIN = "aeiouuaeiouaeiouaeionaeiouuaeiouaeiouaeion"
+assert len(_ACCENTED) == len(_PLAIN)
+
+
+def _fold(text: str) -> str:
+    """Minúsculas y sin tildes (para comparar)."""
+    decomposed = unicodedata.normalize("NFD", text.lower())
+    return "".join(c for c in decomposed if unicodedata.category(c) != "Mn")
+
+
+def _folded(column):
+    return func.lower(func.translate(column, _ACCENTED, _PLAIN))
+
+
+def _patients_query(db: Session, search: str | None, include_blocked: bool, status: str | None):
     q = db.query(Patient)
     if status == "bloqueado":
         q = q.filter(Patient.blocked_at.is_not(None))
@@ -69,15 +80,54 @@ def search_patients(
         q = q.filter(Patient.consent_given.is_(True))
     elif status == "sin_consentimiento":
         q = q.filter(Patient.consent_given.is_(False))
-    if search:
-        term = f"%{search.strip()}%"
+    if search and search.strip():
+        term = f"%{_fold(search.strip())}%"
+        rut = f"%{search.strip().replace('.', '')}%"
+        full_name = func.concat(_folded(Patient.first_name), " ", _folded(Patient.last_name))
         q = q.filter(
-            or_(Patient.rut.ilike(term), Patient.first_name.ilike(term), Patient.last_name.ilike(term))
+            or_(
+                Patient.rut.ilike(rut),
+                _folded(Patient.first_name).like(term),
+                _folded(Patient.last_name).like(term),
+                full_name.like(term),
+            )
         )
-    patients = q.order_by(Patient.created_at.desc()).limit(limit).all()
+    return q
+
+
+def search_patients(
+    db: Session,
+    actor: User,
+    search: str | None = None,
+    limit: int = 50,
+    ip: str | None = None,
+    include_blocked: bool = False,
+    status: str | None = None,
+) -> list[Patient]:
+    patients = (
+        _patients_query(db, search, include_blocked, status).order_by(Patient.created_at.desc()).limit(limit).all()
+    )
     # Se registra la consulta sin el término buscado (puede contener un RUT)
     audit(db, actor, "VIEW", "patient", None, {"list": True, "results": len(patients)}, ip)
     return [with_version(db, p) for p in patients]
+
+
+def page_patients(
+    db: Session,
+    actor: User,
+    search: str | None = None,
+    status: str | None = None,
+    include_blocked: bool = True,
+    page: int = 1,
+    size: int = 25,
+    ip: str | None = None,
+) -> tuple[list[Patient], int]:
+    """Página de pacientes con el total, para recorrer la lista completa."""
+    q = _patients_query(db, search, include_blocked, status)
+    total = q.count()
+    patients = q.order_by(Patient.created_at.desc(), Patient.id.desc()).offset((page - 1) * size).limit(size).all()
+    audit(db, actor, "VIEW", "patient", None, {"list": True, "results": len(patients), "page": page}, ip)
+    return [with_version(db, p) for p in patients], total
 
 
 def update_patient(

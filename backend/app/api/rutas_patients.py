@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.auth.rbac import require_roles
 from app.db.models.user import User, UserRole
 from app.deps import get_db
-from app.schemas.patients import PatientCreate, PatientOut, PatientUpdate, TimelineEvent
+from app.schemas.patients import PatientCreate, PatientOut, PatientPage, PatientUpdate, TimelineEvent
 from app.schemas.privacy import (
     BlockRequest,
     ConsentEventOut,
@@ -51,6 +51,24 @@ def list_patients(
     return patient_service.search_patients(
         db, actor, search, ip=client_ip(request), include_blocked=include_blocked, status=status
     )
+
+
+@router.get("/page", response_model=PatientPage)
+def page_patients(
+    request: Request,
+    search: str | None = Query(None, description="RUT o nombre; ignora tildes («Maria» encuentra «María»)"),
+    status: Literal["activo", "sin_consentimiento", "bloqueado"] | None = Query(None),
+    include_blocked: bool = Query(True, description="Incluir pacientes con datos bloqueados"),
+    page: int = Query(1, ge=1),
+    size: int = Query(25, ge=1, le=100),
+    actor: User = Depends(clinical_staff),
+    db: Session = Depends(get_db),
+):
+    """Lista completa de pacientes, paginada y con el total (registra VIEW)."""
+    items, total = patient_service.page_patients(
+        db, actor, search, status, include_blocked, page, size, ip=client_ip(request)
+    )
+    return PatientPage(items=items, total=total, page=page, size=size)
 
 
 @router.get("/{patient_id}", response_model=PatientOut)

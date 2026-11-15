@@ -98,3 +98,10 @@ class TimelineEvent(BaseModel):
     case_code: str | None = None
     actor_name: str | None = None
     detail: dict = Field(default_factory=dict)
+
+
+class PatientPage(BaseModel):
+    items: list[PatientOut]
+    total: int
+    page: int
+    size: int

@@ -504,6 +504,9 @@ function matchesFilter(u: UserAccount, f: UserFilter | null): boolean {
   }
 }
 
+/** Minúsculas y sin tildes: «maria» encuentra «María». */
+const fold = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 /** Lista de usuarios con filtros por rol, estado y búsqueda (en la dirección). */
 function UsersView({ users, onOpenUser }: { users: UserAccount[] | null; onOpenUser: (id: number) => void }) {
   const [params, setParams] = useSearchParams();
@@ -516,12 +519,12 @@ function UsersView({ users, onOpenUser }: { users: UserAccount[] | null; onOpenU
     else next.delete(k);
     setParams(next, { replace: true });
   };
-  const term = query.trim().toLowerCase().replace(/\./g, '');
+  const term = fold(query.trim()).replace(/\./g, '');
   const shown = (users ?? []).filter(
     (u) =>
       (!role || u.role === role) &&
       matchesFilter(u, filter) &&
-      (!term || `${u.full_name} ${u.rut} ${u.email}`.toLowerCase().replace(/\./g, '').includes(term)),
+      (!term || fold(`${u.full_name} ${u.rut} ${u.email}`).replace(/\./g, '').includes(term)),
   );
   const count = (r: Role | null) => (users ?? []).filter((u) => !r || u.role === r).length;
 

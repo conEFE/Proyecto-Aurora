@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Loader2, Moon, Sun } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useTheme } from '../lib/theme';
 import { cn } from '../lib/cn';
 import PasswordInput from './PasswordInput';
+import { LOGOUT_REASON_KEY } from '../lib/session';
 import colaImg from '../assets/landing/cola.webp';
 import BrandMark from './BrandMark';
 import { ErrorMessage } from './Feedback';
@@ -21,6 +22,23 @@ export default function Login({ onLogin, onBack }: LoginProps) {
   const [rut, setRut] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // Si la sesión anterior se cerró por inactividad, se avisa una vez
+  const [notice] = useState(() => {
+    try {
+      return sessionStorage.getItem(LOGOUT_REASON_KEY) === 'inactividad'
+        ? 'Su sesión se cerró por inactividad. Ingrese de nuevo para continuar.'
+        : null;
+    } catch {
+      return null;
+    }
+  });
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem(LOGOUT_REASON_KEY);
+    } catch {
+      /* nada que limpiar */
+    }
+  }, []);
   const [submitting, setSubmitting] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
@@ -72,6 +90,9 @@ export default function Login({ onLogin, onBack }: LoginProps) {
               <p className="mt-3 text-muted-foreground">Con el RUT y la contraseña que le entregó el administrador.</p>
             </div>
 
+            {notice && !error && (
+              <p role="status" className="px-3 py-2.5 rounded-lg bg-info/10 border border-info/30 text-sm">{notice}</p>
+            )}
             <ErrorMessage>{error}</ErrorMessage>
 
             <div>

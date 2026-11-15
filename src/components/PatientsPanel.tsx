@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, FolderPlus, Loader2, Save, Search, Trash2, UserPlus, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FolderPlus, Loader2, Save, Search, Trash2, UserPlus, Users } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
@@ -295,6 +295,8 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
   );
 }
 
+const PAGE_SIZE = 25;
+
 const STATUS_FILTERS: Array<{ value: PatientStatusFilter; label: string }> = [
   { value: 'activo', label: 'Activos' },
   { value: 'sin_consentimiento', label: 'Sin consentimiento' },
@@ -312,28 +314,47 @@ interface PatientsPanelProps {
 
 /** Pacientes: buscar, registrar, editar, ver sus casos y eliminar (solo sin casos). */
 export default function PatientsPanel({ patientId = null, onOpenPatient, onBack, onOpenCase, onNewCase }: PatientsPanelProps) {
-  const [term, setTerm] = useState('');
   const [patients, setPatients] = useState<Patient[] | null>(null);
+  const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<Patient | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Estado en la dirección: ?estado=activo | sin_consentimiento | bloqueado
+  // Filtros en la dirección: ?estado=activo | sin_consentimiento | bloqueado, ?q=búsqueda y ?pagina=N
   const [params, setParams] = useSearchParams();
   const rawStatus = params.get('estado');
   const status = STATUS_FILTERS.some((f) => f.value === rawStatus) ? (rawStatus as PatientStatusFilter) : null;
+  const q = params.get('q') ?? '';
+  const page = Math.max(1, Number(params.get('pagina')) || 1);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const setFilters = (next: { estado?: string | null; q?: string; pagina?: number }) => {
+    const merged = { estado: status as string | null, q, pagina: page, ...next };
+    const out: Record<string, string> = {};
+    if (merged.estado) out.estado = merged.estado;
+    if (merged.q.trim()) out.q = merged.q.trim();
+    if (merged.pagina > 1) out.pagina = String(merged.pagina);
+    setParams(out, { replace: next.q !== undefined });
+  };
+  // La búsqueda se aplica al dejar de escribir (ignora tildes: «Maria» encuentra «María»)
+  const [term, setTerm] = useState(q);
+  useEffect(() => {
+    if (term.trim() === q) return;
+    const t = window.setTimeout(() => setFilters({ q: term, pagina: 1 }), 350);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [term]);
 
-  const load = useCallback(async (search?: string) => {
-    const r = await apiClient.searchPatients(search?.trim() || undefined, true, status ?? undefined);
+  const load = useCallback(async () => {
+    const r = await apiClient.pagePatients({ search: q || undefined, status: status ?? undefined, include_blocked: true, page, size: PAGE_SIZE });
     if (r.data) {
-      setPatients(r.data);
+      setPatients(r.data.items);
+      setTotal(r.data.total);
       setError(null);
     } else setError(r.error || 'No se pudieron cargar los pacientes.');
-  }, [status]);
+  }, [status, q, page]);
 
   useEffect(() => {
-    if (patientId === null) load(term);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (patientId === null) load();
   }, [load, patientId]);
 
   // La ficha sale de la dirección: se busca en la lista cargada o se pide al servidor
@@ -423,22 +444,16 @@ export default function PatientsPanel({ patientId = null, onOpenPatient, onBack,
         value={status ?? 'todos'}
         onChange={(v) => {
           setPatients(null);
-          setParams(v === 'todos' ? {} : { estado: v }, { replace: true });
+          setFilters({ estado: v === 'todos' ? null : v, pagina: 1 });
         }}
         options={[{ value: 'todos', label: 'Todos' }, ...STATUS_FILTERS]}
       />
-      <form
-        className="flex gap-2 w-full max-w-md"
-        onSubmit={(e) => {
-          e.preventDefault();
-          load(term);
-        }}
-      >
+      <span className="relative w-full max-w-sm">
         <label htmlFor="pp-search" className="sr-only">Buscar por RUT o nombre</label>
-        <input id="pp-search" type="search" className={inputClass} placeholder="Buscar por RUT o nombre" value={term}
+        <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input id="pp-search" type="search" className={cn(inputClass, 'pl-9')} placeholder="Buscar por RUT o nombre" value={term}
           onChange={(e) => setTerm(e.target.value)} />
-        <button type="submit" className={secondaryButton}><Search aria-hidden className="w-4 h-4" /> Buscar</button>
-      </form>
+      </span>
       </div>
 
       <div className={cn(cardClass, 'mt-4 overflow-hidden')}>
@@ -446,7 +461,7 @@ export default function PatientsPanel({ patientId = null, onOpenPatient, onBack,
           <Loading label="Cargando pacientes…" />
         ) : patients.length === 0 ? (
           <EmptyState title="Sin pacientes" icon={<Users aria-hidden className="w-8 h-8" />}>
-            {term || status ? 'No hay pacientes con estos filtros.' : 'Registre la primera con «Nuevo paciente».'}
+            {q || status ? 'No hay pacientes con estos filtros.' : 'Registre la primera con «Nuevo paciente».'}
           </EmptyState>
         ) : (
           <div className="relative overflow-x-auto">
@@ -485,10 +500,24 @@ export default function PatientsPanel({ patientId = null, onOpenPatient, onBack,
             </table>
           </div>
         )}
-        {patients && patients.length >= 50 && (
-          <p className="px-5 py-3 border-t border-border text-sm text-muted-foreground">
-            Se muestran las 50 más recientes. Use la búsqueda para encontrar otras.
-          </p>
+        {patients && (
+          <div className="px-5 py-3 border-t border-border flex flex-wrap items-center justify-between gap-3">
+            <span className="text-sm text-muted-foreground tabular-nums">
+              {total.toLocaleString('es-CL')} {total === 1 ? 'paciente' : 'pacientes'}
+              {status || q ? ' con estos filtros' : ''}
+            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground tabular-nums">Página {page} de {totalPages}</span>
+              <button className={secondaryButton} disabled={page <= 1} aria-label="Página anterior"
+                onClick={() => setFilters({ pagina: page - 1 })}>
+                <ChevronLeft aria-hidden className="w-4 h-4" />
+              </button>
+              <button className={secondaryButton} disabled={page >= totalPages} aria-label="Página siguiente"
+                onClick={() => setFilters({ pagina: page + 1 })}>
+                <ChevronRight aria-hidden className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         )}
       </div>
       {modal}

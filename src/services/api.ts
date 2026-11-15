@@ -91,6 +91,16 @@ class ApiClient {
     }
   }
 
+  /** Renueva el token de la sesión (lo pide la interfaz mientras hay actividad). */
+  async refreshSession(): Promise<boolean> {
+    const r = await this.request<TokenResponse>('/auth/refresh', { method: 'POST' });
+    if (r.data?.access_token) {
+      this.setToken(r.data.access_token);
+      return true;
+    }
+    return false;
+  }
+
   /** Ante un 401 con sesión activa: cerrar sesión y volver al login. */
   private handleUnauthorized() {
     if (this.getToken()) {
@@ -198,6 +208,10 @@ class ApiClient {
 
   async getPatient(id: number) {
     return this.request<Patient>(`/patients/${id}`);
+  }
+
+  async pagePatients(filters: { search?: string; status?: PatientStatusFilter; include_blocked?: boolean; page?: number; size?: number } = {}) {
+    return this.request<Page<Patient>>(`/patients/page?${query(filters)}`);
   }
 
   async searchPatients(search?: string, includeBlocked = false, status?: PatientStatusFilter) {

@@ -707,6 +707,23 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## Sin número de versión — sesión por inactividad, pacientes completos y búsqueda sin tildes (15-11-2026)
+
+Sin migraciones. API, compatible hacia atrás: `POST /auth/refresh` y `GET /patients/page`; la búsqueda de pacientes
+ignora tildes y diéresis.
+
+- **Sesión por inactividad** (corrección): antes la sesión vencía 30 minutos después del ingreso **aunque se estuviera
+  trabajando**. Ahora la interfaz renueva el token mientras hay actividad (teclado, mouse, toque o desplazamiento;
+  los sondeos automáticos no cuentan) y, tras un rato sin actividad, avisa un minuto antes («¿Sigue ahí?») y cierra
+  la sesión; el ingreso explica por qué. La actividad se comparte entre pestañas. Un cambio de contraseña o la
+  desactivación de la cuenta impiden renovar.
+- **Pacientes completos**: la lista ya no se corta en las 50 más recientes; tiene páginas como Casos y muestra el
+  total. Igual en Privacidad → Pacientes, que además suma el filtro por estado.
+- **Búsqueda sin tildes**: «Maria» encuentra «María» y «Nunez», «Núñez», también por nombre completo, en Pacientes,
+  Privacidad, el selector de paciente de «Nuevo caso» y la búsqueda de usuarios de Administración.
+- **Meta de exactitud del modelo: ≥ 85 %** (antes 90 %), en el Dashboard y en el informe PDF.
+- Pruebas: búsqueda sin tildes, páginas con total y filtros, renovación de la sesión y la nueva meta.
+
 ## Sin número de versión — filtros y búsquedas pedidos por el equipo (15-11-2026)
 
 Sin migraciones. API, compatible hacia atrás: `GET /cases?q=&from=&to=`, `GET /patients?status=`,

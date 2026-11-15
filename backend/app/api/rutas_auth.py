@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
-from app.auth.bearer import get_authenticated_user
+from app.auth.bearer import get_authenticated_user, get_current_user
 from app.db.models.user import User
 from app.deps import get_db
 from app.services import auth_service
@@ -59,6 +59,16 @@ def login(credentials: LoginRequest, request: Request, db: Session = Depends(get
     except auth_service.AuthError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
     return auth_service.issue_token(user)
+
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh(current_user: User = Depends(get_current_user)):
+    """Renueva el token de una sesión válida (la interfaz lo pide mientras hay actividad).
+
+    Sin actividad, la interfaz deja de pedirlo y la sesión vence sola. Un cambio de contraseña o la desactivación de
+    la cuenta invalidan el token actual, así que tampoco se puede renovar.
+    """
+    return auth_service.issue_token(current_user)
 
 
 def _me(user: User) -> MeResponse:

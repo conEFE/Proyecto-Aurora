@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
   ChevronLeft,
+  ChevronRight,
   Download,
   FileText,
   Lock,
@@ -24,6 +25,7 @@ import type {
   DataSubjectRequest,
   Me,
   Patient,
+  PatientStatusFilter,
 } from '../types';
 import { DATA_REQUEST_STATUS_LABELS, DATA_REQUEST_TYPE_LABELS } from '../types';
 import { EmptyState, ErrorMessage, Loading, SuccessMessage } from './Feedback';
@@ -258,52 +260,83 @@ function ConsentState({ p }: { p: Patient }) {
   return <span className="text-sm text-baja">Consentimiento vigente</span>;
 }
 
+const PRIVACY_PAGE_SIZE = 25;
+const STATUS_FILTERS: Array<{ value: PatientStatusFilter; label: string }> = [
+  { value: 'activo', label: 'Con consentimiento' },
+  { value: 'sin_consentimiento', label: 'Sin consentimiento' },
+  { value: 'bloqueado', label: 'Datos bloqueados' },
+];
+
 function PatientsView({ onOpenPatient }: { onOpenPatient: (id: number) => void }) {
   const [params, setParams] = useSearchParams();
   const query = params.get('q') ?? '';
+  const rawStatus = params.get('estado');
+  const status = STATUS_FILTERS.some((f) => f.value === rawStatus) ? (rawStatus as PatientStatusFilter) : null;
+  const page = Math.max(1, Number(params.get('pagina')) || 1);
   const [term, setTerm] = useState(query);
   const [results, setResults] = useState<Patient[] | null>(null);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const totalPages = Math.max(1, Math.ceil(total / PRIVACY_PAGE_SIZE));
+
+  const setFilters = (next: { estado?: string | null; q?: string; pagina?: number }) => {
+    const merged = { estado: status as string | null, q: query, pagina: page, ...next };
+    const out: Record<string, string> = { vista: 'pacientes' };
+    if (merged.estado) out.estado = merged.estado;
+    if (merged.q.trim()) out.q = merged.q.trim();
+    if (merged.pagina > 1) out.pagina = String(merged.pagina);
+    setParams(out, { replace: true });
+  };
+
+  // La búsqueda se aplica al dejar de escribir e ignora tildes
+  useEffect(() => {
+    if (term.trim() === query) return;
+    const t = window.setTimeout(() => setFilters({ q: term, pagina: 1 }), 350);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [term]);
 
   useEffect(() => {
     let active = true;
     setResults(null);
-    apiClient.searchPatients(query.trim() || undefined, true).then((r) => {
-      if (!active) return;
-      if (r.data) {
-        setResults(r.data);
-        setError(null);
-      } else setError(r.error || 'Error al buscar');
-    });
+    apiClient
+      .pagePatients({ search: query.trim() || undefined, status: status ?? undefined, include_blocked: true, page, size: PRIVACY_PAGE_SIZE })
+      .then((r) => {
+        if (!active) return;
+        if (r.data) {
+          setResults(r.data.items);
+          setTotal(r.data.total);
+          setError(null);
+        } else setError(r.error || 'Error al buscar');
+      });
     return () => {
       active = false;
     };
-  }, [query]);
+  }, [query, status, page]);
 
   return (
     <>
-      <form
-        className="mt-4 flex gap-2 max-w-xl"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const next = new URLSearchParams(params);
-          if (term.trim()) next.set('q', term.trim());
-          else next.delete('q');
-          setParams(next, { replace: true });
-        }}
-      >
-        <label htmlFor="pv-search" className="sr-only">Buscar por RUT o nombre</label>
-        <input id="pv-search" type="search" className={inputClass} value={term} onChange={(e) => setTerm(e.target.value)}
-          placeholder="Buscar por RUT o nombre (incluye datos bloqueados)" />
-        <button type="submit" className={secondaryButton}><Search aria-hidden className="w-4 h-4" /> Buscar</button>
-      </form>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <Segmented
+          label="Filtrar por estado"
+          value={status ?? 'todos'}
+          onChange={(v) => setFilters({ estado: v === 'todos' ? null : v, pagina: 1 })}
+          options={[{ value: 'todos', label: 'Todos' }, ...STATUS_FILTERS]}
+        />
+        <span className="relative w-full max-w-sm">
+          <label htmlFor="pv-search" className="sr-only">Buscar por RUT o nombre</label>
+          <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input id="pv-search" type="search" className={cn(inputClass, 'pl-9')} value={term} onChange={(e) => setTerm(e.target.value)}
+            placeholder="Buscar por RUT o nombre" />
+        </span>
+      </div>
       <ErrorMessage className="mt-4">{error}</ErrorMessage>
       <div className={cn(cardClass, 'mt-4 overflow-hidden')}>
         {results === null ? (
           <Loading label="Buscando…" />
         ) : results.length === 0 ? (
           <EmptyState title="Sin resultados" icon={<Users aria-hidden className="w-8 h-8" />}>
-            No hay pacientes que coincidan.
+            No hay pacientes con estos filtros.
           </EmptyState>
         ) : (
           <div className="relative overflow-x-auto">
@@ -340,6 +373,22 @@ function PatientsView({ onOpenPatient }: { onOpenPatient: (id: number) => void }
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {results && results.length > 0 && (
+          <div className="px-5 py-3 border-t border-border flex flex-wrap items-center justify-between gap-3">
+            <span className="text-sm text-muted-foreground tabular-nums">
+              {total.toLocaleString('es-CL')} {total === 1 ? 'paciente' : 'pacientes'}
+            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground tabular-nums">Página {page} de {totalPages}</span>
+              <button className={secondaryButton} disabled={page <= 1} aria-label="Página anterior" onClick={() => setFilters({ pagina: page - 1 })}>
+                <ChevronLeft aria-hidden className="w-4 h-4" />
+              </button>
+              <button className={secondaryButton} disabled={page >= totalPages} aria-label="Página siguiente" onClick={() => setFilters({ pagina: page + 1 })}>
+                <ChevronRight aria-hidden className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
       </div>

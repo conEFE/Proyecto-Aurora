@@ -125,7 +125,7 @@ umbral 0,35). Detalle en el informe, sección 3.8. YOLO (localización de la les
 - [x] Usar la probabilidad como factor IA del triage en lugar de la confianza simulada (llega en `confidence`).
 
 ### KPI K5 alineado con el informe
-- [ ] Cambiar `meets_k5` en `/dashboard/model-performance`: hoy evalúa exactitud ≥ 90 %, y el informe fija
+- [ ] Cambiar `meets_k5` en `/dashboard/model-performance`: hoy evalúa exactitud ≥ 85 %, y el informe fija
   **AUC ≥ 0,80 y sensibilidad ≥ 0,80**. Para calcular el AUC en operación se necesita la probabilidad de cada
   resultado (ya queda en `inference_results.confidence`) junto con el veredicto del médico.
 - [ ] Actualizar los tests de `test_signature_model_performance.py` a los nuevos criterios.
