@@ -4,6 +4,18 @@ Actualizado: 13-11-2026. Desplegada la **2.10.0** (imágenes `sha-18183f5…`, m
 ver `AURORA_VERSION` en el servidor). **Modelo real conectado** (PC de Juan por Tailscale; si está apagado, IA
 simulada).
 
+**15-11-2026 (desplegado `af1629a`, respaldo previo `backups/aurora-20261115T132305Z.sql.gz`; versión anterior
+`sha-18183f5…`):** filtros y búsquedas (Dashboard, cola, Casos, Pacientes), sesión por inactividad, pacientes con
+páginas, búsqueda sin tildes, meta del modelo 85 % y React Router 7 (detalle en `docs/CHANGELOG_SPRINTS.md`).
+
+**Incidente de acceso (15-11-2026, resuelto el mismo día):** al entrar con Google en AWS Settings o con `aws login`
+aparecía otro perfil («aurora.solutions», sin proyectos) en vez del dueño («Try Catch Finally»). El proyecto y el
+sitio nunca dejaron de funcionar. Se recuperó entrando a la consola de la cuenta desde el enlace de creación del
+proyecto («Start building»), que abrió `527518120225` en us-east-2; desde ahí `aws login` volvió a funcionar. Si se
+repite: no reintentar muchas veces, probar ese camino y, si falla, abrir un caso en
+https://support.aws.amazon.com/#/contacts/aws-account-support («Account and billing»). Pendiente: invitar a otra
+persona del equipo como miembro del proyecto, para no depender de un solo inicio de sesión.
+
 **13-11-2026 (desplegado `18183f5`, respaldo previo `backups/aurora-20261113T123005Z.sql.gz`; versión anterior
 `sha-49f1bd4…`):** Administración con resumen, filtros y bitácora legible (`GET /admin/overview`); Ingreso al estilo de la landing; Mi perfil, Parámetros, Privacidad y
 Administración con el patrón de Casos y Pacientes; Dashboard con períodos y comparación; PDF con lámina de imágenes y
