@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronLeft, FolderPlus, Loader2, Save, Search, Trash2, UserPlus, Users } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
-import type { ClinicalCase, Patient, PatientInput, Sex } from '../types';
+import type { ClinicalCase, Patient, PatientInput, PatientStatusFilter, Sex } from '../types';
 import { cn } from '../lib/cn';
 import { LevelBadge, StatusBadge } from './Badges';
 import { EmptyState, ErrorMessage, Loading } from './Feedback';
 import PatientModal from './PatientModal';
 import PatientTimeline from './PatientTimeline';
+import { Segmented } from './PageHeader';
 import {
   cardClass,
   dangerButton,
@@ -293,6 +295,12 @@ function PatientDetail({ patient, onUpdated, onDeleted, onOpenCase, onNewCase }:
   );
 }
 
+const STATUS_FILTERS: Array<{ value: PatientStatusFilter; label: string }> = [
+  { value: 'activo', label: 'Activos' },
+  { value: 'sin_consentimiento', label: 'Sin consentimiento' },
+  { value: 'bloqueado', label: 'Datos bloqueados' },
+];
+
 interface PatientsPanelProps {
   /** Ficha abierta, tomada de la dirección /pacientes/:id */
   patientId?: number | null;
@@ -310,16 +318,22 @@ export default function PatientsPanel({ patientId = null, onOpenPatient, onBack,
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Estado en la dirección: ?estado=activo | sin_consentimiento | bloqueado
+  const [params, setParams] = useSearchParams();
+  const rawStatus = params.get('estado');
+  const status = STATUS_FILTERS.some((f) => f.value === rawStatus) ? (rawStatus as PatientStatusFilter) : null;
+
   const load = useCallback(async (search?: string) => {
-    const r = await apiClient.searchPatients(search?.trim() || undefined, true);
+    const r = await apiClient.searchPatients(search?.trim() || undefined, true, status ?? undefined);
     if (r.data) {
       setPatients(r.data);
       setError(null);
     } else setError(r.error || 'No se pudieron cargar los pacientes.');
-  }, []);
+  }, [status]);
 
   useEffect(() => {
-    if (patientId === null) load();
+    if (patientId === null) load(term);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load, patientId]);
 
   // La ficha sale de la dirección: se busca en la lista cargada o se pide al servidor
@@ -403,8 +417,18 @@ export default function PatientsPanel({ patientId = null, onOpenPatient, onBack,
 
       <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+      <Segmented
+        label="Filtrar por estado"
+        value={status ?? 'todos'}
+        onChange={(v) => {
+          setPatients(null);
+          setParams(v === 'todos' ? {} : { estado: v }, { replace: true });
+        }}
+        options={[{ value: 'todos', label: 'Todos' }, ...STATUS_FILTERS]}
+      />
       <form
-        className="mt-6 flex gap-2 max-w-xl"
+        className="flex gap-2 w-full max-w-md"
         onSubmit={(e) => {
           e.preventDefault();
           load(term);
@@ -415,13 +439,14 @@ export default function PatientsPanel({ patientId = null, onOpenPatient, onBack,
           onChange={(e) => setTerm(e.target.value)} />
         <button type="submit" className={secondaryButton}><Search aria-hidden className="w-4 h-4" /> Buscar</button>
       </form>
+      </div>
 
       <div className={cn(cardClass, 'mt-4 overflow-hidden')}>
         {patients === null ? (
           <Loading label="Cargando pacientes…" />
         ) : patients.length === 0 ? (
           <EmptyState title="Sin pacientes" icon={<Users aria-hidden className="w-8 h-8" />}>
-            {term ? 'No hay coincidencias.' : 'Registre la primera con «Nuevo paciente».'}
+            {term || status ? 'No hay pacientes con estos filtros.' : 'Registre la primera con «Nuevo paciente».'}
           </EmptyState>
         ) : (
           <div className="relative overflow-x-auto">

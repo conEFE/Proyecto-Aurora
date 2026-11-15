@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, FolderOpen, Loader2, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FolderOpen, Loader2, Plus, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type { CaseStatus, CaseSymptoms, ClinicalCase, Me, Page, Patient, TriageLevel } from '../types';
@@ -215,14 +215,29 @@ export default function CaseManagement({
   const level = (LEVEL_TABS.includes(params.get('nivel') as LevelFilter) ? params.get('nivel') : 'TODOS') as LevelFilter;
   const statusFilter = (params.get('estado') ?? '') as CaseStatus | '';
   const page = Math.max(1, Number(params.get('pagina')) || 1);
-  const setFilters = (next: { nivel?: LevelFilter; estado?: CaseStatus | ''; pagina?: number }) => {
-    const merged = { nivel: level, estado: statusFilter, pagina: page, ...next };
+  const q = params.get('q') ?? '';
+  const from = params.get('desde') ?? '';
+  const to = params.get('hasta') ?? '';
+  const setFilters = (next: { nivel?: LevelFilter; estado?: CaseStatus | ''; pagina?: number; q?: string; desde?: string; hasta?: string }) => {
+    const merged = { nivel: level, estado: statusFilter, pagina: page, q, desde: from, hasta: to, ...next };
     const out: Record<string, string> = {};
     if (merged.nivel !== 'TODOS') out.nivel = merged.nivel;
     if (merged.estado) out.estado = merged.estado;
+    if (merged.q.trim()) out.q = merged.q.trim();
+    if (merged.desde) out.desde = merged.desde;
+    if (merged.hasta) out.hasta = merged.hasta;
     if (merged.pagina > 1) out.pagina = String(merged.pagina);
-    setParams(out);
+    setParams(out, { replace: next.q !== undefined });
   };
+  // La búsqueda se aplica al dejar de escribir (no en cada tecla)
+  const [term, setTerm] = useState(q);
+  useEffect(() => {
+    if (term.trim() === q) return;
+    const t = window.setTimeout(() => setFilters({ q: term, pagina: 1 }), 350);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [term]);
+  const filtered = !!(q || from || to);
   const setLevel = (l: LevelFilter) => setFilters({ nivel: l, pagina: 1 });
   const setStatusFilter = (st: CaseStatus | '') => setFilters({ estado: st, pagina: 1 });
   const setPage = (fn: (n: number) => number) => setFilters({ pagina: fn(page) });
@@ -236,10 +251,15 @@ export default function CaseManagement({
 
   const loadCases = useCallback(async () => {
     setLoading(true);
-    const status = statusFilter || undefined;
+    const base = {
+      status: statusFilter || undefined,
+      q: q || undefined,
+      from: from ? `${from}T00:00:00` : undefined,
+      to: to ? `${to}T23:59:59` : undefined,
+    };
     const [list, ...totals] = await Promise.all([
-      apiClient.getCases({ status, level: level === 'TODOS' ? undefined : level, page, size }),
-      ...LEVEL_TABS.map((l) => apiClient.getCases({ status, level: l === 'TODOS' ? undefined : l, page: 1, size: 1 })),
+      apiClient.getCases({ ...base, level: level === 'TODOS' ? undefined : level, page, size }),
+      ...LEVEL_TABS.map((l) => apiClient.getCases({ ...base, level: l === 'TODOS' ? undefined : l, page: 1, size: 1 })),
     ]);
     if (list.data) {
       setData(list.data);
@@ -247,7 +267,7 @@ export default function CaseManagement({
     } else setError(list.error || 'No se pudieron cargar los casos.');
     setCounts(Object.fromEntries(LEVEL_TABS.map((l, i) => [l, totals[i].data?.total ?? 0])) as Record<LevelFilter, number>);
     setLoading(false);
-  }, [statusFilter, level, page]);
+  }, [statusFilter, level, page, q, from, to]);
 
   useEffect(() => {
     if (listMode) loadCases();
@@ -323,12 +343,40 @@ export default function CaseManagement({
         </label>
       </div>
 
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <label htmlFor="c-search" className="sr-only">Buscar por código o número de caso</label>
+        <span className="relative">
+          <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
+          <input id="c-search" type="search" className={cn(inputClass, 'h-9 w-64 pl-9')} placeholder="Código o número (p. ej. 23)"
+            value={term} onChange={(e) => setTerm(e.target.value)} />
+        </span>
+        <span className="ml-2">Creados entre</span>
+        <label htmlFor="c-from" className="sr-only">Creados desde</label>
+        <input id="c-from" type="date" className={cn(inputClass, 'h-9 w-40')} value={from} max={to || undefined}
+          onChange={(e) => setFilters({ desde: e.target.value, pagina: 1 })} />
+        y
+        <label htmlFor="c-to" className="sr-only">Creados hasta</label>
+        <input id="c-to" type="date" className={cn(inputClass, 'h-9 w-40')} value={to} min={from || undefined}
+          onChange={(e) => setFilters({ hasta: e.target.value, pagina: 1 })} />
+        {filtered && (
+          <button
+            className={cn(ghostButton, 'h-9 px-2')}
+            onClick={() => {
+              setTerm('');
+              setFilters({ q: '', desde: '', hasta: '', pagina: 1 });
+            }}
+          >
+            <X aria-hidden className="w-4 h-4" /> Limpiar
+          </button>
+        )}
+      </div>
+
       <div className={cn(cardClass, 'mt-4 overflow-hidden')}>
         {loading && !data ? (
           <Loading label="Cargando casos…" />
         ) : !data || data.items.length === 0 ? (
           <EmptyState title="No hay casos" icon={<FolderOpen aria-hidden className="w-8 h-8" />}>
-            {level !== 'TODOS' || statusFilter ? 'No hay casos con estos filtros.' : 'Cree el primero con «Nuevo caso».'}
+            {level !== 'TODOS' || statusFilter || filtered ? 'No hay casos con estos filtros.' : 'Cree el primero con «Nuevo caso».'}
           </EmptyState>
         ) : (
           <div className="relative overflow-x-auto">
@@ -372,7 +420,7 @@ export default function CaseManagement({
           </div>
         )}
         <div className="px-5 py-3 border-t border-border flex items-center justify-between">
-          <span className="text-sm text-muted-foreground tabular-nums">{data ? `${data.total} casos` : ''}</span>
+          <span className="text-sm text-muted-foreground tabular-nums">{data ? `${data.total} ${data.total === 1 ? 'caso' : 'casos'}` : ''}</span>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground tabular-nums">Página {page} de {totalPages}</span>
             <button className={secondaryButton} disabled={page <= 1} onClick={() => setPage((n) => n - 1)} aria-label="Página anterior">

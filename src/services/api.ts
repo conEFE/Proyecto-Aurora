@@ -1,5 +1,8 @@
 import type {
   AdminOverview,
+  DashboardCase,
+  PatientStatusFilter,
+  Reviewer,
   AdminStats,
   AIValidation,
   AIVerdict,
@@ -50,6 +53,23 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
   status: number;
+}
+
+export interface DashboardFilters {
+  from?: string;
+  to?: string;
+  alta_pending_hours?: number;
+  level?: TriageLevel;
+  medico_id?: number;
+}
+
+/** Parámetros de búsqueda sin los vacíos. */
+function query(filters: object): string {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') params.append(k, String(v));
+  });
+  return params.toString();
 }
 
 class ApiClient {
@@ -180,10 +200,11 @@ class ApiClient {
     return this.request<Patient>(`/patients/${id}`);
   }
 
-  async searchPatients(search?: string, includeBlocked = false) {
+  async searchPatients(search?: string, includeBlocked = false, status?: PatientStatusFilter) {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (includeBlocked) params.append('include_blocked', 'true');
+    if (status) params.append('status', status);
     return this.request<Patient[]>(`/patients?${params.toString()}`);
   }
 
@@ -265,7 +286,7 @@ class ApiClient {
     return this.request<ClinicalCase>('/cases', { method: 'POST', body: JSON.stringify(data) });
   }
 
-  async getCases(filters: { status?: CaseStatus; level?: TriageLevel; patient_id?: number; code?: string; page?: number; size?: number } = {}) {
+  async getCases(filters: { status?: CaseStatus; level?: TriageLevel; patient_id?: number; code?: string; q?: string; from?: string; to?: string; page?: number; size?: number } = {}) {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => {
       if (v !== undefined) params.append(k, String(v));
@@ -448,12 +469,16 @@ class ApiClient {
   }
 
   // --- Dashboard -------------------------------------------------------------
-  async getDashboard(filters: { from?: string; to?: string; alta_pending_hours?: number } = {}) {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([k, v]) => {
-      if (v !== undefined && v !== '') params.append(k, String(v));
-    });
-    return this.request<DashboardMetrics>(`/dashboard/metrics?${params.toString()}`);
+  async getDashboard(filters: DashboardFilters = {}) {
+    return this.request<DashboardMetrics>(`/dashboard/metrics?${query(filters)}`);
+  }
+
+  async getDashboardCases(filters: DashboardFilters = {}) {
+    return this.request<DashboardCase[]>(`/dashboard/cases?${query(filters)}`);
+  }
+
+  async getReviewers() {
+    return this.request<Reviewer[]>('/dashboard/reviewers');
   }
 
   async getModelPerformance(filters: { from?: string; to?: string } = {}) {

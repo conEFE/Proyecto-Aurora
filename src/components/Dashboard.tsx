@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, CheckCircle2, FileDown, Minus } from 'lucide-react';
-import { apiClient } from '../services/api';
+import { AlertTriangle, CheckCircle2, FileDown, Minus, X } from 'lucide-react';
+import { apiClient, type DashboardFilters } from '../services/api';
 import type {
   AIVerdict,
   CaseStatus,
+  DashboardCase,
   DashboardMetrics,
   InferenceStatus,
   Me,
   ModelPerformanceReport,
   QueueItem,
+  Reviewer,
   TriageAssessment,
   TriageLevel,
 } from '../types';
@@ -17,6 +19,7 @@ import { AI_VERDICT_LABELS, CASE_STATUS_LABELS, TRIAGE_ASSESSMENT_LABELS } from 
 import { LEVEL_FILL, RULE_LABELS } from '../constants';
 import { cn } from '../lib/cn';
 import { LevelBadge, SimulatedBadge } from './Badges';
+import Dialog from './Dialog';
 import { ErrorMessage, Loading } from './Feedback';
 import { ListHeader, Segmented } from './PageHeader';
 import { cardClass, ghostButton, secondaryButton, inputClass, pageClass, sectionTitle, tdClass, thClass } from './ui';
@@ -164,7 +167,7 @@ function LevelBars({ data }: { data: Record<TriageLevel, number> }) {
 type WeekPoint = DashboardMetrics['cases_per_week'][number];
 
 /** Columnas apiladas por nivel (ALTA abajo), con la escala fija de colores de nivel. */
-function WeeklyColumns({ points }: { points: WeekPoint[] }) {
+function WeeklyColumns({ points, onSelect }: { points: WeekPoint[]; onSelect: (weekStart: string) => void }) {
   const [hover, setHover] = useState<number | null>(null);
   if (points.length === 0) return <p className="text-sm text-muted-foreground">Sin casos en el período.</p>;
   const shown = points.slice(-16);
@@ -200,7 +203,23 @@ function WeeklyColumns({ points }: { points: WeekPoint[] }) {
           const untriaged = p.cases - segments.reduce((a, s) => a + s.n, 0);
           if (untriaged > 0) segments.push({ l: 'SIN' as TriageLevel, n: untriaged });
           return (
-            <g key={p.week_start} onMouseEnter={() => setHover(i)} opacity={hover === null || hover === i ? 1 : 0.55}>
+            <g
+              key={p.week_start}
+              role="button"
+              tabIndex={0}
+              aria-label={`Ver los casos de la semana del ${fmt(p.week_start)}`}
+              className="cursor-pointer focus:outline-none [&:focus-visible>rect:first-child]:fill-[hsl(var(--ring)/0.12)]"
+              onClick={() => onSelect(p.week_start)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelect(p.week_start);
+                }
+              }}
+              onMouseEnter={() => setHover(i)}
+              onFocus={() => setHover(i)}
+              opacity={hover === null || hover === i ? 1 : 0.55}
+            >
               <rect x={pad.l + i * slot} y={pad.t} width={slot} height={plotH} fill="transparent" />
               {segments.map(({ l, n }) => {
                 if (!n) return null;
@@ -251,6 +270,7 @@ function WeeklyColumns({ points }: { points: WeekPoint[] }) {
           </span>
         ))}
         {points.length > shown.length && <span>Últimas {shown.length} semanas</span>}
+        <span className="sm:ml-auto">Haga clic en una semana para ver sus casos</span>
       </div>
     </div>
   );
@@ -405,6 +425,110 @@ function ModelPerformanceTable({ report, status }: { report: ModelPerformanceRep
   );
 }
 
+/** Casos de una semana del gráfico, con los atrasados primero (ventana de detalle). */
+function WeekCases({
+  week,
+  filters,
+  filterLabel,
+  canOpen,
+  onClose,
+}: {
+  week: string;
+  filters: DashboardFilters;
+  filterLabel: string;
+  canOpen: boolean;
+  onClose: () => void;
+}) {
+  const [rows, setRows] = useState<DashboardCase[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [onlyLate, setOnlyLate] = useState(false);
+  const end = addDays(week, 6);
+  const fmt = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('es-CL', { day: 'numeric', month: 'long' });
+
+  useEffect(() => {
+    let active = true;
+    apiClient.getDashboardCases({ ...filters, from: `${week}T00:00:00`, to: `${end}T23:59:59` }).then((r) => {
+      if (!active) return;
+      if (r.data) {
+        setRows(r.data);
+        setOnlyLate(r.data.some((x) => x.late));
+      } else setError(r.error || 'No se pudieron cargar los casos.');
+    });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [week]);
+
+  const late = rows?.filter((r) => r.late).length ?? 0;
+  const shown = (rows ?? []).filter((r) => !onlyLate || r.late);
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      size="lg"
+      title={`Semana del ${fmt(week)} al ${fmt(end)}`}
+      description={
+        rows
+          ? `${rows.length} ${rows.length === 1 ? 'caso' : 'casos'}${late ? `, ${late} ALTA ${late === 1 ? 'atrasado' : 'atrasados'} (más de ${filters.alta_pending_hours} h sin cerrar)` : ', ninguno atrasado'}${filterLabel ? ` · ${filterLabel}` : ''}`
+          : undefined
+      }
+    >
+      <ErrorMessage>{error}</ErrorMessage>
+      {rows === null && !error ? (
+        <Loading label="Cargando casos…" />
+      ) : rows && rows.length > 0 ? (
+        <>
+          {late > 0 && (
+            <label className="mb-3 inline-flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={onlyLate} onChange={(e) => setOnlyLate(e.target.checked)} />
+              Ver solo los atrasados
+            </label>
+          )}
+          <div className="relative overflow-x-auto -mx-6">
+            <table className="w-full">
+              <caption className="sr-only">Casos de la semana</caption>
+              <thead className="bg-muted/60">
+                <tr>
+                  <th scope="col" className={cn(thClass, 'pl-6')}>Código</th>
+                  <th scope="col" className={thClass}>Nivel</th>
+                  <th scope="col" className={thClass}>Estado</th>
+                  <th scope="col" className={thClass}>Revisa</th>
+                  <th scope="col" className={cn(thClass, 'text-right pr-6')}>Espera</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((c) => (
+                  <tr key={c.id} className={cn(c.late && 'bg-alta/5')}>
+                    <td className={cn(tdClass, 'pl-6')}>
+                      {canOpen ? (
+                        <Link to={`/casos/${c.code}`} className="font-bold tabular-nums hover:text-brand hover:underline">{c.code}</Link>
+                      ) : (
+                        <span className="font-bold tabular-nums">{c.code}</span>
+                      )}
+                    </td>
+                    <td className={tdClass}><LevelBadge level={c.level} /></td>
+                    <td className={cn(tdClass, 'text-muted-foreground')}>{CASE_STATUS_LABELS[c.status]}</td>
+                    <td className={cn(tdClass, 'text-muted-foreground')}>{c.reviewer ?? 'Sin asignar'}</td>
+                    <td className={cn(tdClass, 'text-right pr-6 tabular-nums', c.late ? 'font-bold text-alta' : 'text-muted-foreground')}>
+                      {hoursText(c.waiting_hours)}
+                      {c.late && <span className="block text-xs font-semibold">atrasado</span>}
+                      {!c.late && c.reviewed_at && <span className="block text-xs">hasta la revisión</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        rows && <p className="text-sm text-muted-foreground">No hay casos esta semana con estos filtros.</p>
+      )}
+    </Dialog>
+  );
+}
+
 const CLINICAL_ROLES = ['MEDICO', 'ADMINISTRATIVO'];
 
 export default function Dashboard({ me }: { me: Me }) {
@@ -424,6 +548,17 @@ export default function Dashboard({ me }: { me: Me }) {
   const [error, setError] = useState<string | null>(null);
   const [showTable, setShowTable] = useState(false);
   const clinical = CLINICAL_ROLES.includes(me.role);
+  // Filtros por prioridad vigente y por médico que revisa (?nivel=ALTA&medico=2)
+  const level = (LEVELS as string[]).includes(params.get('nivel') ?? '') ? (params.get('nivel') as TriageLevel) : undefined;
+  const medicoId = Number(params.get('medico')) || undefined;
+  const [reviewers, setReviewers] = useState<Reviewer[]>([]);
+  const [week, setWeek] = useState<string | null>(null);
+  const reviewerName = reviewers.find((r) => r.id === medicoId)?.full_name;
+  const filterLabel = [level ? `prioridad ${level}` : '', reviewerName ? `revisa ${reviewerName}` : ''].filter(Boolean).join(' · ');
+
+  useEffect(() => {
+    apiClient.getReviewers().then((r) => setReviewers(r.data ?? []));
+  }, []);
 
   const setParam = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -437,9 +572,11 @@ export default function Dashboard({ me }: { me: Me }) {
   const load = useCallback(async () => {
     const range = apiRange(ranges.current);
     const [r, m, prev, q, inf] = await Promise.all([
-      apiClient.getDashboard({ ...range, alta_pending_hours: hours }),
+      apiClient.getDashboard({ ...range, alta_pending_hours: hours, level, medico_id: medicoId }),
       apiClient.getModelPerformance(range),
-      ranges.previous ? apiClient.getDashboard({ ...apiRange(ranges.previous), alta_pending_hours: hours }) : Promise.resolve(null),
+      ranges.previous
+        ? apiClient.getDashboard({ ...apiRange(ranges.previous), alta_pending_hours: hours, level, medico_id: medicoId })
+        : Promise.resolve(null),
       clinical ? apiClient.getQueue(true) : Promise.resolve(null),
       me.role === 'ADMINISTRATIVO' ? Promise.resolve(null) : apiClient.getInferenceStatus(),
     ]);
@@ -452,7 +589,7 @@ export default function Dashboard({ me }: { me: Me }) {
     setModel(m.data ?? null);
     setQueue(q?.data ?? null);
     setInference(inf?.data ?? null);
-  }, [ranges, hours, clinical, me.role]);
+  }, [ranges, hours, clinical, me.role, level, medicoId]);
 
   useEffect(() => {
     load();
@@ -472,6 +609,7 @@ export default function Dashboard({ me }: { me: Me }) {
         model,
         inference,
         altaWaiting: queue?.filter((q) => q.level === 'ALTA' && q.status !== 'CERRADO' && q.waiting_hours > hours) ?? null,
+        filters: filterLabel,
         generatedBy: me.full_name,
         assets: await loadPdfAssets(),
       });
@@ -547,6 +685,26 @@ export default function Dashboard({ me }: { me: Me }) {
         </label>
       </div>
 
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <label htmlFor="d-level" className="sr-only">Prioridad</label>
+        <select id="d-level" className={cn(inputClass, 'h-9 w-48')} value={level ?? ''} onChange={(e) => setParam({ nivel: e.target.value || null })}>
+          <option value="">Todas las prioridades</option>
+          {LEVELS.map((l) => <option key={l} value={l}>Prioridad {l}</option>)}
+        </select>
+        <label htmlFor="d-medico" className="sr-only">Médico que revisa</label>
+        <select id="d-medico" className={cn(inputClass, 'h-9 w-64')} value={medicoId ?? ''} onChange={(e) => setParam({ medico: e.target.value || null })}>
+          <option value="">Todos los médicos</option>
+          {reviewers.map((r) => (
+            <option key={r.id} value={r.id}>{r.full_name}{r.is_active ? '' : ' (desactivado)'}</option>
+          ))}
+        </select>
+        {(level || medicoId) && (
+          <button className={cn(ghostButton, 'h-9 px-2')} onClick={() => setParam({ nivel: null, medico: null })}>
+            <X aria-hidden className="w-4 h-4" /> Quitar filtros
+          </button>
+        )}
+      </div>
+
       <ErrorMessage className="mt-4">{error}</ErrorMessage>
       {!data || !summary ? (
         <Loading label="Cargando métricas…" />
@@ -564,7 +722,7 @@ export default function Dashboard({ me }: { me: Me }) {
 
           <div className="grid xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-6 items-start">
             <Panel title="Casos creados por semana">
-              <WeeklyColumns points={data.cases_per_week} />
+              <WeeklyColumns points={data.cases_per_week} onSelect={setWeek} />
             </Panel>
             <Panel title="Nivel vigente y estado">
               <LevelBars data={data.cases_by_level} />
@@ -752,6 +910,15 @@ export default function Dashboard({ me }: { me: Me }) {
             )}
           </div>
         </div>
+      )}
+      {week && (
+        <WeekCases
+          week={week}
+          filters={{ level, medico_id: medicoId, alta_pending_hours: hours }}
+          filterLabel={filterLabel}
+          canOpen={clinical}
+          onClose={() => setWeek(null)}
+        />
       )}
     </div>
   );

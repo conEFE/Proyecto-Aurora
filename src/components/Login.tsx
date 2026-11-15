@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Loader2, Moon, Sun } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { useTheme } from '../lib/theme';
 import { cn } from '../lib/cn';
+import PasswordInput from './PasswordInput';
 import colaImg from '../assets/landing/cola.webp';
 import BrandMark from './BrandMark';
 import { ErrorMessage } from './Feedback';
@@ -91,13 +92,12 @@ export default function Login({ onLogin, onBack }: LoginProps) {
 
             <div>
               <label htmlFor="password" className={labelClass}>Contraseña</label>
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={cn(inputClass, 'h-11')}
+                inputClassName="h-11"
                 aria-invalid={error ? true : undefined}
                 required
               />

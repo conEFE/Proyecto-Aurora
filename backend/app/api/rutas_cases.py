@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
@@ -32,13 +34,18 @@ def list_cases(
     level: TriageLevel | None = None,
     patient_id: int | None = None,
     code: str | None = Query(None, max_length=20, description="Código exacto del caso (AUR-AAAA-NNNNNN)"),
+    q: str | None = Query(None, max_length=20, description="Parte del código o número del caso (p. ej. 23 o 2026-0000)"),
+    date_from: datetime | None = Query(None, alias="from", description="Creados desde"),
+    date_to: datetime | None = Query(None, alias="to", description="Creados hasta"),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     _: User = Depends(clinical_staff),
     db: Session = Depends(get_db),
 ):
-    """Lista casos con filtros por estado, nivel de triage vigente, paciente y código."""
-    items, total = case_service.list_cases(db, status, patient_id, page, size, level, code)
+    """Lista casos con filtros por estado, nivel vigente, paciente, código (exacto o parcial) y fecha de creación."""
+    items, total = case_service.list_cases(
+        db, status, patient_id, page, size, level, code, q=q, date_from=date_from, date_to=date_to
+    )
     return CasePage(items=[case_service.to_out(db, c) for c in items], total=total, page=page, size=size)
 
 

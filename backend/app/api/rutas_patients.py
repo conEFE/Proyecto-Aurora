@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.orm import Session
 
@@ -39,12 +41,15 @@ def list_patients(
     request: Request,
     search: str | None = Query(None, description="Buscar por RUT o nombre"),
     include_blocked: bool = Query(False, description="Incluir pacientes con datos bloqueados"),
+    status: Literal["activo", "sin_consentimiento", "bloqueado"] | None = Query(
+        None, description="Activo (con consentimiento), sin consentimiento vigente o con datos bloqueados"
+    ),
     actor: User = Depends(clinical_staff),
     db: Session = Depends(get_db),
 ):
     """Busca pacientes por RUT o nombre (registra VIEW). Los bloqueados solo aparecen si se piden."""
     return patient_service.search_patients(
-        db, actor, search, ip=client_ip(request), include_blocked=include_blocked
+        db, actor, search, ip=client_ip(request), include_blocked=include_blocked, status=status
     )
 
 

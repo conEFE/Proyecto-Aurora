@@ -5,6 +5,7 @@ import { apiClient } from '../services/api';
 import type { Me } from '../types';
 import { ROLE_LABELS } from '../types';
 import { cn } from '../lib/cn';
+import PasswordInput from './PasswordInput';
 import ChangePassword from './ChangePassword';
 import { ErrorMessage } from './Feedback';
 import { DetailHeader } from './PageHeader';
@@ -66,7 +67,7 @@ export default function Profile({ me, onUpdated }: ProfileProps) {
               {changed && (
                 <div>
                   <label className={labelClass} htmlFor="pf-email-password">Contraseña actual (para confirmar)</label>
-                  <input id="pf-email-password" type="password" className={inputClass} value={password}
+                  <PasswordInput id="pf-email-password" value={password}
                     autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} />
                 </div>
               )}

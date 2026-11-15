@@ -402,6 +402,8 @@ interface ManagementReportInput {
   inference?: InferenceStatus | null;
   /** Casos ALTA que esperan más que el umbral al generar el informe (solo códigos anónimos). */
   altaWaiting?: QueueItem[] | null;
+  /** Filtros aplicados (p. ej. «prioridad ALTA · revisa Dra. X»); vacío si es todo el centro. */
+  filters?: string;
   generatedBy: string;
   assets: Awaited<ReturnType<typeof loadPdfAssets>>;
 }
@@ -413,6 +415,7 @@ export function buildManagementReport({
   model,
   inference = null,
   altaWaiting = null,
+  filters = '',
   generatedBy,
   assets,
 }: ManagementReportInput): jsPDF {
@@ -446,7 +449,11 @@ export function buildManagementReport({
   text(doc, C.ink, 24, 'extrabold');
   doc.text('Informe de gestión', MARGIN, y + 7);
   text(doc, C.muted, 9);
-  doc.text(`Período: ${period}  ·  Métricas agregadas, sin datos identificables de pacientes`, MARGIN, y + 13.5);
+  doc.text(
+    `Período: ${period}${filters ? `  ·  Solo ${filters}` : ''}  ·  Métricas agregadas, sin datos identificables de pacientes`,
+    MARGIN,
+    y + 13.5,
+  );
   y += 21;
   if (data.ai_validations_simulated > 0 || model?.versions.some((v) => v.is_simulated))
     y = drawNotice(doc, y, 'IA SIMULADA', 'Incluye resultados de IA simulada: no son resultados clínicos.', C.sim, C.simBg);

@@ -20,6 +20,7 @@ import { ROLE_LABELS } from '../types';
 import { isValidRut, normalizeRut } from '../utils/rut';
 import { PASSWORD_MIN_LENGTH, passwordHints } from '../utils/password';
 import { cn } from '../lib/cn';
+import PasswordInput from './PasswordInput';
 import Dialog from './Dialog';
 import { EmptyState, ErrorMessage, Loading } from './Feedback';
 import { DetailHeader, ListHeader, Segmented } from './PageHeader';
@@ -100,7 +101,7 @@ function UserForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: ()
         </div>
         <div className="sm:col-span-2">
           <label className={labelClass} htmlFor="u-pass">Contraseña temporal</label>
-          <input id="u-pass" type="password" className={inputClass} value={form.password} required minLength={PASSWORD_MIN_LENGTH}
+          <PasswordInput id="u-pass" value={form.password} required minLength={PASSWORD_MIN_LENGTH}
             aria-describedby="u-pass-hint"
             onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" />
           <p id="u-pass-hint" className="mt-1 text-xs text-muted-foreground">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con letras y números. La persona deberá cambiarla en su primer ingreso; entréguela por un canal seguro.</p>
@@ -140,10 +141,9 @@ function ResetPasswordForm({ user, onDone }: { user: UserAccount; onDone: (error
     <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
       <div>
         <label htmlFor={inputId} className={labelClass}>Contraseña temporal</label>
-        <input
+        <PasswordInput
           id={inputId}
-          type="password"
-          className={cn(inputClass, 'w-72')}
+          className="w-72"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder={`Mínimo ${PASSWORD_MIN_LENGTH}, con letras y números`}

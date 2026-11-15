@@ -707,6 +707,25 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## Sin número de versión — filtros y búsquedas pedidos por el equipo (15-11-2026)
+
+Sin migraciones. API, compatible hacia atrás: `GET /cases?q=&from=&to=`, `GET /patients?status=`,
+`GET /dashboard/metrics?level=&medico_id=`, y nuevos `GET /dashboard/reviewers` y `GET /dashboard/cases`.
+
+- **Dashboard** (todos los roles): filtros por prioridad vigente y por médico que revisa o revisó el caso, en la
+  dirección (`?nivel=&medico=`); también los respeta la comparación con el período anterior y el informe PDF (que
+  indica los filtros aplicados). **Al hacer clic en una semana del gráfico** se abre una ventana con sus casos (solo el
+  código anónimo, nivel, estado, quién revisa y la espera), los atrasados primero y la opción «Ver solo los atrasados».
+  Atrasado = misma regla del indicador: ALTA vigente, sin cerrar y con más horas que el umbral.
+- **Cola de triage**: filtro por motivo (BI-RADS informado, síntoma de alarma o puntaje); el motivo de cada fila
+  también filtra al hacer clic. Búsqueda por código o número del caso («23» encuentra AUR-2026-000023).
+- **Casos**: búsqueda por código o número y rango de fechas de creación, en la dirección (`?q=&desde=&hasta=`).
+- **Pacientes**: filtro por estado (activos, sin consentimiento, datos bloqueados), en la dirección (`?estado=`).
+- **Contraseñas**: botón para mostrar u ocultar en el ingreso, Mi perfil, el cambio obligatorio, la firma del reporte
+  y los formularios del administrador.
+- Pruebas: búsqueda parcial y por número, fechas, estados de pacientes, filtros del dashboard por nivel y por médico y
+  la marca de atrasados.
+
 ## 2.10.0 — Rediseño completo, una dirección por pantalla, Dashboard y PDF ampliados y Administración
 
 Cerrada el 13-11-2026 y desplegada en https://demo.auroracare.cl (`18183f5`). Agrupa lo hecho desde la 2.9.2.

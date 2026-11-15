@@ -58,10 +58,17 @@ def search_patients(
     limit: int = 50,
     ip: str | None = None,
     include_blocked: bool = False,
+    status: str | None = None,
 ) -> list[Patient]:
     q = db.query(Patient)
-    if not include_blocked:  # los datos bloqueados no aparecen en la búsqueda habitual
+    if status == "bloqueado":
+        q = q.filter(Patient.blocked_at.is_not(None))
+    elif not include_blocked or status is not None:  # los datos bloqueados no aparecen en la búsqueda habitual
         q = q.filter(Patient.blocked_at.is_(None))
+    if status == "activo":
+        q = q.filter(Patient.consent_given.is_(True))
+    elif status == "sin_consentimiento":
+        q = q.filter(Patient.consent_given.is_(False))
     if search:
         term = f"%{search.strip()}%"
         q = q.filter(

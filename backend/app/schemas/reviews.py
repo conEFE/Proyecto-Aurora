@@ -176,3 +176,25 @@ class DashboardMetrics(BaseModel):
     triage_assessments_total: int = 0
     triage_assessments_by_value: dict[str, int] = {}
     triage_agreement_rate: float | None = None
+
+
+class Reviewer(BaseModel):
+    id: int
+    full_name: str
+    is_active: bool
+
+
+class DashboardCase(BaseModel):
+    """Fila del detalle de casos del dashboard: solo el código anónimo, sin datos del paciente."""
+
+    id: int
+    code: str
+    level: str | None
+    status: str
+    created_at: datetime | None
+    triaged_at: datetime | None
+    reviewed_at: datetime | None
+    reviewer: str | None
+    # Desde la creación hasta la revisión, o hasta ahora si aún no se revisa
+    waiting_hours: float
+    late: bool

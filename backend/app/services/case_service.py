@@ -106,22 +106,36 @@ def list_cases(
     size: int = 20,
     level=None,
     code: str | None = None,
+    q: str | None = None,
+    date_from=None,
+    date_to=None,
 ) -> tuple[list[Case], int]:
     from app.db.models.triage import TriageResult
 
-    q = db.query(Case)
+    query = db.query(Case)
     if status is not None:
-        q = q.filter(Case.status == status)
+        query = query.filter(Case.status == status)
     if level is not None:
-        q = q.join(
+        query = query.join(
             TriageResult, (TriageResult.case_id == Case.id) & TriageResult.is_current.is_(True)
         ).filter(TriageResult.final_level == level)
     if patient_id is not None:
-        q = q.filter(Case.patient_id == patient_id)
+        query = query.filter(Case.patient_id == patient_id)
     if code:
-        q = q.filter(Case.code == code.strip().upper())
-    total = q.count()
-    items = q.order_by(Case.created_at.desc(), Case.id.desc()).offset((page - 1) * size).limit(size).all()
+        query = query.filter(Case.code == code.strip().upper())
+    if q and q.strip():
+        term = q.strip().upper()
+        if term.isdigit():
+            # Un número busca el correlativo: «23» encuentra AUR-2026-000023 (y también 000123, 000230…)
+            query = query.filter(Case.code.like(f"AUR-%-%{term}%"))
+        else:
+            query = query.filter(Case.code.ilike(f"%{term}%"))
+    if date_from is not None:
+        query = query.filter(Case.created_at >= date_from)
+    if date_to is not None:
+        query = query.filter(Case.created_at <= date_to)
+    total = query.count()
+    items = query.order_by(Case.created_at.desc(), Case.id.desc()).offset((page - 1) * size).limit(size).all()
     return items, total
 
 

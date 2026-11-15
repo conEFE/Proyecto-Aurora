@@ -428,6 +428,30 @@ export interface DashboardMetrics {
   triage_agreement_rate: number | null;
 }
 
+/** Filtro de estado de la lista de pacientes. */
+export type PatientStatusFilter = 'activo' | 'sin_consentimiento' | 'bloqueado';
+
+/** Médico para filtrar el dashboard por quien revisa. */
+export interface Reviewer {
+  id: number;
+  full_name: string;
+  is_active: boolean;
+}
+
+/** Fila del detalle de casos del dashboard (solo el código anónimo). */
+export interface DashboardCase {
+  id: number;
+  code: string;
+  level: TriageLevel | null;
+  status: CaseStatus;
+  created_at: string | null;
+  triaged_at: string | null;
+  reviewed_at: string | null;
+  reviewer: string | null;
+  waiting_hours: number;
+  late: boolean;
+}
+
 /** Resumen del administrador (GET /admin/overview). */
 export interface AdminOverview {
   version: string;

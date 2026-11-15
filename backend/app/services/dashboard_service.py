@@ -3,7 +3,7 @@
 import math
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -12,10 +12,13 @@ from app.db.models.error_log import ErrorLog
 from app.db.models.image import Image
 from app.db.models.review import AI_VERDICTS, TRIAGE_ASSESSMENTS, AIValidation, ClinicalReview, RequestMetric
 from app.db.models.triage import TriageLevel, TriageResult
+from app.db.models.user import User, UserRole
 from app.schemas.reviews import (
+    DashboardCase,
     DashboardMetrics,
     ModelPerformanceReport,
     ModelVersionPerformance,
+    Reviewer,
     WeekPoint,
 )
 
@@ -131,22 +134,42 @@ def model_performance(
     )
 
 
+def _cases_query(
+    db: Session,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    level: TriageLevel | None = None,
+    medico_id: int | None = None,
+):
+    """Casos del período, con filtros opcionales por nivel vigente y por médico que los revisa o revisó."""
+    q = db.query(Case)
+    if date_from:
+        q = q.filter(Case.created_at >= date_from)
+    if date_to:
+        q = q.filter(Case.created_at <= date_to)
+    if level is not None:
+        q = q.join(
+            TriageResult, (TriageResult.case_id == Case.id) & TriageResult.is_current.is_(True)
+        ).filter(TriageResult.final_level == level)
+    if medico_id is not None:
+        reviewed = select(ClinicalReview.case_id).where(ClinicalReview.medico_id == medico_id)
+        q = q.filter(or_(Case.assigned_medico_id == medico_id, Case.id.in_(reviewed)))
+    return q
+
+
 def metrics(
     db: Session,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
     alta_pending_hours: int | None = None,
     now: datetime | None = None,
+    level: TriageLevel | None = None,
+    medico_id: int | None = None,
 ) -> DashboardMetrics:
     now = now or datetime.now(timezone.utc)
     hours = alta_pending_hours if alta_pending_hours is not None else settings.ALTA_PENDING_HOURS
 
-    cases_q = db.query(Case)
-    if date_from:
-        cases_q = cases_q.filter(Case.created_at >= date_from)
-    if date_to:
-        cases_q = cases_q.filter(Case.created_at <= date_to)
-    cases = cases_q.all()
+    cases = _cases_query(db, date_from, date_to, level, medico_id).all()
     case_ids = [c.id for c in cases]
 
     by_status = {s.value: 0 for s in CaseStatus}
@@ -277,3 +300,73 @@ def metrics(
         triage_assessments_by_value=assessments,
         triage_agreement_rate=round(assessments["APROPIADO"] / assessed, 4) if assessed else None,
     )
+
+
+def reviewers(db: Session) -> list[Reviewer]:
+    """Médicos (activos o no) para filtrar el dashboard por quien revisa."""
+    rows = db.query(User).filter(User.role == UserRole.MEDICO).order_by(User.full_name).all()
+    return [Reviewer(id=u.id, full_name=u.full_name, is_active=u.is_active) for u in rows]
+
+
+def case_rows(
+    db: Session,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    level: TriageLevel | None = None,
+    medico_id: int | None = None,
+    alta_pending_hours: int | None = None,
+    now: datetime | None = None,
+    limit: int = 500,
+) -> list[DashboardCase]:
+    """Casos de un período (solo el código anónimo, sin datos del paciente), con su espera y si están atrasados.
+
+    Atrasado = la misma regla del indicador: ALTA vigente, sin cerrar y creado hace más de `alta_pending_hours`.
+    """
+    now = now or datetime.now(timezone.utc)
+    hours = alta_pending_hours if alta_pending_hours is not None else settings.ALTA_PENDING_HOURS
+    cases = _cases_query(db, date_from, date_to, level, medico_id).order_by(Case.created_at).limit(limit).all()
+    ids = [c.id for c in cases]
+    if not ids:
+        return []
+    current = {
+        r.case_id: r
+        for r in db.query(TriageResult).filter(TriageResult.case_id.in_(ids), TriageResult.is_current.is_(True))
+    }
+    first = dict(
+        db.query(TriageResult.case_id, func.min(TriageResult.computed_at))
+        .filter(TriageResult.case_id.in_(ids))
+        .group_by(TriageResult.case_id)
+        .all()
+    )
+    reviews = {rv.case_id: rv for rv in db.query(ClinicalReview).filter(ClinicalReview.case_id.in_(ids))}
+    medico_ids = {rv.medico_id for rv in reviews.values()} | {c.assigned_medico_id for c in cases if c.assigned_medico_id}
+    names = dict(db.query(User.id, User.full_name).filter(User.id.in_(medico_ids)).all()) if medico_ids else {}
+    cutoff = now - timedelta(hours=hours)
+    rows = []
+    for c in cases:
+        cur = current.get(c.id)
+        rv = reviews.get(c.id)
+        created = _aware(c.created_at)
+        end = _aware(rv.created_at) if rv and rv.created_at else now
+        reviewer_id = rv.medico_id if rv else c.assigned_medico_id
+        rows.append(
+            DashboardCase(
+                id=c.id,
+                code=c.code,
+                level=cur.final_level.value if cur else None,
+                status=c.status.value,
+                created_at=c.created_at,
+                triaged_at=first.get(c.id),
+                reviewed_at=rv.created_at if rv else None,
+                reviewer=names.get(reviewer_id) if reviewer_id else None,
+                waiting_hours=round((end - created).total_seconds() / 3600, 1),
+                late=bool(
+                    cur
+                    and cur.final_level == TriageLevel.ALTA
+                    and c.status != CaseStatus.CERRADO
+                    and created < cutoff
+                ),
+            )
+        )
+    rows.sort(key=lambda r: (not r.late, -r.waiting_hours))
+    return rows

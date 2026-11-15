@@ -3,9 +3,10 @@ import { Check, Loader2 } from 'lucide-react';
 import { apiClient } from '../services/api';
 import { passwordHints } from '../utils/password';
 import { cn } from '../lib/cn';
+import PasswordInput from './PasswordInput';
 import BrandMark from './BrandMark';
 import { ErrorMessage, SuccessMessage } from './Feedback';
-import { cardClass, inputClass, labelClass, primaryButton, secondaryButton } from './ui';
+import { cardClass, labelClass, primaryButton, secondaryButton } from './ui';
 
 interface ChangePasswordProps {
   /** Cambio obligatorio (primer ingreso o contraseña restablecida): no se puede cerrar. */
@@ -53,12 +54,12 @@ export default function ChangePassword({ forced = false, embedded = false, onDon
       {done && !forced && <SuccessMessage>Contraseña actualizada. Las demás sesiones abiertas se cerraron.</SuccessMessage>}
       <div>
         <label className={labelClass} htmlFor="cp-current">Contraseña actual</label>
-        <input id="cp-current" type="password" className={inputClass} value={current} required
+        <PasswordInput id="cp-current" value={current} required
           autoComplete="current-password" onChange={(e) => setCurrent(e.target.value)} />
       </div>
       <div>
         <label className={labelClass} htmlFor="cp-new">Nueva contraseña</label>
-        <input id="cp-new" type="password" className={inputClass} value={next} required
+        <PasswordInput id="cp-new" value={next} required
           autoComplete="new-password" aria-describedby="cp-rules" onChange={(e) => setNext(e.target.value)} />
         <ul id="cp-rules" className="mt-2 space-y-1">
           {hints.map((h) => (
@@ -75,7 +76,7 @@ export default function ChangePassword({ forced = false, embedded = false, onDon
       </div>
       <div>
         <label className={labelClass} htmlFor="cp-confirm">Repita la nueva contraseña</label>
-        <input id="cp-confirm" type="password" className={inputClass} value={confirm} required
+        <PasswordInput id="cp-confirm" value={confirm} required
           autoComplete="new-password" aria-invalid={mismatch || undefined}
           aria-describedby={mismatch ? 'cp-mismatch' : undefined}
           onChange={(e) => setConfirm(e.target.value)} />

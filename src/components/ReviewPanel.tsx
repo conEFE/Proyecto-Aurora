@@ -16,6 +16,7 @@ import type {
 import { RECOMMENDATION_LABELS, TRIAGE_ASSESSMENT_LABELS } from '../types';
 import { BIRADS_LABELS } from '../constants';
 import { cn } from '../lib/cn';
+import PasswordInput from './PasswordInput';
 import { LevelBadge } from './Badges';
 import { ErrorMessage, SuccessMessage } from './Feedback';
 import {
@@ -293,11 +294,10 @@ export default function ReviewPanel({ caseData, me, validationKey = 0, onChanged
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <label htmlFor={`rv-sign-${caseData.id}`} className="sr-only">Contraseña para firmar</label>
-                  <input
+                  <PasswordInput
                     id={`rv-sign-${caseData.id}`}
-                    type="password"
                     autoComplete="current-password"
-                    className={cn(inputClass, 'w-64')}
+                    className="w-64"
                     placeholder="Contraseña"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
