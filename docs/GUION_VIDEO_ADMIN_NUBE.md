@@ -25,9 +25,9 @@ Cómo leerlo:
 | 3 | Usuarios y contraseñas | 1:50 – 3:10 | ≈ 300 palabras | 20 s |
 | 4 | Parámetros del triage | 3:10 – 3:50 | ≈ 140 palabras | 10 s |
 | 5 | Bitácora y errores | 3:50 – 4:35 | ≈ 165 palabras | 10 s |
-| 6 | Instalador aurora-admin | 4:35 – 5:45 | ≈ 300 palabras | 15 s |
+| 6 | Instalador aurora-admin | 4:35 – 5:45 | ≈ 270 palabras | 15 s |
 | 7 | Nube y dominio | 5:45 – 6:40 | ≈ 240 palabras | 5 s |
-| 8 | Cierre | 6:40 – 7:00 | ≈ 70 palabras | — |
+| 8 | Cierre | 6:40 – 7:00 | ≈ 50 palabras | — |
 
 ---
 
