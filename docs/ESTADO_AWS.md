@@ -227,3 +227,5 @@ una falla pasajera del registro `public.ecr.aws`, no del código. Se resuelve co
 - `DESIGN.md` y `PRODUCT.md`: sistema visual (también lo usan los PDF, vía `src/utils/pdfTheme.ts`) y contexto de producto.
 - `docs/cumplimiento_legal.md` y `docs/seguridad_owasp.md`: cumplimiento y seguridad.
 - `docs/CHANGELOG_SPRINTS.md`: qué se hizo en cada versión.
+
+- 16-11-2026: desplegado `d945a06` (generar/copiar contraseña temporal en Administración). Respaldo previo `backups/aurora-20261116T124928Z.sql.gz`; health 200; modelo de Juan no alcanzable (respaldo simulado activo).
