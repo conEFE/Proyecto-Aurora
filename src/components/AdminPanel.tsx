@@ -20,7 +20,7 @@ import { ROLE_LABELS } from '../types';
 import { isValidRut, normalizeRut } from '../utils/rut';
 import { PASSWORD_MIN_LENGTH, passwordHints } from '../utils/password';
 import { cn } from '../lib/cn';
-import PasswordInput from './PasswordInput';
+import TempPasswordField from './TempPasswordField';
 import Dialog from './Dialog';
 import { EmptyState, ErrorMessage, Loading } from './Feedback';
 import { DetailHeader, ListHeader, Segmented } from './PageHeader';
@@ -101,10 +101,10 @@ function UserForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: ()
         </div>
         <div className="sm:col-span-2">
           <label className={labelClass} htmlFor="u-pass">Contraseña temporal</label>
-          <PasswordInput id="u-pass" value={form.password} required minLength={PASSWORD_MIN_LENGTH}
+          <TempPasswordField id="u-pass" value={form.password} required minLength={PASSWORD_MIN_LENGTH}
             aria-describedby="u-pass-hint"
-            onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" />
-          <p id="u-pass-hint" className="mt-1 text-xs text-muted-foreground">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con letras y números. La persona deberá cambiarla en su primer ingreso; entréguela por un canal seguro.</p>
+            onChange={(password) => setForm({ ...form, password })} autoComplete="new-password" />
+          <p id="u-pass-hint" className="mt-1 text-xs text-muted-foreground">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con letras y números. Cópiela antes de crear el usuario: no se vuelve a mostrar. Deberá cambiarla en su primer ingreso; entréguela por un canal seguro.</p>
         </div>
       </div>
       <div className="flex justify-end gap-2">
@@ -139,13 +139,13 @@ function ResetPasswordForm({ user, onDone }: { user: UserAccount; onDone: (error
   const inputId = `reset-${user.id}`;
   return (
     <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
-      <div>
+      <div className="w-full max-w-xl">
         <label htmlFor={inputId} className={labelClass}>Contraseña temporal</label>
-        <PasswordInput
+        <TempPasswordField
           id={inputId}
-          className="w-72"
+          fieldClassName="min-w-[14rem]"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={setPassword}
           placeholder={`Mínimo ${PASSWORD_MIN_LENGTH}, con letras y números`}
           autoComplete="new-password"
           required
@@ -155,7 +155,7 @@ function ResetPasswordForm({ user, onDone }: { user: UserAccount; onDone: (error
         {saving && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
         Restablecer
       </button>
-      <p className="w-full text-xs text-muted-foreground">Cierra sus sesiones y le exige cambiarla al ingresar.</p>
+      <p className="w-full text-xs text-muted-foreground">Cópiela antes de restablecer: no se vuelve a mostrar. Cierra sus sesiones y le exige cambiarla al ingresar.</p>
     </form>
   );
 }

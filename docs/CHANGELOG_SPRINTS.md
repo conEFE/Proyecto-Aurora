@@ -707,6 +707,16 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## Sin número de versión — contraseña temporal generada y más datos de demostración (16-11-2026)
+
+- **Generar contraseña temporal** en «Nuevo usuario» y en «Restablecer contraseña» (Administración): botón «Generar»
+  (12 caracteres al azar en tres grupos, sin caracteres confusos como 0/O o 1/l, con 3 números que nunca forman un
+  RUT; `crypto.getRandomValues`) y botón «Copiar». La contraseña generada queda visible para copiarla y no se vuelve a
+  mostrar después de guardar. Componente `TempPasswordField`; `PasswordInput` acepta visibilidad controlada.
+- **`seed_demo --more N --reviewers N`**: agrega N pacientes ficticios a una base que ya tiene demo y crea médicos
+  ficticios (RUT 39.000.001-4 en adelante) con contraseña al azar no guardada y cambio obligatorio. Se usó en
+  producción el 15-11-2026: 150 pacientes y 2 médicos más (272 pacientes y 305 casos en total).
+
 ## Sin número de versión — sesión por inactividad, pacientes completos y búsqueda sin tildes (15-11-2026)
 
 Sin migraciones. API, compatible hacia atrás: `POST /auth/refresh` y `GET /patients/page`; la búsqueda de pacientes

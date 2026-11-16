@@ -6,17 +6,28 @@ import { inputClass } from './ui';
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
   /** Clases del campo (la de `className` va al contenedor, p. ej. el ancho). */
   inputClassName?: string;
+  /** Visibilidad controlada desde fuera (opcional; si no se pasa, la maneja el propio campo). */
+  visible?: boolean;
+  onVisibleChange?: (visible: boolean) => void;
 };
 
 /** Campo de contraseña con un botón para mostrarla u ocultarla. */
-const PasswordInput = forwardRef<HTMLInputElement, Props>(function PasswordInput({ className, inputClassName, ...props }, ref) {
-  const [visible, setVisible] = useState(false);
+const PasswordInput = forwardRef<HTMLInputElement, Props>(function PasswordInput(
+  { className, inputClassName, visible: visibleProp, onVisibleChange, ...props },
+  ref,
+) {
+  const [visibleState, setVisibleState] = useState(false);
+  const visible = visibleProp ?? visibleState;
+  const toggle = () => {
+    setVisibleState(!visible);
+    onVisibleChange?.(!visible);
+  };
   return (
     <div className={cn('relative', className)}>
       <input ref={ref} {...props} type={visible ? 'text' : 'password'} className={cn(inputClass, 'pr-11', inputClassName)} />
       <button
         type="button"
-        onClick={() => setVisible((v) => !v)}
+        onClick={toggle}
         aria-pressed={visible}
         aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
         title={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
