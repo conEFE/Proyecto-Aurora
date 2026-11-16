@@ -58,8 +58,9 @@ Cómo leerlo:
 **[PAUSA 5 s]** Pasar el mouse por la franja de estado de arriba.
 
 > Arriba está el estado del sistema: qué versión de Aurora está instalada, si el modelo de inteligencia artificial
-> está conectado o no, cuándo fue el último respaldo de la base de datos y si el servidor ha tenido errores. Si
-> algo de esto falla, se ve de inmediato, sin tener que entrar a ningún servidor ni pedirle nada a un técnico.
+> está conectado o si se está usando el respaldo simulado, si el servidor ha tenido errores en los últimos siete
+> días, y cuántos pacientes y casos hay registrados. Si algo de esto falla, se ve de inmediato, sin tener que entrar
+> a ningún servidor ni pedirle nada a un técnico.
 >
 > Luego viene la sección «Requiere atención». Aquí la plataforma le avisa al administrador lo que debería revisar.
 > Por ejemplo, cuentas bloqueadas por intentos fallidos de contraseña, que conviene confirmar con la persona antes
@@ -118,7 +119,7 @@ Cómo leerlo:
 
 **En pantalla:** menú **Parámetros**.
 
-> El administrador también puede ajustar las reglas con que Aurora prioriza los casos. Aquí están los pesos del
+> El administrador también puede consultar las reglas con que Aurora prioriza los casos. Aquí están los pesos del
 > puntaje, como el antecedente familiar, el cáncer previo o el tiempo de espera, y los umbrales que separan la
 > prioridad alta de la media y la baja. También se define qué hallazgos escalan un caso directamente a prioridad
 > alta, por ejemplo cierto BI-RADS informado, y cuántos días como máximo debería esperar un caso antes de ser
@@ -126,7 +127,8 @@ Cómo leerlo:
 
 **[PAUSA 5 s]** Recorrer los campos con el mouse, sin cambiar nada.
 
-> Cada cambio exige escribir un motivo, y queda guardado como una versión nueva, con quién lo hizo y cuándo. Así,
+> Ojo, el administrador las ve en modo de solo lectura: por diseño, solo el equipo médico puede modificarlas. Cada
+> cambio exige escribir un motivo, y queda guardado como una versión nueva, con quién lo hizo y cuándo. Así,
 > si un caso se priorizó de cierta forma, siempre se puede saber con qué reglas se calculó en ese momento. Estas
 > reglas las define el equipo clínico; la plataforma solo las aplica de forma consistente, igual para todos los
 > pacientes, sin importar quién esté de turno.
@@ -142,7 +144,7 @@ Cómo leerlo:
 > un paciente o quién cambió una contraseña. Esto responde a lo que exige la ley chilena sobre datos de salud:
 > cada acceso a la información de un paciente tiene que poder justificarse y rastrearse.
 
-**[PAUSA 5 s]** Elegir el filtro «Seguridad».
+**[PAUSA 5 s]** Elegir el filtro «Alertas de seguridad».
 
 > Puedo filtrar, por ejemplo, solo los eventos de seguridad, y exportar todo a un archivo CSV para entregarlo en una
 > auditoría. Esta bitácora no se puede borrar desde la plataforma, ni siquiera siendo administrador.
