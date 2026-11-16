@@ -4,6 +4,12 @@ Actualizado: 13-11-2026. Desplegada la **2.10.0** (imágenes `sha-18183f5…`, m
 ver `AURORA_VERSION` en el servidor). **Modelo real conectado** (PC de Juan por Tailscale; si está apagado, IA
 simulada).
 
+**16-11-2026: baja de `hospital-norte`** (prueba real de aurora-admin): respaldo final en su bucket
+(`aurora-inst-hospital-norte-databucket-hfaajok0r13s`, que se conserva), pila borrada (servidor, IP y DNS) y 11
+parámetros eliminados. **Verificación previa a la evaluación** (contra RDS): crear, leer, editar y eliminar un paciente;
+crear un caso (`AUR-2026-000309`, paciente ficticio «Prueba Caso Demo»); 409 al eliminar un paciente con casos; e
+informe de gestión PDF de 4 páginas generado desde el Dashboard. Sin errores 5xx.
+
 **16-11-2026: base de datos migrada a Amazon RDS.** `demo.auroracare.cl` usa la RDS `aurora-demo-db` (PostgreSQL
 16.15, `db.t4g.micro`, 20 GB gp3 cifrados, us-east-2c, sin acceso público, protección contra borrado). Firewall
 `aurora-rds` (`sg-053051bdb38d8381a`): solo el 5432 desde `aurora-web`. Grupo de subredes `aurora-db`. Clave maestra
