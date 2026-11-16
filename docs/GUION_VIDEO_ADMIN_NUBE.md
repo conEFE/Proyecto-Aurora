@@ -7,27 +7,27 @@ no se habla y solo se hace clic o se deja ver la pantalla.
 Cómo leerlo:
 - **[PAUSA X s]**: callar y hacer lo que dice el corchete. Contar mentalmente.
 - Si un bloque se adelanta, alargar la pausa siguiente recorriendo la pantalla con el mouse, sin hablar.
-- Leído tal cual da unos 6:45; los 15 segundos restantes son margen para clics que tarden más o para respirar.
+- Leído tal cual da unos 6:45.
 - Si falta tiempo, se acorta el bloque 4 (Parámetros).
 
 **Antes de grabar**
 - Entrar a https://demo.auroracare.cl como ADMIN, en una ventana limpia (sin otras pestañas ni marcadores personales).
 - Tener abiertos: la consola de AWS en **EC2** (us-east-2) y **Route 53 → auroracare.cl**, y `aurora-admin-windows.exe`.
 - No mostrar en pantalla: `deploy/.env`, Parameter Store con valores, la clave de operador ni contraseñas reales.
-- Para la contraseña generada, usar un médico ficticio (por ejemplo, el «Dr. Andrés Piloto», RUT 39000002-2).
+- Para crear la cuenta, usar datos ficticios (por ejemplo, «Dra. Inés Muestra», RUT 39000003-0).
 - El instalador **aún no se ha probado de punta a punta**: probarlo antes con una institución `prueba` y grabar ese
   bloque solo si funciona. Si no, mostrar el menú (versión B del bloque 6).
 
 | # | Bloque | Tiempo | Habla | Pausas |
 |---|---|---|---|---|
-| 1 | Presentación | 0:00 – 0:35 | ≈ 120 palabras | 10 s |
+| 1 | Presentación e ingreso | 0:00 – 0:35 | ≈ 115 palabras | 10 s |
 | 2 | Resumen de Administración | 0:35 – 1:50 | ≈ 310 palabras | 15 s |
-| 3 | Usuarios y contraseñas | 1:50 – 3:10 | ≈ 300 palabras | 20 s |
+| 3 | Usuarios: crear una cuenta | 1:50 – 3:10 | ≈ 230 palabras | 30 s |
 | 4 | Parámetros del triage | 3:10 – 3:50 | ≈ 140 palabras | 10 s |
 | 5 | Bitácora y errores | 3:50 – 4:35 | ≈ 165 palabras | 10 s |
-| 6 | Instalador aurora-admin | 4:35 – 5:45 | ≈ 270 palabras | 15 s |
-| 7 | Nube y dominio | 5:45 – 6:40 | ≈ 240 palabras | 5 s |
-| 8 | Cierre | 6:40 – 7:00 | ≈ 50 palabras | — |
+| 6 | Instalador aurora-admin | 4:35 – 5:40 | ≈ 245 palabras | 15 s |
+| 7 | Nube y dominio | 5:40 – 6:30 | ≈ 220 palabras | 5 s |
+| 8 | Cierre | 6:30 – 6:45 | ≈ 50 palabras | — |
 
 ---
 
@@ -40,11 +40,11 @@ Cómo leerlo:
 > nube y cómo funciona el dominio; y tercero, cómo podemos instalar una copia completamente nueva de Aurora para
 > otra institución, como un hospital o un CESFAM, en pocos minutos.
 >
-> Algo importante antes de empezar: todo lo que van a ver no es una maqueta. Está publicado de verdad en internet,
-> en la dirección demo punto auroracare punto c-l, con conexión segura. Eso sí, todos los pacientes y casos que
-> aparecen son ficticios, para cuidar la privacidad.
+> Lo que van a ver está publicado en internet, en la dirección demo punto auroracare punto c-l, con conexión
+> segura. Todos los pacientes y casos que aparecen son ficticios, para cuidar la privacidad. Para empezar, entro con
+> mi cuenta de administrador.
 
-**[PAUSA 10 s]** Clic en «Ingresar», escribir RUT y contraseña (la contraseña fuera de cámara o tapada) y entrar.
+**[PAUSA 10 s]** Clic en «Ingresar», escribir RUT y contraseña, y entrar.
 
 ## 2. Vista de administración: resumen (0:35 – 1:50)
 
@@ -74,46 +74,45 @@ Cómo leerlo:
 > Más abajo vemos los ingresos a la plataforma de los últimos días, la actividad reciente y cómo está compuesto el
 > equipo: cuántos médicos, cuántos administrativos y cuántos administradores hay. Cada elemento de esta pantalla
 > es un acceso directo: si hago clic en una alerta, me lleva justo a la lista de cuentas o de eventos que tengo que
-> revisar. La idea de fondo es simple: el administrador no tiene que salir a buscar los problemas, los problemas
-> aparecen solos en esta pantalla.
+> revisar. Así, desde esta misma pantalla se llega a cada cosa que hay que atender, sin tener que buscarla en
+> otra parte.
 
 **[PAUSA 5 s]** Dejar ver la pantalla completa.
 
-## 3. Usuarios y contraseñas (1:50 – 3:10)
+## 3. Usuarios: crear una cuenta (1:50 – 3:10)
 
 **En pantalla:** pestaña **Usuarios**.
 
 > En la pestaña Usuarios están todas las cuentas de la institución. Hay tres roles: el médico, que revisa y prioriza
-> los casos; el administrativo, que registra pacientes y exámenes; y el administrador, que gestiona las cuentas y la
-> configuración. Cada rol ve solo lo que necesita para su trabajo.
+> los casos; el administrativo, que registra pacientes y exámenes; y el administrador, que gestiona las cuentas.
+> Cada rol ve solo las secciones que necesita.
 
-**[PAUSA 5 s]** Filtrar por «Médico» y escribir un nombre en el buscador.
+**[PAUSA 5 s]** Clic en **Nuevo usuario**.
 
-> Puedo filtrar por rol, por estado, o buscar por nombre, RUT o correo. La búsqueda no distingue tildes, así que si
-> escribo «Andres» sin tilde, igual encuentra a «Andrés». Parece un detalle, pero en Chile muchos nombres llevan
-> tilde o eñe, y nadie debería quedarse sin encontrar a un colega o a un paciente por cómo lo escribió.
+> Voy a crear la cuenta de una médica nueva. El formulario pide su RUT, que se valida al escribirlo, su nombre
+> completo, su correo y el rol que tendrá en la plataforma.
 
-**[PAUSA 5 s]** Abrir la página del médico.
+**[PAUSA 10 s]** Escribir RUT, nombre y correo; dejar el rol «Médico».
 
-> Cada persona tiene su propia página, con su rol, el estado de su contraseña y su actividad reciente. Desde aquí el
-> administrador puede cambiarle el rol, desactivar la cuenta si la persona deja de trabajar en el centro, o
-> restablecer su contraseña si la olvidó.
->
-> Para eso agregamos algo práctico: el administrador no tiene que inventar una clave.
+> Falta la contraseña. El administrador puede escribirla, pero es más seguro que la genere la plataforma.
 
 **[PAUSA 5 s]** Clic en **Generar**, luego en **Copiar**.
 
-> Presiono «Generar» y la plataforma crea una contraseña segura al azar, en tres grupos fáciles de dictar, sin
-> letras que se confundan como la «o» con el cero. Con «Copiar» queda lista para entregarla por un canal privado.
-> Esta contraseña es temporal: en su primer ingreso, la persona está obligada a cambiarla por una propia. Así, el
-> administrador nunca conoce la contraseña definitiva de nadie.
->
-> Además, la sesión se cierra sola después de un rato sin actividad, con un aviso previo que pregunta «¿Sigue
-> ahí?» y permite seguir trabajando con un clic. Mientras la persona está usando la plataforma, la sesión se renueva
-> sola, así que no la expulsa en medio de una revisión. Esto es importante en un
-> centro de salud, donde un computador puede quedar abierto en un box con datos de pacientes a la vista.
+> Con «Generar» se crea una contraseña al azar de doce caracteres, en tres grupos, sin letras que se confundan con
+> números. Con «Copiar» queda lista para entregarla a la persona por un canal privado. Es una contraseña temporal:
+> en su primer ingreso, la plataforma le exige cambiarla por una propia, así que el administrador no conoce la
+> contraseña definitiva de nadie.
 
-**[PAUSA 5 s]** Clic en **Restablecer** y dejar ver el mensaje de confirmación.
+**[PAUSA 5 s]** Clic en **Crear usuario**; aparece en la lista.
+
+> La cuenta ya aparece en la lista, marcada con la contraseña temporal pendiente de cambio. Si abro su página, veo
+> su rol, el estado de la cuenta y su actividad.
+
+**[PAUSA 5 s]** Abrir la página de la nueva usuaria.
+
+> Desde aquí se le puede cambiar el rol, desactivar la cuenta si deja de trabajar en el centro, o restablecer su
+> contraseña con el mismo botón de generar. Por último, la sesión de cualquier usuario se cierra sola después de
+> un rato sin actividad, con un aviso previo.
 
 ## 4. Parámetros del triage (3:10 – 3:50)
 
@@ -155,7 +154,7 @@ Cómo leerlo:
 
 **[PAUSA 5 s]** Abrir la pestaña **Errores** un momento.
 
-## 6. El instalador: una institución nueva (4:35 – 5:45)
+## 6. El instalador: una institución nueva (4:35 – 5:40)
 
 **En pantalla:** abrir `aurora-admin-windows.exe`.
 
@@ -168,8 +167,7 @@ Cómo leerlo:
 
 > Al abrirlo, pide una clave de operador, que solo conoce el responsable del equipo. Luego muestra un menú con
 > todo lo necesario: inscribir una institución, ver las que existen, actualizarlas, respaldarlas, pausarlas o
-> darlas de baja. Está pensado para que cualquier persona del equipo pueda operarlo sin saber programar ni conocer
-> los detalles de AWS: elige una opción, responde un par de preguntas y la herramienta hace el resto.
+> darlas de baja. Cada opción hace unas pocas preguntas y luego ejecuta los pasos en AWS.
 
 **Versión A (si la prueba funcionó):** opción **1. Inscribir** → identificador `prueba` → datos ficticios del primer
 ADMIN → cortar mientras espera → mostrar `prueba.auroracare.cl` abierta → opción **2. Ver instituciones**.
@@ -183,14 +181,13 @@ ADMIN → cortar mientras espera → mostrar `prueba.auroracare.cl` abierta → 
 > auroracare punto c-l. En unos quince a veinte minutos la plataforma está lista, con la última versión y con
 > conexión segura.
 >
-> Lo más importante es que cada institución queda completamente separada: los datos de un hospital nunca se
-> mezclan con los de otro. Desde el mismo menú se pueden actualizar todas las instituciones a la versión nueva, hacer
+> Cada institución queda separada de las demás: tiene su propio servidor y su propia base de datos. Desde el mismo menú se pueden actualizar todas las instituciones a la versión nueva, hacer
 > un respaldo inmediato, o dar de baja una institución, guardando antes un respaldo final. Cada institución cuesta
 > unos diez dólares al mes de infraestructura.
 
 **[PAUSA 5 s]** Dejar ver el resultado o el menú.
 
-## 7. Cómo funciona en la nube y el dominio (5:45 – 6:40)
+## 7. Cómo funciona en la nube y el dominio (5:40 – 6:30)
 
 **En pantalla:** consola de AWS → EC2 (`aurora-prod`), luego Route 53 (zona `auroracare.cl`, registro `demo`).
 
@@ -208,12 +205,11 @@ ADMIN → cortar mientras espera → mostrar `prueba.auroracare.cl` abierta → 
 
 > Sobre el dominio: compramos auroracare punto c-l en NIC Chile y lo administramos desde AWS. Eso nos permite crear
 > subdominios, como demo punto auroracare punto c-l, o uno por cada hospital. El certificado de seguridad se renueva
-> solo. Y el modelo de inteligencia artificial corre aparte, en un computador con tarjeta gráfica conectado por una
-> red privada. Si no está disponible, la plataforma sigue funcionando y lo indica con el sello «IA simulada».
-> Cada vez que publicamos una versión nueva, primero se prueba automáticamente y se respalda la base de datos antes
-> de instalarla, así que una actualización nunca pone en riesgo los datos.
+> solo. El modelo de inteligencia artificial corre en otro equipo, conectado por una red privada; si no responde,
+> la plataforma usa un resultado simulado y lo marca como «IA simulada». Antes de instalar una versión nueva, el
+> código pasa por pruebas automáticas y se respalda la base de datos.
 
-## 8. Cierre (6:40 – 7:00)
+## 8. Cierre (6:30 – 6:45)
 
 **En pantalla:** volver al resumen de Administración o a la landing.
 
