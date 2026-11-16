@@ -1,37 +1,30 @@
 # Guion del video: Administración, instalador y nube (parte de Felipe)
 
-Duración: **7 minutos**. Está calculado a **unas 5 palabras por segundo** (la introducción original, de 70 palabras,
-se leyó en 15 segundos). Cada bloque indica cuántas palabras tiene y cuántos segundos son **pausas**: momentos en que
-no se habla y solo se hace clic o se deja ver la pantalla.
+El video ya está grabado completo, sin audio: **`aurora-video-felipe-completo.mp4`**, de **6:41**, en 1920×1080. Este
+guion es la narración para ponerle la voz encima. Está calculado a **unas 5 palabras por segundo** y cada bloque
+indica el minuto exacto del video en que empieza.
 
-Cómo leerlo:
-- **[PAUSA X s]**: callar y hacer lo que dice el corchete. Contar mentalmente.
-- Si un bloque se adelanta, alargar la pausa siguiente recorriendo la pantalla con el mouse, sin hablar.
-- Leído tal cual da unos 6:45.
-- Si falta tiempo, se acorta el bloque 4 (Parámetros).
+Cómo narrar:
+- Graba la voz bloque por bloque, mirando el video. Los tiempos de cada bloque son los del video final.
+- **[PAUSA X s]** es un momento sin voz: en pantalla pasa lo que dice el corchete (un clic, escribir, cambiar de
+  pantalla). Úsalo para respirar.
+- Si te adelantas, deja más silencio en la pausa siguiente. Si te atrasas, recorta un poco el texto del bloque, no
+  el video.
 
-**Antes de grabar**
-- Entrar a https://demo.auroracare.cl como ADMIN, en una ventana limpia (sin otras pestañas ni marcadores personales).
-- Tener abiertos: la consola de AWS en **EC2** (us-east-2) y **Route 53 → auroracare.cl**, y `aurora-admin-windows.exe`.
-- No mostrar en pantalla: `deploy/.env`, Parameter Store con valores, la clave de operador ni contraseñas reales.
-- Para crear la cuenta, usar datos ficticios (por ejemplo, «Dra. Inés Muestra», RUT 39000003-0).
-- El instalador **aún no se ha probado de punta a punta**: probarlo antes con una institución `prueba` y grabar ese
-  bloque solo si funciona. Si no, mostrar el menú (versión B del bloque 6).
-
-| # | Bloque | Tiempo | Habla | Pausas |
+| # | Bloque | Video | Habla | Pausas |
 |---|---|---|---|---|
 | 1 | Presentación e ingreso | 0:00 – 0:35 | ≈ 115 palabras | 10 s |
-| 2 | Resumen de Administración | 0:35 – 1:50 | ≈ 310 palabras | 15 s |
-| 3 | Usuarios: crear una cuenta | 1:50 – 3:10 | ≈ 230 palabras | 30 s |
-| 4 | Parámetros del triage | 3:10 – 3:50 | ≈ 140 palabras | 10 s |
-| 5 | Bitácora y errores | 3:50 – 4:35 | ≈ 165 palabras | 10 s |
-| 6 | Instalador aurora-admin | 4:35 – 5:40 | ≈ 245 palabras | 15 s |
-| 7 | Nube y dominio | 5:40 – 6:30 | ≈ 220 palabras | 5 s |
-| 8 | Cierre | 6:30 – 6:45 | ≈ 50 palabras | — |
+| 2 | Resumen de Administración | 0:35 – 1:55 | ≈ 315 palabras | 15 s |
+| 3 | Usuarios: crear una cuenta | 1:55 – 3:12 | ≈ 230 palabras | 30 s |
+| 4 | Parámetros del triage | 3:12 – 3:54 | ≈ 160 palabras | 10 s |
+| 5 | Bitácora y errores | 3:54 – 4:38 | ≈ 165 palabras | 10 s |
+| 6 | Instalador aurora-admin | 4:38 – 5:42 | ≈ 245 palabras | 15 s |
+| 7 | Nube y dominio | 5:42 – 6:31 | ≈ 220 palabras | 5 s |
+| 8 | Cierre | 6:31 – 6:41 | ≈ 50 palabras | — |
 
 ---
 
-## 1. Presentación (0:00 – 0:35)
+## 1. Presentación e ingreso (0:00 – 0:35)
 
 **En pantalla:** landing de demo.auroracare.cl.
 
@@ -46,7 +39,7 @@ Cómo leerlo:
 
 **[PAUSA 10 s]** Clic en «Ingresar», escribir RUT y contraseña, y entrar.
 
-## 2. Vista de administración: resumen (0:35 – 1:50)
+## 2. Vista de administración: resumen (0:35 – 1:55)
 
 **En pantalla:** Administración → pestaña **Resumen**.
 
@@ -79,7 +72,7 @@ Cómo leerlo:
 
 **[PAUSA 5 s]** Dejar ver la pantalla completa.
 
-## 3. Usuarios: crear una cuenta (1:50 – 3:10)
+## 3. Usuarios: crear una cuenta (1:55 – 3:12)
 
 **En pantalla:** pestaña **Usuarios**.
 
@@ -114,7 +107,7 @@ Cómo leerlo:
 > contraseña con el mismo botón de generar. Por último, la sesión de cualquier usuario se cierra sola después de
 > un rato sin actividad, con un aviso previo.
 
-## 4. Parámetros del triage (3:10 – 3:50)
+## 4. Parámetros del triage (3:12 – 3:54)
 
 **En pantalla:** menú **Parámetros**.
 
@@ -134,7 +127,7 @@ Cómo leerlo:
 
 **[PAUSA 5 s]** Mostrar el historial de versiones.
 
-## 5. Bitácora y errores (3:50 – 4:35)
+## 5. Bitácora y errores (3:54 – 4:38)
 
 **En pantalla:** Administración → pestaña **Bitácora**.
 
@@ -154,26 +147,22 @@ Cómo leerlo:
 
 **[PAUSA 5 s]** Abrir la pestaña **Errores** un momento.
 
-## 6. El instalador: una institución nueva (4:35 – 5:40)
+## 6. El instalador: una institución nueva (4:38 – 5:42)
 
-**En pantalla:** abrir `aurora-admin-windows.exe`.
+**En pantalla:** la consola de `aurora-admin` pidiendo la clave de operador.
 
 > Ahora, pensemos en el crecimiento. ¿Qué pasa si otro hospital o un CESFAM quiere usar Aurora? No queremos mezclar
 > sus datos con los de otra institución, y tampoco queremos configurar un servidor a mano cada vez. Para eso
 > construimos **aurora-admin**: un ejecutable para Windows, Mac o Linux, que se descarga desde nuestro repositorio y
 > solo necesita la herramienta de línea de comandos de AWS para iniciar sesión.
 
-**[PAUSA 5 s]** Escribir la clave de operador (fuera de cámara) y llegar al menú.
+**[PAUSA 5 s]** Se escribe la clave (no se ve) y aparece el menú.
 
 > Al abrirlo, pide una clave de operador, que solo conoce el responsable del equipo. Luego muestra un menú con
 > todo lo necesario: inscribir una institución, ver las que existen, actualizarlas, respaldarlas, pausarlas o
 > darlas de baja. Cada opción hace unas pocas preguntas y luego ejecuta los pasos en AWS.
 
-**Versión A (si la prueba funcionó):** opción **1. Inscribir** → identificador `prueba` → datos ficticios del primer
-ADMIN → cortar mientras espera → mostrar `prueba.auroracare.cl` abierta → opción **2. Ver instituciones**.
-**Versión B (si no):** mostrar la opción **2. Ver instituciones** o **9. Versiones**.
-
-**[PAUSA 5 s]** Elegir la opción 1 (o la 2 en la versión B).
+**[PAUSA 5 s]** Se elige la opción 1 y se escriben el identificador `hospital-norte` y los datos del primer ADMIN.
 
 > Con «Inscribir», escribo un identificador, por ejemplo «hospital-norte», y los datos del primer administrador de
 > esa institución. Con eso, la herramienta crea sola todo lo que necesita: su propio servidor, su base de datos, su
@@ -181,15 +170,16 @@ ADMIN → cortar mientras espera → mostrar `prueba.auroracare.cl` abierta → 
 > auroracare punto c-l. En unos quince a veinte minutos la plataforma está lista, con la última versión y con
 > conexión segura.
 >
-> Cada institución queda separada de las demás: tiene su propio servidor y su propia base de datos. Desde el mismo menú se pueden actualizar todas las instituciones a la versión nueva, hacer
-> un respaldo inmediato, o dar de baja una institución, guardando antes un respaldo final. Cada institución cuesta
-> unos diez dólares al mes de infraestructura.
+> Cada institución queda separada de las demás: tiene su propio servidor y su propia base de datos. Desde el
+> mismo menú se pueden actualizar todas las instituciones a la versión nueva, hacer
+> un respaldo inmediato, o dar de baja una institución, guardando antes un respaldo final. Y aquí está la nueva
+> institución funcionando, con su primer administrador.
 
-**[PAUSA 5 s]** Dejar ver el resultado o el menú.
+**[PAUSA 5 s]** Se ve `hospital-norte.auroracare.cl` con su propio panel de Administración.
 
-## 7. Cómo funciona en la nube y el dominio (5:40 – 6:30)
+## 7. Cómo funciona en la nube y el dominio (5:42 – 6:31)
 
-**En pantalla:** consola de AWS → EC2 (`aurora-prod`), luego Route 53 (zona `auroracare.cl`, registro `demo`).
+**En pantalla:** consola de AWS → EC2, con la instancia `aurora-prod` y su detalle.
 
 > Por detrás, Aurora vive en Amazon Web Services, en un servidor ubicado en Ohio, Estados Unidos. Dentro de ese
 > servidor corren tres partes separadas: la base de datos, el motor de la aplicación y el sitio web, cada una en su
@@ -201,7 +191,7 @@ ADMIN → cortar mientras espera → mostrar `prueba.auroracare.cl` abierta → 
 > se guardan treinta días, y tenemos un presupuesto con alertas para que el costo no se nos escape. Hoy cuesta
 > alrededor de once dólares al mes.
 
-**[PAUSA 5 s]** Cambiar a Route 53.
+**[PAUSA 5 s]** Se cambia a Route 53, zona `auroracare.cl`, con sus registros (`demo`, `hospital-norte`…).
 
 > Sobre el dominio: compramos auroracare punto c-l en NIC Chile y lo administramos desde AWS. Eso nos permite crear
 > subdominios, como demo punto auroracare punto c-l, o uno por cada hospital. El certificado de seguridad se renueva
@@ -209,9 +199,9 @@ ADMIN → cortar mientras espera → mostrar `prueba.auroracare.cl` abierta → 
 > la plataforma usa un resultado simulado y lo marca como «IA simulada». Antes de instalar una versión nueva, el
 > código pasa por pruebas automáticas y se respalda la base de datos.
 
-## 8. Cierre (6:30 – 6:45)
+## 8. Cierre (6:31 – 6:41)
 
-**En pantalla:** volver al resumen de Administración o a la landing.
+**En pantalla:** demo.auroracare.cl.
 
 > En resumen: el administrador tiene todo a la vista y con trazabilidad; la plataforma está en la nube, protegida y
 > con respaldos diarios; y podemos llevar Aurora a una nueva institución en minutos, con sus datos aislados.
