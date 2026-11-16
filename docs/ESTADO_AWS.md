@@ -4,6 +4,22 @@ Actualizado: 13-11-2026. Desplegada la **2.10.0** (imágenes `sha-18183f5…`, m
 ver `AURORA_VERSION` en el servidor). **Modelo real conectado** (PC de Juan por Tailscale; si está apagado, IA
 simulada).
 
+**16-11-2026: base de datos migrada a Amazon RDS.** `demo.auroracare.cl` usa la RDS `aurora-demo-db` (PostgreSQL
+16.15, `db.t4g.micro`, 20 GB gp3 cifrados, us-east-2c, sin acceso público, protección contra borrado). Firewall
+`aurora-rds` (`sg-053051bdb38d8381a`): solo el 5432 desde `aurora-web`. Grupo de subredes `aurora-db`. Clave maestra
+(`aurora_master`) en **Secrets Manager**, gestionada por RDS. La aplicación usa el usuario `aurora`, con clave generada
+en el servidor; solo existe en `deploy/.env` (`DB_DSN`, `sslmode=require`). Se copiaron las 19 tablas y los conteos
+coincidieron (273 pacientes, 308 casos, 2.806 eventos de auditoría). Respaldo previo en `backups/` y primero desde RDS:
+`backups/aurora-20261116T195958Z.sql.gz`. El plan gratuito limita los respaldos automáticos de RDS a **1 día**; los
+volcados diarios a S3 (35 días) siguen siendo el historial largo. El contenedor `db` quedó **apagado con su volumen
+intacto**, y la configuración anterior está en `deploy/.env.antes-rds`.
+- **Volver atrás** (si hiciera falta): `cp -p deploy/.env.antes-rds deploy/.env`, luego `dc --profile db start db` y
+  `dc up -d backend`. Ojo: se pierde lo escrito en RDS después del 16-11-2026.
+- **Costo:** +≈ USD 15 al mes (RDS) + USD 0,40 (secreto). Total estimado ≈ USD 26 al mes, sin contar `hospital-norte`.
+- **Pendiente:** cuando ya no se necesite volver atrás, borrar `deploy/.env.antes-rds` y el volumen `aurora_pgdata`.
+  Revisar en *Earn AWS credits* si la actividad de RDS quedó cumplida. **No** borrar `aurora-demo-db`: ahora es la base
+  real.
+
 **15-11-2026 (desplegado `af1629a`, respaldo previo `backups/aurora-20261115T132305Z.sql.gz`; versión anterior
 `sha-18183f5…`):** filtros y búsquedas (Dashboard, cola, Casos, Pacientes), sesión por inactividad, pacientes con
 páginas, búsqueda sin tildes, meta del modelo 85 % y React Router 7 (detalle en `docs/CHANGELOG_SPRINTS.md`).
@@ -65,10 +81,11 @@ desde 40.000.000 y se puede repetir sin efecto.
 | Firewall | Grupo `aurora-web`: TCP 80, TCP 443 y UDP 443 desde Internet. **Sin puerto 22** |
 | Acceso al servidor | **Session Manager** (EC2 → Conectar → Administrador de sesiones), luego `sudo su - ec2-user` |
 | Rol | `AuroraEC2Role` = política `AuroraEC2` (S3 `images/*` y `backups/*`, logs `/aurora/*`) + `AmazonSSMManagedInstanceCore` |
-| Contenedores | `/opt/aurora`: `db` (PostgreSQL 16), `backend` (API), `web` (Caddy + sitio). Configuración en `deploy/.env` (permisos 600, generado en el servidor; **sus secretos nunca salieron del servidor**) |
+| Contenedores | `/opt/aurora`: `backend` (API) y `web` (Caddy + sitio); `db` apagado desde el 16-11-2026 (base en RDS). Configuración en `deploy/.env` (permisos 600, generado en el servidor; **sus secretos nunca salieron del servidor**) |
 | Imágenes | Bucket privado `aurora-imagenes-7k3p9x`: cifrado Fernet (aplicación) + SSE-KMS `aws/s3`, versionado, acceso público bloqueado |
 | Ciclo de vida del bucket | Versiones antiguas: 7 días. Respaldos (`backups/`): 35 días. Cargas incompletas: 7 días |
-| Respaldo | `deploy/backup_db.sh` diario a las **03:15 hora de Chile** (crontab de `ec2-user`), verificado (13,5 KB) |
+| Base de datos | **Amazon RDS** `aurora-demo-db` (PostgreSQL 16.15, `db.t4g.micro`, cifrada, privada). Respaldo automático de RDS: 1 día (límite del plan gratuito) |
+| Respaldo | `deploy/backup_db.sh` diario a las **03:15 hora de Chile** (crontab de `ec2-user`); desde el 16-11-2026 vuelca la RDS (≈ 230 KB) |
 | Logs | CloudWatch `/aurora/prod` (backend, db, web), retención 30 días |
 | DNS | Route 53, zona `auroracare.cl` (`Z0628464DNWEOT5ICYNC`), registro `demo` → Elastic IP. Delegado en NIC Chile (inscrito el 11-11-2026, vence el 11-11-2027) |
 | Tailscale | Instalado en el servidor (11-11-2026): `aurora-ec2`, IP `100.83.18.31`, `--accept-dns=false`, servicio `tailscaled` habilitado al arrancar. Falta Juan (`aurora-modelo`) |
@@ -76,7 +93,7 @@ desde 40.000.000 y se puede repetir sin efecto.
 | Modelo de IA | `INFERENCE_PROVIDER=http`, `INFERENCE_URL=http://100.114.99.23:8080` (PC de Juan, `aurora-modelo`, GPU `cuda:0`). Si no responde, se usa la IA simulada con su badge (`INFERENCE_FALLBACK_SIMULATED=true`) |
 | Usuarios | ADMIN (Felipe, con email provisorio `admin@aurora-demo.cl`) y médico de prueba `11111111-1` (ficticio) |
 
-**Costo estimado:** ≈ USD 11 al mes, descontados de los créditos (alcanza para todo el plan gratuito).
+**Costo estimado:** ≈ USD 26 al mes desde el 16-11-2026 (EC2 + RDS), descontados de los créditos (USD 177,53 al 16-11-2026, hasta el 10-05-2027).
 
 ## 2. Plan para continuar
 
@@ -90,9 +107,8 @@ desde 40.000.000 y se puede repetir sin efecto.
 - **Opcional:** enlace de invitación para cuentas nuevas (no existe; hoy es contraseña temporal + cambio obligatorio).
 
 ### Prioridad alta
-1. **Actividad de RDS (+USD 20):** iniciarla desde *Earn AWS credits*. Usar **RDS PostgreSQL** (no Aurora),
-   capa gratuita, `db.t4g.micro`, una zona, 20 GB sin autoescalado y sin acceso público. Cuando aparezca completada,
-   **borrarla** sin instantánea final y sin conservar respaldos automáticos.
+1. **Actividad de RDS (+USD 20):** la base real ya está en RDS (16-11-2026). Revisar en *Earn AWS credits* si cuenta;
+   si la actividad pide borrar la base, **no** usar `aurora-demo-db`: hacerla con una RDS de prueba aparte.
 2. **Probar la restauración de un respaldo** (antes de la defensa): descargar uno de `backups/`, cargarlo en una base
    vacía temporal dentro del servidor y comprobar que tenga los datos. No se debe tocar la base real.
 3. **Cambiar el email del ADMIN** por uno real en Administración → Usuarios.
@@ -157,6 +173,31 @@ desde 40.000.000 y se puede repetir sin efecto.
     instalación, respaldo y primer administrador), listar con estado, versión y costo (etiquetas por institución),
     actualizar una o todas, respaldar o restaurar, pausar o reactivar, y dar de baja exportando los datos. Más
     adelante, un panel web de superadministrador. Estimación: un par de días para la versión 1.
+22. **Pendiente: aurora-admin con RDS (implementación final).** Hoy cada institución nueva usa PostgreSQL en
+    contenedor (`COMPOSE_PROFILES=db` en `institucion.yaml`). Para que use RDS como `demo`:
+    - **Plantilla `institucion.yaml`:**
+      - Agregar `AWS::RDS::DBSubnetGroup`, un security group propio (5432 solo desde el SG de la instancia) y
+        `AWS::RDS::DBInstance`: PostgreSQL 16, `db.t4g.micro`, 20 GB gp3, cifrada, privada, `ManageMasterUserPassword`
+        y `DeletionProtection`, con `DeletionPolicy: Snapshot`.
+      - Retención de respaldos: 1 día en el plan gratuito y 7 en el pagado (parámetro).
+      - La instancia EC2 va con `DependsOn` a la base.
+    - **Arranque (UserData):**
+      - Quitar `COMPOSE_PROFILES=db`.
+      - Leer la clave maestra de Secrets Manager con un permiso **limitado a ese secreto**.
+      - Crear el usuario `aurora` con clave generada en el servidor, dejar `DB_DSN` en `deploy/.env` y no guardar la
+        clave maestra en disco.
+      - Mismos pasos que la migración del 16-11-2026: rol, `ALTER DATABASE … OWNER TO aurora`,
+        `ALTER SCHEMA public OWNER TO aurora`.
+    - **`aurora_admin.py`:**
+      - Opción «base: RDS o contenedor» al inscribir (RDS por defecto).
+      - La baja ofrece una instantánea final y quita la protección contra borrado.
+      - «Ver instituciones» muestra el estado de la base.
+      - Ya no genera `POSTGRES_PASSWORD` con RDS.
+    - **Instituciones existentes:** migrar `hospital-norte` con el mismo procedimiento de `demo`, o darla de baja y
+      volver a crearla.
+    - **Costo por institución:** de ≈ USD 10 a ≈ USD 25 al mes. Ajustar el texto del README y del menú.
+    - **Pruebas:** `cfn-lint`, `validate-template`, las pruebas sin AWS del script y una inscripción real de prueba con
+      su baja.
 21. **Antes de vender:** el modelo de IA es un prototipo no validado y podría requerir registro como dispositivo
     médico en el **ISP**. Además: **contrato de encargo** con cada institución (ellos son responsables y el equipo es
     encargado del tratamiento), textos de consentimiento y reportes con el nombre de cada hospital, **salir del plan
