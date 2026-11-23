@@ -1,8 +1,17 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 23-11-2026 (iteración 7: capítulo XV)  
-**Versiones vigentes:** documento maestro v0.11 (rev.) · registro de revisiones v0.16  
-**Estado general:** revisión en curso; capítulos I a XV con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+**Actualización:** 23-11-2026 (iteración 8: capítulos I a V)  
+**Versiones vigentes:** documento maestro v0.12 · registro de revisiones v0.17  
+**Estado general:** capítulos I a XV redactados; faltan XVI (conclusiones), XVII (referencias), XVIII (anexos) y el cierre editorial. Plan general en `../PLAN_INFORME_FINAL.md`.
+
+## 00000000. Iteración 8 — Capítulos I a V (maestro v0.12)
+
+- **Decisiones del usuario:** K5 = exactitud respecto de la validación médica ≥ 0,85 con ≥ 30 imágenes (D-08-01); RF09 agregado (D-08-02); presupuesto de Unidad 2 vigente (D-08-03).
+- **Resumen, abstract, palabras clave e introducción** redactados (antes vacíos).
+- **Capítulo III:** criterios de HU01–HU07 de la formulación inicial (Tabla 1); verificación de HU01–HU12 con pruebas (Tabla 2: verificadas, salvo HU06/HU07 parciales por interfaz); RF01–RF09 (Tabla 3; RF08 actualizado, RF09 nuevo); RNF01–RNF05 (Tabla 4); restricciones; títulos ajustados a la plantilla (3.1.x).
+- **V, XI, XII, XIV** sincronizados con las decisiones.
+- **Pendiente menor:** comentario del código del dashboard dice 90% (N-08-01); anchos de la tabla de historias (N-08-04, iteración 10).
+- **Siguiente:** iteración 9 — conclusiones y recomendaciones, referencias APA y glosario, anexos (diccionario de datos, especificación de casos de uso, matriz de riesgos).
 
 ## 0000000. Iteración 7 — Capítulo XV (maestro v0.11)
 

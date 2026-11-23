@@ -1,6 +1,6 @@
 # Plan del Informe Final — Proyecto Aurora
 
-**Creado:** 23-11-2026 · **Documento maestro vigente:** v0.11 · **Registro de revisiones:** v0.15
+**Creado:** 23-11-2026 · **Documento maestro vigente:** v0.12 · **Registro de revisiones:** v0.17
 
 Hoja de ruta para llegar a la versión final del Informe de Proyecto de Título. El trabajo avanza por
 iteraciones cortas sobre un único documento maestro. Este archivo es el plan general: se actualiza al
@@ -90,7 +90,7 @@ la documentación final entre el 20-11 y el 05-12-2026 y la entrega entre el 01-
 | 5 | XI KPI y SLA (alineado con cap. V y HU07) y XIII Plan de implementación (disponibilidad, continuidad, mantención) | U2 cap. IV y VI, `ESTADO_AWS.md` | **Hecha (23-11)** |
 | 6 | XIV Factibilidad económica: conciliar presupuesto del prototipo, costo del piloto y costo real de la demostración | U2 cap. VIII; confirmación del equipo | **Hecha (23-11)**; falta confirmar presupuesto aprobado |
 | 7 | XV Ajustes del cronograma: estado real, desviaciones, hitos, ruta crítica, matriz de riesgos | **Estado aprobado por el equipo al cierre** | **Hecha (23-11)**; actividades sin registro por confirmar |
-| 8 | Revisión de I–V con la evidencia acumulada: introducción, resumen/abstract, criterios de aceptación, matriz de interesados | Resultados de iteraciones 3–7 | 01-12 |
+| 8 | Revisión de I–V con la evidencia acumulada: introducción, resumen/abstract, criterios de aceptación, matriz de interesados | Resultados de iteraciones 3–7 | **Hecha (23-11)** |
 | 9 | XVI Conclusiones, XVII Referencias y glosario (APA normalizado), XVIII Anexos | Todas las fuentes | 02-12 |
 | 10 | Cierre editorial: leyendas y numeración de tablas/figuras, TDC e índices, retiro de «Control de integración», PDF final, cierre del registro | — | 03-12 |
 
@@ -120,3 +120,4 @@ iteraciones 6 y 7 necesitan datos que solo tiene el equipo; conviene pedirlos de
 | 5 | 23-11-2026 | v0.9 | v0.13 | Capítulos XI y XIII redactados (Tablas 28–31 y 38–42); KPI con estado de implementación y medición; SLA como propuesta; continuidad con preparación real; observaciones N-11-01 a N-13-05. |
 | 6 | 23-11-2026 | v0.10 | v0.14 | Capítulo XIV redactado (Tablas 43–49) con costo real de la nube y cálculos verificados; especificaciones del equipo de inferencia en VI y X; observaciones N-14-01 a N-14-07. |
 | 7 | 23-11-2026 | v0.11 | v0.15 | Capítulo XV redactado: carta Gantt con línea base, ejecución, responsables e hitos (Figura 11; Tablas 50–54); criterio D-15-01; observaciones N-15-01 a N-15-06. |
+| 8 | 23-11-2026 | v0.12 | v0.17 | Resumen, abstract e introducción; capítulo III completo (criterios, verificación, RF01–RF09, RNF, restricciones); decisiones D-08-01 a D-08-03 aplicadas en V, XI, XII y XIV. |
