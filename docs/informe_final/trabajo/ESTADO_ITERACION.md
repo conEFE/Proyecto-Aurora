@@ -1,8 +1,17 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 23-11-2026 (iteración 3: capítulo X)  
-**Versiones vigentes:** documento maestro v0.7 · registro de revisiones v0.11  
-**Estado general:** revisión en curso; capítulos I a X con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+**Actualización:** 23-11-2026 (iteración 4: capítulo XII)  
+**Versiones vigentes:** documento maestro v0.8 · registro de revisiones v0.12  
+**Estado general:** revisión en curso; capítulos I a X y XII con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+
+## 0000. Iteración 4 — Capítulo XII (maestro v0.8)
+
+- **Ejecución propia (23-11-2026, commit 53ee1b1):** 314/314 pruebas aprobadas; cobertura 97% (servicios 96,1%); ruff, ESLint y TypeScript sin errores. Evidencia en `../evidencias/pruebas_2026-11-23/`. CI de `main` en verde (run 61, 16-11-2026).
+- **12.1 Plan de pruebas:** parámetros (Tabla 28), matriz de casos con la prueba automatizada que implementa cada uno y su resultado (Tabla 29), resultados (Tabla 30), pruebas por archivo (Tabla 31), matriz de trazabilidad RF/RNF–HU–CU–prueba–evidencia (Tabla 32).
+- **12.2 Normas:** Tabla 33 con aplicación concreta en el proyecto; sin declaración de cumplimiento.
+- **No ejecutado:** ZAP (0 corridas), carga y estrés (Locust no implementado), alfa y beta (sin evidencia), pruebas de interfaz.
+- **Observaciones:** N-12-01 a N-12-09 (registro v0.12, sección 4.8). Para aprobar: RF09 para HU10 y los casos de prueba nuevos (PI-06 a PS-08).
+- **Siguiente:** iteración 5 — capítulos XI (KPI y SLA) y XIII (plan de implementación).
 
 ## 000. Iteración 3 — Capítulo X (maestro v0.7)
 
