@@ -19,12 +19,13 @@ ROWS = [
  ("3.4", "Sprint 4: exámenes e imágenes", "FJ", "01-09", "15-09", "01-09", "15-09", "done"),
  ("3.5", "Sprint 5: triage y priorización", "FC", "16-09", "30-09", "16-09", "30-09", "done"),
  ("3.6", "Sprint 6: dashboard y reportes (2.0.0–2.1.0)", "FJ", "01-10", "15-10", "01-10", "15-10", "done"),
+ ("3.6b", "Entrenamiento del modelo de IA (declarado)", "JM", None, None, "01-09", "10-11", "done"),
  ("3.7a", "Métricas del modelo y firma (2.2.0)", "FC", None, None, "16-10", "03-11", "done"),
  ("3.7", "Sprint 7: seguridad e infraestructura (2.3.0–2.5.1)", "JM", "16-10", "31-10", "16-10", "11-11", "done"),
  ("3.8", "Sprint 8: integración y estabilización (2.6.0–2.10.0)", "EQ", "01-11", "15-11", "01-11", "16-11", "partial"),
  ("4.1", "QA y pruebas automatizadas", "FC", "16-10", "31-10", "16-10", "23-11", "partial"),
- ("4.2", "Validación clínica del prototipo", "FN", "16-11", "20-11", None, None, "none"),
- ("4.3", "Capacitación de usuarios", "FN", "10-11", "25-11", None, None, "none"),
+ ("4.2", "Revisión con profesionales de salud (declarada)", "FN", "16-11", "20-11", "20-11", "20-11", "done"),
+ ("4.3", "Capacitación de usuarios (no realizada)", "FN", "10-11", "25-11", None, None, "none"),
  ("4.4", "Piloto y ajustes finales", "EQ", "20-11", "30-11", None, None, "none"),
  ("5.1", "Documentación final (informe)", "FN", "20-11", "05-12", "23-11", "05-12", "progress"),
  ("5.2", "Entrega y cierre académico", "EQ", "01-12", "10-12", "01-12", "10-12", "plan"),
@@ -32,7 +33,7 @@ ROWS = [
 COL = {"FN": "#A0335A", "FC": "#1F6F78", "JM": "#5B4C9E", "FJ": "#2E7D5B", "EQ": "#8A6A2E"}
 NOM = {"FN": "Francisca Neira", "FC": "Felipe Campos", "JM": "Juan Francisco Meneses", "FJ": "F. Campos / J. F. Meneses", "EQ": "Equipo"}
 MILES = [("Inicio", "11-04", "ok", 0, "center"), ("Inicio desarrollo", "16-07", "ok", 0, "center"), ("Versión 2.0.0", "07-10", "ok", 0, "right"),
-         ("Firma SLA", "31-10", "no", 1, "right"), ("Modelo conectado", "11-11", "ok", 2, "right"), ("Validación clínica", "20-11", "no", 0, "right"),
+         ("Firma SLA", "31-10", "no", 1, "right"), ("Modelo conectado", "11-11", "ok", 2, "right"), ("Revisión con profesionales", "20-11", "ok", 0, "right"),
          ("Aceptación MVP", "24-11", "plan", 1, "left"), ("Entrega", "10-12", "plan", 2, "left")]
 
 fig, ax = plt.subplots(figsize=(11, 7.2), dpi=220)
@@ -52,7 +53,7 @@ for i, (id_, name, resp, bi, bf, ri, rf, st) in enumerate(ROWS):
         elif st == "plan":
             ax.barh(y + 0.08, w, left=md.date2num(D(ri)), height=0.42, facecolor="none", edgecolor=COL[resp], linestyle="--", zorder=3)
     else:
-        ax.text(md.date2num(D(bf)) + 2, y + 0.05, "sin registro de ejecución", fontsize=6.5, va="center", color="#9A2F2F")
+        ax.text(md.date2num(D(bf)) + 2, y + 0.05, "no realizada" if "no realizada" in name else "sin registro de ejecución", fontsize=6.5, va="center", color="#9A2F2F")
 ax.set_yticks(range(n))
 ax.set_yticklabels([f"{r[0]}  {r[1]}" for r in ROWS][::-1], fontsize=7.5)
 corte = md.date2num(dt.date(2026, 11, 23))

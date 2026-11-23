@@ -1,7 +1,7 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
 **Actualización:** 23-11-2026 (iteración 7: capítulo XV)  
-**Versiones vigentes:** documento maestro v0.11 · registro de revisiones v0.15  
+**Versiones vigentes:** documento maestro v0.11 (rev.) · registro de revisiones v0.16  
 **Estado general:** revisión en curso; capítulos I a XV con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
 
 ## 0000000. Iteración 7 — Capítulo XV (maestro v0.11)
@@ -10,7 +10,8 @@
 - **Criterio D-15-01:** no se inventan fechas de ejecución; S1–S6 según Unidad 2, desde octubre según Git/CHANGELOG; sin registro = «sin registro de ejecución».
 - **Tablas:** estado por fase (50), entregables por sprint y responsable (51), ajustes A1–A4 con resultado (52), hitos (53), matriz de riesgos actualizada con R18 (54).
 - **Desviaciones:** Sprint 7 +11 días (cierre 11-11); Sprint 8 cierre 16-11 con pendientes; validación clínica, capacitación y piloto sin registro.
-- **Para el equipo:** si existen registros de validación, capacitación, firma de SLA, decisión del modelo o aceptación del MVP, entregarlos para actualizar (N-15-03).
+- **Hechos declarados por el equipo (D-15-02):** entrenamiento del modelo por Juan Francisco Meneses (sep.–nov., fila 3.6b); presentación y revisión del prototipo con 2 médicos y 1 enfermera el 20-11 (revisión funcional, no validación clínica formal); sin capacitación independiente. Actualizados XV y XII (PB-01).
+- **Para el equipo:** si existen notas o acta de la revisión del 20-11, adjuntarlas como anexo; siguen sin evidencia la firma del SLA, el acta de decisión del modelo y el piloto.
 - **Siguiente:** iteración 8 — revisión de capítulos I–V con la evidencia acumulada (criterios de aceptación, K5, RF09, interesados).
 
 ## 000000. Iteración 6 — Capítulo XIV y equipo de inferencia (maestro v0.10)
