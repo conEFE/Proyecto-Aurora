@@ -1,8 +1,15 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 23-11-2026 (iteración 5: capítulos XI y XIII)  
-**Versiones vigentes:** documento maestro v0.9 · registro de revisiones v0.13  
-**Estado general:** revisión en curso; capítulos I a XIII con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+**Actualización:** 23-11-2026 (iteración 6: capítulo XIV)  
+**Versiones vigentes:** documento maestro v0.10 · registro de revisiones v0.14  
+**Estado general:** revisión en curso; capítulos I a XIV con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+
+## 000000. Iteración 6 — Capítulo XIV y equipo de inferencia (maestro v0.10)
+
+- **Dato del usuario:** equipo de inferencia HP Victus 16 (i7-11800H, 16 GB, RTX 3060 Laptop 6 GB, SSD 512 GB PCIe 4.0 + 1 TB PCIe 3.0); incorporado en VI (Tabla 8), X (Tablas 26 y 27) y XIV.
+- **XIV:** mercado y demanda como supuesto no validado (Tabla 43); presupuesto estimado del prototipo $47.074.638 como valoración (Tabla 44); costo real de la demostración ≈ USD 26/mes con créditos USD 177,53 vigentes hasta el 10-05-2027, frente a USD 241,09/mes estimados para un piloto (Tabla 45); cotización de equipos (Tabla 46); flujo de caja, VAN $134.801.449, TIR 45,0%, recuperación 2,84 años y sensibilidad, recalculados y coincidentes (Tablas 47–49).
+- **Pendientes:** confirmar presupuesto aprobado (N-14-03); ajustar alerta de presupuesto AWS a ≥ USD 26 (N-14-04); costear licencia YOLO (N-14-06); costo del dominio (N-14-07).
+- **Siguiente:** iteración 7 — capítulo XV (requiere estado del cronograma aprobado por el equipo).
 
 ## 00000. Iteración 5 — Capítulos XI y XIII (maestro v0.9)
 
