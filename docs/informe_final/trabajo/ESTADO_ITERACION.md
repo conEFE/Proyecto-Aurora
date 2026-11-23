@@ -1,8 +1,19 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 23-11-2026 (iteración 2: capítulo IX)  
-**Versiones vigentes:** documento maestro v0.6 · registro de revisiones v0.10  
-**Estado general:** revisión en curso; capítulos I a IX con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+**Actualización:** 23-11-2026 (iteración 3: capítulo X)  
+**Versiones vigentes:** documento maestro v0.7 · registro de revisiones v0.11  
+**Estado general:** revisión en curso; capítulos I a X con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+
+## 000. Iteración 3 — Capítulo X (maestro v0.7)
+
+- **10.1 BPMN:** tres procesos de Unidad 2 reutilizados; reglas contrastadas con el código (escalamiento BI-RADS 4–5 o síntoma de alarma, umbrales 60/30, firma con contraseña, cierre con imágenes validadas).
+- **10.2 Casos de uso:** diagrama y catálogo actualizados (CU17 implementado en 2.3.0; CU18 nuevo para solicitudes de titulares, a confirmar).
+- **10.3 Componentes, 10.5 Topología, 10.6 Infraestructura, 10.7 Arquitectura:** diagramas nuevos desde código y `docs/ESTADO_AWS.md` (D-07-01), reemplazan el diseño objetivo de Unidad 2.
+- **10.4 Modelo de datos:** modelo lógico generado desde SQLAlchemy (18 tablas; 5 relaciones 1:1), modelo físico (Tabla 24); diccionario de datos derivado a anexos.
+- **10.8 Componente de análisis automatizado (subsección agregada):** servicio de inferencia inspeccionado; métricas declaradas (AUC 0,838; sens. 0,849; esp. 0,641; mAP50 0,538) no reproducibles; umbral 0,35 fijo en código; sin validación clínica.
+- **Observaciones:** N-10-01 a N-10-09 (registro v0.11, sección 4.7) y evidencia de las observaciones técnicas del componente inference (identificación, contrato, preprocesamiento y persistencia verificados en código; pruebas por ejecutar; sin validación clínica).
+- **Figuras:** `../figuras/` (regenerables con `herramientas/diagramas_cap10.py`).
+- **Siguiente:** iteración 4 — capítulo XII (ejecución propia de la suite de pruebas y matriz de trazabilidad HU ↔ RF/RNF ↔ endpoint/entidad ↔ prueba).
 
 ## 00. Iteración 2 — Capítulo IX (maestro v0.6)
 
