@@ -1,6 +1,6 @@
 # Plan del Informe Final — Proyecto Aurora
 
-**Creado:** 23-11-2026 · **Documento maestro vigente:** v0.10 · **Registro de revisiones:** v0.14
+**Creado:** 23-11-2026 · **Documento maestro vigente:** v0.11 · **Registro de revisiones:** v0.15
 
 Hoja de ruta para llegar a la versión final del Informe de Proyecto de Título. El trabajo avanza por
 iteraciones cortas sobre un único documento maestro. Este archivo es el plan general: se actualiza al
@@ -70,7 +70,7 @@ estado actualizados; respaldo guardado.
 | XII. Pruebas y calidad | — | V | `backend/app/tests/`, `resultados_tests.md`, `seguridad_owasp.md` | Inicial v0.8 (pruebas ejecutadas) |
 | XIII. Plan de implementación | — | VI | `ESTADO_AWS.md`, respaldos | Inicial v0.9 |
 | XIV. Factibilidad económica | Anexo citado (no existe) | VIII (Tablas 55–61) | `ESTADO_AWS.md` (costos reales) | Inicial v0.10 |
-| XV. Ajustes del cronograma | — | VII (Tablas 51–54, Figura 11, corte 18-10) | `CHANGELOG_SPRINTS.md`, historial Git | **Por redactar**; requiere estado aprobado |
+| XV. Ajustes del cronograma | — | VII (Tablas 51–54, Figura 11, corte 18-10) | `CHANGELOG_SPRINTS.md`, historial Git | Inicial v0.11 (Gantt real con evidencia) |
 | XVI. Conclusiones | 9 | Conclusiones | — | Al final |
 | XVII. Referencias y glosario | 10 | Referencias, glosario | — | Al final |
 | XVIII. Anexos | 11 (matriz de riesgos) | Anexos (casos de uso, diccionario, parámetros) | — | Al final |
@@ -89,7 +89,7 @@ la documentación final entre el 20-11 y el 05-12-2026 y la entrega entre el 01-
 | 4 | XII Pruebas y calidad: **ejecución propia de la suite de pruebas** y **matriz de trazabilidad HU01–HU12 ↔ RF/RNF ↔ endpoint/entidad ↔ prueba**; con eso se revisan los criterios de aceptación del cap. III | Código, base de datos de pruebas | **Hecha (23-11)** |
 | 5 | XI KPI y SLA (alineado con cap. V y HU07) y XIII Plan de implementación (disponibilidad, continuidad, mantención) | U2 cap. IV y VI, `ESTADO_AWS.md` | **Hecha (23-11)** |
 | 6 | XIV Factibilidad económica: conciliar presupuesto del prototipo, costo del piloto y costo real de la demostración | U2 cap. VIII; confirmación del equipo | **Hecha (23-11)**; falta confirmar presupuesto aprobado |
-| 7 | XV Ajustes del cronograma: estado real, desviaciones, hitos, ruta crítica, matriz de riesgos | **Estado aprobado por el equipo al cierre** | 30-11 |
+| 7 | XV Ajustes del cronograma: estado real, desviaciones, hitos, ruta crítica, matriz de riesgos | **Estado aprobado por el equipo al cierre** | **Hecha (23-11)**; actividades sin registro por confirmar |
 | 8 | Revisión de I–V con la evidencia acumulada: introducción, resumen/abstract, criterios de aceptación, matriz de interesados | Resultados de iteraciones 3–7 | 01-12 |
 | 9 | XVI Conclusiones, XVII Referencias y glosario (APA normalizado), XVIII Anexos | Todas las fuentes | 02-12 |
 | 10 | Cierre editorial: leyendas y numeración de tablas/figuras, TDC e índices, retiro de «Control de integración», PDF final, cierre del registro | — | 03-12 |
@@ -119,3 +119,4 @@ iteraciones 6 y 7 necesitan datos que solo tiene el equipo; conviene pedirlos de
 | 4 | 23-11-2026 | v0.8 | v0.12 | Capítulo XII redactado (Tablas 28–33) con ejecución propia de 314 pruebas (100% aprobadas, cobertura 97%) y matriz de trazabilidad; observaciones N-12-01 a N-12-09. |
 | 5 | 23-11-2026 | v0.9 | v0.13 | Capítulos XI y XIII redactados (Tablas 28–31 y 38–42); KPI con estado de implementación y medición; SLA como propuesta; continuidad con preparación real; observaciones N-11-01 a N-13-05. |
 | 6 | 23-11-2026 | v0.10 | v0.14 | Capítulo XIV redactado (Tablas 43–49) con costo real de la nube y cálculos verificados; especificaciones del equipo de inferencia en VI y X; observaciones N-14-01 a N-14-07. |
+| 7 | 23-11-2026 | v0.11 | v0.15 | Capítulo XV redactado: carta Gantt con línea base, ejecución, responsables e hitos (Figura 11; Tablas 50–54); criterio D-15-01; observaciones N-15-01 a N-15-06. |

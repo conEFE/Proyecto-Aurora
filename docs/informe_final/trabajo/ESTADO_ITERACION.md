@@ -1,8 +1,17 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 23-11-2026 (iteración 6: capítulo XIV)  
-**Versiones vigentes:** documento maestro v0.10 · registro de revisiones v0.14  
-**Estado general:** revisión en curso; capítulos I a XIV con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+**Actualización:** 23-11-2026 (iteración 7: capítulo XV)  
+**Versiones vigentes:** documento maestro v0.11 · registro de revisiones v0.15  
+**Estado general:** revisión en curso; capítulos I a XV con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+
+## 0000000. Iteración 7 — Capítulo XV (maestro v0.11)
+
+- **Carta Gantt real (Figura 11, `figuras/cap15_gantt_estado.png`, regenerable con `herramientas/gantt_xv.py`):** línea base frente a ejecución, color por responsable, hitos cumplidos y sin evidencia, corte 23-11.
+- **Criterio D-15-01:** no se inventan fechas de ejecución; S1–S6 según Unidad 2, desde octubre según Git/CHANGELOG; sin registro = «sin registro de ejecución».
+- **Tablas:** estado por fase (50), entregables por sprint y responsable (51), ajustes A1–A4 con resultado (52), hitos (53), matriz de riesgos actualizada con R18 (54).
+- **Desviaciones:** Sprint 7 +11 días (cierre 11-11); Sprint 8 cierre 16-11 con pendientes; validación clínica, capacitación y piloto sin registro.
+- **Para el equipo:** si existen registros de validación, capacitación, firma de SLA, decisión del modelo o aceptación del MVP, entregarlos para actualizar (N-15-03).
+- **Siguiente:** iteración 8 — revisión de capítulos I–V con la evidencia acumulada (criterios de aceptación, K5, RF09, interesados).
 
 ## 000000. Iteración 6 — Capítulo XIV y equipo de inferencia (maestro v0.10)
 
