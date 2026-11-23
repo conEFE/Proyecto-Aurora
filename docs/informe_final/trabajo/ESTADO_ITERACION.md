@@ -1,8 +1,16 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 23-11-2026 (iteración 8: capítulos I a V)  
-**Versiones vigentes:** documento maestro v0.12 · registro de revisiones v0.17  
-**Estado general:** capítulos I a XV redactados; faltan XVI (conclusiones), XVII (referencias), XVIII (anexos) y el cierre editorial. Plan general en `../PLAN_INFORME_FINAL.md`.
+**Actualización:** 23-11-2026 (iteración 9: capítulos XVI, XVII y XVIII)  
+**Versiones vigentes:** documento maestro v0.13 · registro de revisiones v0.18  
+**Estado general:** los 18 capítulos tienen contenido. Falta el cierre editorial (iteración 10). Plan general en `../PLAN_INFORME_FINAL.md`.
+
+## 000000000. Iteración 9 — Capítulos XVI a XVIII (maestro v0.13)
+
+- **XVI:** conclusiones por objetivo específico, gestión y aprendizajes; nueve recomendaciones.
+- **XVII:** glosario de 23 términos (estilo «Glorario») y 56 referencias APA 7 (estilo «Bibliografía y Referencias»), contrastadas con todas las citas del texto; «s. f.» normalizado.
+- **XVIII:** Anexo 1 especificación de CU01–CU18; Anexo 2 diccionario de datos de las 18 tablas (generado del código); Anexo 3 configuración inicial del triage (verificada en código); Anexo 4 evidencia de pruebas; material complementario.
+- **Pendientes:** Shah et al. (2023) sin identificar (N-17-01); título del informe de Unidad 2 (N-17-02); fechas de fuentes web (N-17-03); descripción de 2026b (N-17-04).
+- **Siguiente:** iteración 10 — cierre editorial: TDC e índices, páginas horizontales para diagramas anchos, tabla de historias, retiro de «Control de integración», PDF final y cierre del registro.
 
 ## 00000000. Iteración 8 — Capítulos I a V (maestro v0.12)
 

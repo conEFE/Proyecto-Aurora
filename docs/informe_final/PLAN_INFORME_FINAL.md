@@ -1,6 +1,6 @@
 # Plan del Informe Final — Proyecto Aurora
 
-**Creado:** 23-11-2026 · **Documento maestro vigente:** v0.12 · **Registro de revisiones:** v0.17
+**Creado:** 23-11-2026 · **Documento maestro vigente:** v0.13 · **Registro de revisiones:** v0.18
 
 Hoja de ruta para llegar a la versión final del Informe de Proyecto de Título. El trabajo avanza por
 iteraciones cortas sobre un único documento maestro. Este archivo es el plan general: se actualiza al
@@ -71,9 +71,9 @@ estado actualizados; respaldo guardado.
 | XIII. Plan de implementación | — | VI | `ESTADO_AWS.md`, respaldos | Inicial v0.9 |
 | XIV. Factibilidad económica | Anexo citado (no existe) | VIII (Tablas 55–61) | `ESTADO_AWS.md` (costos reales) | Inicial v0.10 |
 | XV. Ajustes del cronograma | — | VII (Tablas 51–54, Figura 11, corte 18-10) | `CHANGELOG_SPRINTS.md`, historial Git | Inicial v0.11 (Gantt real con evidencia) |
-| XVI. Conclusiones | 9 | Conclusiones | — | Al final |
-| XVII. Referencias y glosario | 10 | Referencias, glosario | — | Al final |
-| XVIII. Anexos | 11 (matriz de riesgos) | Anexos (casos de uso, diccionario, parámetros) | — | Al final |
+| XVI. Conclusiones | 9 | Conclusiones | — | Inicial v0.13 |
+| XVII. Referencias y glosario | 10 | Referencias, glosario | — | Inicial v0.13 |
+| XVIII. Anexos | 11 (matriz de riesgos) | Anexos (casos de uso, diccionario, parámetros) | — | Inicial v0.13 |
 
 ## 5. Iteraciones
 
@@ -91,7 +91,7 @@ la documentación final entre el 20-11 y el 05-12-2026 y la entrega entre el 01-
 | 6 | XIV Factibilidad económica: conciliar presupuesto del prototipo, costo del piloto y costo real de la demostración | U2 cap. VIII; confirmación del equipo | **Hecha (23-11)**; falta confirmar presupuesto aprobado |
 | 7 | XV Ajustes del cronograma: estado real, desviaciones, hitos, ruta crítica, matriz de riesgos | **Estado aprobado por el equipo al cierre** | **Hecha (23-11)**; actividades sin registro por confirmar |
 | 8 | Revisión de I–V con la evidencia acumulada: introducción, resumen/abstract, criterios de aceptación, matriz de interesados | Resultados de iteraciones 3–7 | **Hecha (23-11)** |
-| 9 | XVI Conclusiones, XVII Referencias y glosario (APA normalizado), XVIII Anexos | Todas las fuentes | 02-12 |
+| 9 | XVI Conclusiones, XVII Referencias y glosario (APA normalizado), XVIII Anexos | Todas las fuentes | **Hecha (23-11)** |
 | 10 | Cierre editorial: leyendas y numeración de tablas/figuras, TDC e índices, retiro de «Control de integración», PDF final, cierre del registro | — | 03-12 |
 
 Las iteraciones 2 a 5 dependen sobre todo del repositorio y pueden avanzar sin esperar al equipo. Las
@@ -121,3 +121,4 @@ iteraciones 6 y 7 necesitan datos que solo tiene el equipo; conviene pedirlos de
 | 6 | 23-11-2026 | v0.10 | v0.14 | Capítulo XIV redactado (Tablas 43–49) con costo real de la nube y cálculos verificados; especificaciones del equipo de inferencia en VI y X; observaciones N-14-01 a N-14-07. |
 | 7 | 23-11-2026 | v0.11 | v0.15 | Capítulo XV redactado: carta Gantt con línea base, ejecución, responsables e hitos (Figura 11; Tablas 50–54); criterio D-15-01; observaciones N-15-01 a N-15-06. |
 | 8 | 23-11-2026 | v0.12 | v0.17 | Resumen, abstract e introducción; capítulo III completo (criterios, verificación, RF01–RF09, RNF, restricciones); decisiones D-08-01 a D-08-03 aplicadas en V, XI, XII y XIV. |
+| 9 | 23-11-2026 | v0.13 | v0.18 | Capítulos XVI, XVII y XVIII redactados: conclusiones y recomendaciones, glosario y 56 referencias APA, anexos 1 a 4 y material complementario; observaciones N-17-01 a N-17-05. |
