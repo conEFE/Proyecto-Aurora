@@ -166,3 +166,25 @@ def _ref_sub(m, nums):
     lab = LAB[re.search(r"_([TF])_", name).group(1)]
     s = m.group(0)
     return s[:s.rfind("<w:t>") + 5] + "%s %d" % (lab, nums[name]) + "</w:t>"
+
+def set_control_row(x, label, col2, col3):
+    """Actualiza una fila de la tabla «Control de integración» del maestro."""
+    t = "<w:t>%s</w:t>" % escape(label)
+    assert x.count(t) == 1, label
+    i = x.find(t); s = x.rfind("<w:tr>", 0, i); e = x.find("</w:tr>", i) + 7
+    row = x[s:e]; ts = re.findall(r"<w:t>[^<]*</w:t>", row); assert len(ts) == 3, label
+    row = row.replace(ts[1], "<w:t>%s</w:t>" % escape(col2), 1).replace(ts[2], "<w:t>%s</w:t>" % escape(col3), 1)
+    return x[:s] + row + x[e:]
+
+def set_control_version(x, version, fecha):
+    x2 = re.sub(r"Registro interno de trabajo para la versión [0-9.]+ del documento maestro( \(\d\d-\d\d-\d{4}\))?\.",
+                "Registro interno de trabajo para la versión %s del documento maestro (%s)." % (version, fecha), x, count=1)
+    assert x2 != x
+    return x2
+
+def init_ids(x):
+    """Ajusta los contadores de marcadores y de dibujos al máximo existente en el documento (evita ids duplicados)."""
+    bms = [int(i) for i in re.findall(r'<w:bookmarkStart w:id="(\d+)"', x)]
+    docs = [int(i) for i in re.findall(r'<wp:docPr id="(\d+)"', x)]
+    _bm[0] = max(bms + [_bm[0]])
+    _img[0] = max(docs + [_img[0]])

@@ -1,8 +1,16 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 23-11-2026 (iteración 1: capítulos VII y VIII)  
-**Versiones vigentes:** documento maestro v0.5 · registro de revisiones v0.9  
-**Estado general:** revisión en curso; capítulos I a VIII con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+**Actualización:** 23-11-2026 (iteración 2: capítulo IX)  
+**Versiones vigentes:** documento maestro v0.6 · registro de revisiones v0.10  
+**Estado general:** revisión en curso; capítulos I a IX con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+
+## 00. Iteración 2 — Capítulo IX (maestro v0.6)
+
+- **Decisión D-07-01:** se documenta la arquitectura actual implementada; no hay cambios arquitectónicos pendientes y las mejoras menores quedan fuera de esta entrega. El capítulo X usará diagramas de la arquitectura actual.
+- **9.1 Análisis cualitativo/cuantitativo:** criterios (Tabla 14), AHP recalculado (Tabla 15; RC 0,013), escala anclada (Tabla 16), ventajas y desventajas (Tabla 17), matriz ponderada (Tabla 18), sensibilidad (Tabla 19) y consideraciones posteriores (región us-east-2 de la demostración; licencia AGPL-3.0 de YOLO; IA en dos etapas).
+- **9.2 Herramientas:** versiones reales de dependencias al 23-11-2026 con estado (Tabla 20) y servicios TI (Tabla 21). Locust, Prometheus y Grafana: no implementados; Cloudflare: no adoptado; ZAP: configurado sin resultados revisados.
+- **Observaciones:** N-09-01 a N-09-08 (registro v0.10, sección 4.6). Abiertas: N-09-03 (pruebas, it. 4), N-09-04 (número de tablas, it. 3), N-09-06 (región para datos reales), N-09-07 (licencia YOLO), N-09-08 (cita Stack Overflow).
+- **Siguiente:** iteración 3 — capítulo X (arquitectura a implementar) con inspección directa de `backend/inference_service`.
 
 ## 0. Iteración 1 — Capítulos VII y VIII (maestro v0.5)
 
