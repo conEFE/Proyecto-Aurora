@@ -17,7 +17,7 @@ sec = [H("4.12. Hechos declarados por el equipo (23-11-2026)"),
        TABLE(OBS_W, [
         ["ID", "Capítulo", "Observación", "Acción", "Estado"],
         ["N-15-03", "XV", "Actualización: la validación con profesionales (hito del 20-11) queda cumplida como revisión funcional declarada, aplicando la alternativa del ajuste A3; la capacitación no se realizó; persisten sin evidencia la firma del SLA, el acta de decisión del modelo y el piloto.", "Capítulos XV y XII actualizados. Si existe un acta o notas de la revisión del 20-11, adjuntarlas como anexo.", "Resuelto parcialmente"],
-        ["N-15-07", "XII / XI", "La revisión del 20-11 no incluyó encuesta de satisfacción: K7 sigue sin medición.", "Declarado en las Tablas 34 y 35 del capítulo XII.", "Informativo"]])]
+        ["N-15-07", "XII / XI", "La revisión del 20-11 no incluyó encuesta de satisfacción: K7 sigue sin medición.", "Declarado en las Tablas 33 y 34 del capítulo XII.", "Informativo"]])]
 x = append_section(x, "".join(sec))
 open(p, "w", encoding="utf-8").write(x)
 print("ok")
