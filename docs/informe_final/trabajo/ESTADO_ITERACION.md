@@ -1,8 +1,40 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 23-11-2026 (iteración 10: cierre editorial)  
+**Actualización:** 23-11-2026 (revisión contra plantilla y rúbrica; iteración 11 planificada)  
 **Versiones vigentes:** documento maestro **1.0-rc** · registro de revisiones v0.19 · PDF `Proyecto_Aurora_Informe_Final.pdf` (160 páginas)  
-**Estado general:** informe completo en versión candidata. Quedan pendientes del equipo antes de la entrega (ver abajo y registro, sección 4.15).
+**Estado general:** informe completo en versión candidata. La revisión contra la plantilla institucional y la rúbrica de defensa
+(Escala de Apreciación N°5) dejó cinco mejoras propuestas (iteración 11), aún **sin aplicar y sin aprobación del equipo**. Siguen
+los pendientes del equipo antes de la entrega (ver abajo y registro, sección 4.15). Traspaso al siguiente agente: `../HANDOFF_ITERACION_11.md`.
+
+## Revisión contra plantilla y rúbrica (23-11-2026, sin cambios en el maestro)
+
+**Insumos:** `Plantilla_Informe_Final_TIHI84_Apoquindo.docx` y `TIHI84_U3_ES3_EA5.xlsx` (hoja EA_Calidad, 6 indicadores).
+Los dos documentos fuente reenviados por el usuario (`Neira_Campos_Meneses.docx` = U2 y `Campos_Meneses_Neira.docx` = U1) son
+idénticos (sha256) a los ya usados en las iteraciones 0–10; no aportan contenido nuevo.
+
+**Plantilla:** los 95 títulos de la plantilla están presentes y en orden. Dos desvíos introducidos por nosotros:
+1. 10.4.3 quedó como «Diccionario de datos.»; la plantilla dice literalmente «Diccionario de datos (puede ir como anexo).» → revertir.
+2. Se agregó un 10.8 que no existe en la plantilla → moverlo como 10.7.1 (título de nivel 4 bajo 10.7).
+
+**Rúbrica (indicador, puntaje, estado en el maestro 1.0-rc):**
+
+| Ind. | Criterio | Pje. | Estado | Brecha |
+|---|---|---|---|---|
+| 1 | Plataformas adecuadas | 15 | Cubierto | IX (AHP) y X justifican plataformas. |
+| 2 | Herramientas se complementan | 20 | Parcial | Falta una subsección explícita de integración del stack (cómo encajan FastAPI, PostgreSQL, React, servicio de inferencia, AWS, CI). |
+| 3 | Procesos de negocio y solución sustentable | 20 | Parcial | VIII describe procesos; falta argumento de sustentabilidad (operación, costos recurrentes, mantención, continuidad). |
+| 4 | Innovación frente a soluciones existentes | 15 | **No cubierto** | No hay comparación con soluciones existentes. U1 (3.1) solo nombra «revisión bibliográfica y de proyectos similares» como instrumento, sin resultados; U2 no tiene contenido. Requiere fuentes externas reales. |
+| 5 | Buenas prácticas/normas y evaluación técnica, operativa, económica, legal y ambiental | 15 | Parcial | Económica completa (XIV); normas en XII. El «Estudio de factibilidad» de U2 (técnica, económica, implementativa; líneas 685–697 del texto de U2) **no se integró** al maestro. No hay factibilidad ambiental en ninguna fuente; operativa y legal no están explícitas. |
+| 6 | Estabilidad, rendimiento y buen diseño | 15 | Parcial | p95 aparece solo como meta (XI); no hay prueba de rendimiento ejecutada (Locust no implementado). |
+
+**Contradicciones a resolver al reutilizar la factibilidad implementativa de U2:**
+- U2 dice «capacitación de usuarios (planificada del 10 al 25 de noviembre)»; lo declarado por el equipo es que **no hubo capacitación**,
+  sino una presentación el 20-11-2026 a 2 médicos y 1 enfermera (D-15-02). Reescribir como planificado y no ejecutado.
+- U2 llama a Nueva Clínica Cordillera «cliente piloto» con interés; mantener la regla: institución de referencia, sin compromiso
+  formal (riesgo R12), no cliente ni patrocinador ni piloto.
+
+**Correcciones del docente:** no se han recibido. Servirían para verificar que las observaciones U1-xx y U2-xx del registro estén
+efectivamente atendidas; se pidieron al usuario.
 
 ## Iteración 10 — Cierre editorial (maestro 1.0-rc)
 
