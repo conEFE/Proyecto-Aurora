@@ -1,6 +1,6 @@
 # Plan del Informe Final — Proyecto Aurora
 
-**Creado:** 23-11-2026 · **Documento maestro vigente:** v0.4 · **Registro de revisiones:** v0.8
+**Creado:** 23-11-2026 · **Documento maestro vigente:** v0.5 · **Registro de revisiones:** v0.9
 
 Hoja de ruta para llegar a la versión final del Informe de Proyecto de Título. El trabajo avanza por
 iteraciones cortas sobre un único documento maestro. Este archivo es el plan general: se actualiza al
@@ -16,7 +16,7 @@ cerrar cada iteración. El detalle de cada iteración (qué se hizo y qué qued�
 | `trabajo/ESTADO_ITERACION.md` | Estado operativo y pendientes de la iteración en curso. |
 | `PLAN_INFORME_FINAL.md` | Este plan: iteraciones, mapa de fuentes y criterios de cierre. |
 | `respaldos/` | Copia de los tres archivos anteriores antes de cada hito (`*_pre-<hito>`). |
-| `herramientas/` | Scripts usados para editar el maestro y generar figuras (trazabilidad de cambios). |
+| `herramientas/` | Scripts usados para editar el maestro y generar figuras (trazabilidad de cambios). `maestro_lib.py` y `registro_lib.py` son la base común; cada iteración tiene su script `iterN_*.py`. |
 
 Fuentes que **no** están en el repositorio y deben estar disponibles en cada sesión: formulación de
 Unidad 1 (`Campos, Meneses, Neira.docx`), informe de Unidad 2 (`Neira, Campos, Meneses.docx`),
@@ -62,8 +62,8 @@ estado actualizados; respaldo guardado.
 | IV. Marco teórico | 4 | — | — | Inicial; referencias por normalizar |
 | V. Objetivos | 5 | — | — | Inicial; falta matriz de interesados |
 | VI. Metodología | 6 | «Metodología: Scrumban»; VII (Tablas 51–52) | — | Inicial v0.4 |
-| VII. Definición de arquitectura TI | 7 | III (parcial) | `stack.md` | **Por redactar** |
-| VIII. Arquitectura empresarial | 8 | III.1 (BPMN) | — | **Por redactar** |
+| VII. Definición de arquitectura TI | 7 | III (parcial) | `stack.md`, estructura de `backend/` | Inicial v0.5 |
+| VIII. Arquitectura empresarial | 8 | III.1 (BPMN) | — | Inicial v0.5 |
 | IX. Tecnologías a implementar | — | II (AHP, Tablas 1–14) | `requirements*.txt`, `package.json` | **Por redactar** |
 | X. Arquitectura a implementar | — | III.1–III.8 (incluye clasificador CNN) | `modelo_datos.md`, `despliegue_aws.md`, `ESTADO_AWS.md`, `backend/inference_service/` | **Por redactar** |
 | XI. KPI y SLA | 5.2.3–5.2.4 | IV | Dashboard (HU07) | **Por redactar** |
@@ -83,7 +83,7 @@ la documentación final entre el 20-11 y el 05-12-2026 y la entrega entre el 01-
 | It. | Alcance | Insumos necesarios | Fecha objetivo |
 |---|---|---|---|
 | 0 | Capítulos I–VI en versión inicial | — | **Hecha (23-11)** |
-| 1 | VII Definición de arquitectura TI y VIII Arquitectura empresarial | Plantilla, `TIHI84_ES2_…_AVANCE.docx`, U1 cap. 7–8 | 24-11 |
+| 1 | VII Definición de arquitectura TI y VIII Arquitectura empresarial | Plantilla, `TIHI84_ES2_…_AVANCE.docx`, U1 cap. 7–8 | **Hecha (23-11)**; falta contraste con plantilla |
 | 2 | IX Tecnologías: AHP de U2 contrastado con las versiones reales de las dependencias | U2 cap. II, archivos de dependencias | 25-11 |
 | 3 | X Arquitectura a implementar: BPMN, casos de uso, componentes, modelo de datos, topología, infraestructura y arquitectura; **inspección directa de `inference_service`** (cierra N-03-16 a N-03-21 o los deja con evidencia) | U2 cap. III y figuras, código | 26-11 |
 | 4 | XII Pruebas y calidad: **ejecución propia de la suite de pruebas** y **matriz de trazabilidad HU01–HU12 ↔ RF/RNF ↔ endpoint/entidad ↔ prueba**; con eso se revisan los criterios de aceptación del cap. III | Código, base de datos de pruebas | 27-11 |
@@ -113,3 +113,4 @@ iteraciones 6 y 7 necesitan datos que solo tiene el equipo; conviene pedirlos de
 | It. | Fecha | Maestro | Registro | Resumen |
 |---|---|---|---|---|
 | 0 | 23-11-2026 | v0.4 | v0.8 | Capítulo VI redactado; decisiones D-06-01 a D-06-04; observaciones N-06-01 a N-06-14. |
+| 1 | 23-11-2026 | v0.5 | v0.9 | Capítulos VII y VIII redactados (Tablas 10–13); observaciones N-07-01 a N-07-06. Plantilla aún no disponible: subdivisión según Unidad 1. |

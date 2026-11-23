@@ -1,8 +1,16 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 23-11-2026 (iteración capítulo VI)  
-**Versiones vigentes:** documento maestro v0.4 · registro de revisiones v0.8  
-**Estado general:** revisión en curso; prioridades HU09–HU12 aprobadas e incorporadas; capítulos IV, V y VI redactados en versión inicial.
+**Actualización:** 23-11-2026 (iteración 1: capítulos VII y VIII)  
+**Versiones vigentes:** documento maestro v0.5 · registro de revisiones v0.9  
+**Estado general:** revisión en curso; capítulos I a VIII con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+
+## 0. Iteración 1 — Capítulos VII y VIII (maestro v0.5)
+
+- **VII Definición de arquitectura TI (7.1):** arquitectura N-tier cliente-servidor con API REST; monolito modular con servicio de análisis de imágenes desacoplado tras interfaz de proveedor; Tabla 10 (capas, componentes y nivel de evidencia), Tabla 11 (decisiones de arquitectura); relación con requerimientos; evolución respecto de Unidad 1 (los diagramas de U1 no se reproducen por incluir componentes no evidenciados: Grafana, Prometheus, gRPC, Cloudflare, DICOM en S3, sa-east-1).
+- **VIII Arquitectura empresarial (8.1–8.3):** emprendimiento SaaS B2B con estructura plana (Tabla 12; QA como rol contemplado no asignado); procesos de negocio con actor, apoyo previsto e historias HU01–HU12 (Tabla 13); revisión y evaluación asignadas al médico (corrige el diagrama de U1); limitación de doble registro por falta de integración HIS/RIS/PACS.
+- **Evidencia:** estructura de capas verificada por inspección de la organización del código; entorno desplegado según documentación del repositorio; sin ejecución de pruebas.
+- **Observaciones:** N-07-01 a N-07-06 (registro v0.9, sección 4.5). Abiertas: N-07-02 (QA), N-07-04 (plantilla), N-07-06 (inspección de `inference_service`, iteración 3).
+- **Siguiente:** iteración 2 — capítulo IX (tecnologías: AHP de Unidad 2 contrastado con versiones reales de dependencias).
 
 ## 1. Decisión aprobada: prioridades HU09–HU12
 
