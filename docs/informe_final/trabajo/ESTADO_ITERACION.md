@@ -1,8 +1,17 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 23-11-2026 (iteración 4: capítulo XII)  
-**Versiones vigentes:** documento maestro v0.8 · registro de revisiones v0.12  
-**Estado general:** revisión en curso; capítulos I a X y XII con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+**Actualización:** 23-11-2026 (iteración 5: capítulos XI y XIII)  
+**Versiones vigentes:** documento maestro v0.9 · registro de revisiones v0.13  
+**Estado general:** revisión en curso; capítulos I a XIII con redacción inicial. Plan general en `../PLAN_INFORME_FINAL.md`.
+
+## 00000. Iteración 5 — Capítulos XI y XIII (maestro v0.9)
+
+- **XI KPI:** K1–K11 con fórmula, meta, implementación en la plataforma y estado de medición (Tabla 28); umbrales y responsables (Tabla 29). Implementados en el dashboard: K1, K2, K5, K6; K11 por diseño (probado). Ningún KPI medido en operación real.
+- **XI SLA:** propuesta para un eventual piloto, institución usuaria por definir (Tablas 30–31); se retira a NCC como «cliente».
+- **XIII:** disponibilidad planificado vs. estado actual (Tabla 38); BIA (Tabla 39); escenarios con preparación (Tabla 40); configuración (Tabla 41); versionado, despliegue manual, cambios e incidentes (Tabla 42, incidente real del 15-11).
+- **Decisiones pendientes:** definición única de K5 (N-11-01) y metas del capítulo V sin KPI (N-11-03).
+- **Acción recomendada antes de la defensa:** probar la restauración de un respaldo (N-13-02).
+- **Siguiente:** iteración 6 — capítulo XIV (factibilidad económica).
 
 ## 0000. Iteración 4 — Capítulo XII (maestro v0.8)
 
