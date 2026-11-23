@@ -1,6 +1,6 @@
 # Plan del Informe Final — Proyecto Aurora
 
-**Creado:** 23-11-2026 · **Documento maestro vigente:** v0.13 · **Registro de revisiones:** v0.18
+**Creado:** 23-11-2026 · **Documento maestro vigente:** 1.0-rc · **Registro de revisiones:** v0.19
 
 Hoja de ruta para llegar a la versión final del Informe de Proyecto de Título. El trabajo avanza por
 iteraciones cortas sobre un único documento maestro. Este archivo es el plan general: se actualiza al
@@ -14,6 +14,7 @@ cerrar cada iteración. El detalle de cada iteración (qué se hizo y qué qued�
 | `trabajo/Proyecto_Aurora_Informe_Final_Maestro.docx` | **Único** documento maestro. Todo el informe se edita aquí. |
 | `trabajo/Proyecto_Aurora_Registro_de_Revisiones.docx` | Registro formal: observaciones, decisiones, estados, historial de versiones. |
 | `trabajo/ESTADO_ITERACION.md` | Estado operativo y pendientes de la iteración en curso. |
+| `trabajo/Proyecto_Aurora_Informe_Final.pdf` | PDF del maestro con índices actualizados (`herramientas/exportar_pdf.py`). |
 | `PLAN_INFORME_FINAL.md` | Este plan: iteraciones, mapa de fuentes y criterios de cierre. |
 | `respaldos/` | Copia de los tres archivos anteriores antes de cada hito (`*_pre-<hito>`). |
 | `herramientas/` | Scripts usados para editar el maestro y generar figuras (trazabilidad de cambios). `maestro_lib.py` y `registro_lib.py` son la base común; cada iteración tiene su script `iterN_*.py`. |
@@ -92,7 +93,7 @@ la documentación final entre el 20-11 y el 05-12-2026 y la entrega entre el 01-
 | 7 | XV Ajustes del cronograma: estado real, desviaciones, hitos, ruta crítica, matriz de riesgos | **Estado aprobado por el equipo al cierre** | **Hecha (23-11)**; actividades sin registro por confirmar |
 | 8 | Revisión de I–V con la evidencia acumulada: introducción, resumen/abstract, criterios de aceptación, matriz de interesados | Resultados de iteraciones 3–7 | **Hecha (23-11)** |
 | 9 | XVI Conclusiones, XVII Referencias y glosario (APA normalizado), XVIII Anexos | Todas las fuentes | **Hecha (23-11)** |
-| 10 | Cierre editorial: leyendas y numeración de tablas/figuras, TDC e índices, retiro de «Control de integración», PDF final, cierre del registro | — | 03-12 |
+| 10 | Cierre editorial: leyendas y numeración de tablas/figuras, TDC e índices, retiro de «Control de integración», PDF final, cierre del registro | — | **Hecha (23-11)**; quedan pendientes del equipo |
 
 Las iteraciones 2 a 5 dependen sobre todo del repositorio y pueden avanzar sin esperar al equipo. Las
 iteraciones 6 y 7 necesitan datos que solo tiene el equipo; conviene pedirlos desde ya.
@@ -122,3 +123,4 @@ iteraciones 6 y 7 necesitan datos que solo tiene el equipo; conviene pedirlos de
 | 7 | 23-11-2026 | v0.11 | v0.15 | Capítulo XV redactado: carta Gantt con línea base, ejecución, responsables e hitos (Figura 11; Tablas 50–54); criterio D-15-01; observaciones N-15-01 a N-15-06. |
 | 8 | 23-11-2026 | v0.12 | v0.17 | Resumen, abstract e introducción; capítulo III completo (criterios, verificación, RF01–RF09, RNF, restricciones); decisiones D-08-01 a D-08-03 aplicadas en V, XI, XII y XIV. |
 | 9 | 23-11-2026 | v0.13 | v0.18 | Capítulos XVI, XVII y XVIII redactados: conclusiones y recomendaciones, glosario y 56 referencias APA, anexos 1 a 4 y material complementario; observaciones N-17-01 a N-17-05. |
+| 10 | 23-11-2026 | 1.0-rc | v0.19 | Cierre editorial: páginas horizontales, índices de tablas y figuras, tabla de historias, portada, retiro del control interno; PDF de 160 páginas. Pendientes del equipo consolidados en el registro (4.15). |

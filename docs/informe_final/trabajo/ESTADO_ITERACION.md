@@ -1,8 +1,26 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 23-11-2026 (iteración 9: capítulos XVI, XVII y XVIII)  
-**Versiones vigentes:** documento maestro v0.13 · registro de revisiones v0.18  
-**Estado general:** los 18 capítulos tienen contenido. Falta el cierre editorial (iteración 10). Plan general en `../PLAN_INFORME_FINAL.md`.
+**Actualización:** 23-11-2026 (iteración 10: cierre editorial)  
+**Versiones vigentes:** documento maestro **1.0-rc** · registro de revisiones v0.19 · PDF `Proyecto_Aurora_Informe_Final.pdf` (160 páginas)  
+**Estado general:** informe completo en versión candidata. Quedan pendientes del equipo antes de la entrega (ver abajo y registro, sección 4.15).
+
+## Iteración 10 — Cierre editorial (maestro 1.0-rc)
+
+- Siete figuras anchas en páginas horizontales (Gantt línea base, BPMN 1–3, topología, arquitectura, Gantt de ejecución), con el encabezado del capítulo.
+- Tabla de contenido, índice de tablas (60) e índice de figuras (11) regenerados en el PDF; Word pedirá actualizar campos al abrir.
+- Tabla de historias con leyenda (Tabla 1), anchos y letra uniformes; nota de plantilla retirada del diccionario de datos; encabezados vacíos eliminados.
+- Portada con fecha «Diciembre, 2026». Sección interna «Control de integración» retirada (su función la cumple el registro).
+- Exportación reproducible: `python3 herramientas/exportar_pdf.py trabajo/Proyecto_Aurora_Informe_Final_Maestro.docx trabajo/Proyecto_Aurora_Informe_Final.pdf`.
+
+### Pendientes del equipo antes de la entrega
+1. Dedicatoria y agradecimientos (páginas vacías).
+2. Cita «Shah et al., 2023» (cap. IV): completar o reemplazar.
+3. Título del informe de Unidad 2 (2026c) y descripción de 2026b; fechas de OMS 2026, NEMA 2026 y ACR 2025.
+4. Notas/acta de la revisión del 20-11 (opcional, como anexo).
+5. Prueba de restauración de respaldo y escaneo ZAP (actualizar XII y XIII si se ejecutan).
+6. Alerta de presupuesto AWS ≥ USD 30; comentario de K5 en el código.
+7. Confirmar CU18 y los casos PI-06 a PS-08; contrastar con la plantilla institucional.
+8. Lectura completa y aceptación de la versión 1.0.
 
 ## 000000000. Iteración 9 — Capítulos XVI a XVIII (maestro v0.13)
 
