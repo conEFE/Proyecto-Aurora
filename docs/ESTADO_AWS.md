@@ -1,8 +1,21 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 24-11-2026 (2.10.2). Antes, 13-11-2026: desplegada la **2.10.0** (imágenes `sha-18183f5…`, mismo código salvo el número de versión;
+Actualizado: 24-11-2026 (2.10.2, imágenes `sha-a2f4da4…`; monitoreo con alarmas). Antes, 13-11-2026: desplegada la **2.10.0** (imágenes `sha-18183f5…`, mismo código salvo el número de versión;
 ver `AURORA_VERSION` en el servidor). **Modelo real conectado** (PC de Juan por Tailscale; si está apagado, IA
 simulada).
+
+**24-11-2026: monitoreo, restauración y escaneo ZAP.**
+- **Monitoreo:** `deploy/monitor_salud.sh` en el crontab de `ec2-user` (cada minuto) consulta
+  `https://demo.auroracare.cl/api/health` y deja «SALUD OK»/«SALUD FALLA» en CloudWatch Logs `/aurora/monitor`
+  (retención 30 días). Filtros de métrica `Aurora/ChequeosOK` y `Aurora/ChequeosFallidos`. Alarmas (us-east-2):
+  `aurora-demo-sin-respuesta` (menos de 3 OK en 5 min, o sin datos) y `aurora-ec2-estado` (StatusCheckFailed), con
+  aviso y vuelta a OK al tema SNS `aurora-alertas` (correo de Felipe, confirmado). Probado el 24-11 (ALARM al instalar,
+  OK a las 13:36 UTC). No se usa el chequeo de Route 53: sus métricas viven en us-east-1, donde SNS está bloqueado.
+  Limitación: corre en el mismo servidor (no detecta fallas de DNS o de red vistas desde fuera).
+  **Disponibilidad del mes:** `Aurora/ChequeosOK` (suma) ÷ minutos del período.
+- **Prueba de restauración (hecha):** volcado diario restaurado en un esquema temporal de la RDS; 19 tablas
+  coincidentes, ≈ 3 s. Repetirla igual (ver la evidencia en la rama del informe, `restauracion_2026-11-24`).
+- **ZAP (hecho):** 0 altas; COOP y CORP agregados en `deploy/Caddyfile` (imagen `sha-a2f4da4…`, desplegada).
 
 **24-11-2026: desplegada la 2.10.2** (`1ec7904`, imágenes `sha-1ec7904…`; respaldo previo
 `backups/aurora-20261124T032923Z.sql.gz`). Limita las solicitudes simultáneas (10 por proceso; el resto en cola, 503
@@ -130,8 +143,7 @@ desde 40.000.000 y se puede repetir sin efecto.
 ### Prioridad alta
 1. **Actividad de RDS (+USD 20):** la base real ya está en RDS (16-11-2026). Revisar en *Earn AWS credits* si cuenta;
    si la actividad pide borrar la base, **no** usar `aurora-demo-db`: hacerla con una RDS de prueba aparte.
-2. **Probar la restauración de un respaldo** (antes de la defensa): descargar uno de `backups/`, cargarlo en una base
-   vacía temporal dentro del servidor y comprobar que tenga los datos. No se debe tocar la base real.
+2. ~~**Probar la restauración de un respaldo**~~ **Hecho el 24-11-2026** (ver arriba).
 3. **Cambiar el email del ADMIN** por uno real en Administración → Usuarios.
 4. **Limpiar en el servidor:** `deploy/.env.antes-2.7.0` y `deploy/.env.dominio-anterior` (copias con permisos 600 de
    configuraciones previas). Borrarlas cuando no se necesite volver atrás.
@@ -150,7 +162,7 @@ desde 40.000.000 y se puede repetir sin efecto.
    sección 5 de `docs/inferencia_remota.md`.
 
 ### Seguridad y cumplimiento
-8. Ejecutar el **escaneo OWASP ZAP** (*Actions → ZAP baseline → Run workflow*) y revisar el informe.
+8. ~~Escaneo OWASP ZAP~~ **Hecho el 24-11-2026** (0 altas). Pendiente: escaneo autenticado de la API.
 9. **Historial de Session Manager:** contiene la contraseña temporal del ADMIN (ya reemplazada en el primer ingreso).
    Se puede borrar o dejar expirar.
 10. **Rotar los secretos de la v1.0** en cada instalación local (`python -m scripts.rotate_secrets --db-password`).
