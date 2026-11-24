@@ -1,9 +1,25 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 24-11-2026 (iteración 12: despliegue de la 2.10.1)
-**Versiones vigentes:** documento maestro **1.2-rc** · registro de revisiones v0.21 · PDF `Proyecto_Aurora_Informe_Final.pdf` (167 páginas)
+**Actualización:** 24-11-2026 (iteración 13: rendimiento en AWS y 2.10.2)
+**Versiones vigentes:** documento maestro **1.3-rc** · registro de revisiones v0.22 · PDF `Proyecto_Aurora_Informe_Final.pdf` (169 páginas)
 **Estado general:** informe completo en versión candidata, con los cinco ajustes de la rúbrica aplicados. Quedan los
-pendientes del equipo (abajo y registro, secciones 4.15 y 4.16). Traspaso al siguiente agente: `../HANDOFF_ITERACION_13.md`.
+pendientes del equipo (abajo y registro, secciones 4.15 y 4.16). Traspaso al siguiente agente: `../HANDOFF_ITERACION_14.md`.
+
+## Iteración 13 — Rendimiento en el entorno de demostración (maestro 1.3-rc)
+
+Pedida por el usuario («mide en AWS»); eligió hacerlo sobre una copia de la base y luego autorizó desplegar la 2.10.2.
+
+- **Método:** API apuntada a una copia de la base en el esquema temporal `carga` de la misma RDS (sin tocar la bitácora
+  real; borrada al terminar). Generador en el propio servidor (el externo pasa por un proxy que limita conexiones).
+- **Resultados (2.10.2):** ≈ 20 solicitudes/s con un proceso; p95 923 ms (10 usuarios), 2.308 ms (25), 6.132 ms (50);
+  **PC-01 (100, 15 min): 15.013 solicitudes, 0 errores, p95 14.979 ms → no cumple**. `/health` estable todo el tiempo.
+- **Segundo defecto** (2.10.1, 100 usuarios): bloqueo entre hilos y conexiones; la API y `/health` dejaban de responder.
+  Reproducido en local y corregido en **2.10.2** (`1ec7904`, `ConcurrencyLimitMiddleware`, 321 pruebas), desplegada el
+  24-11 con respaldo `backups/aurora-20261124T032923Z.sql.gz`.
+- **Informe:** nuevo 12.1.4 (Tabla 44; las siguientes se renumeran; «Matriz de trazabilidad» pasa a 12.1.5); resumen,
+  abstract, XI (indicador p95), XII (PC-01 y RNF03), XIII (versión 2.10.2), Tabla de factibilidad de 14.3.1 y XVI.
+  Registro 4.18 (D-13-01..03, N-12-01 cerrada, N-13-01..03).
+- Evidencia: `evidencias/rendimiento_aws_2026-11-24/` (README con método, tablas y limitaciones).
 
 ## Iteración 12 — Despliegue de la corrección (maestro 1.2-rc)
 
