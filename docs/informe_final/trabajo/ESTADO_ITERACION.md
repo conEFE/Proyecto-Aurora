@@ -1,9 +1,23 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 24-11-2026 (iteración 11: plantilla y rúbrica de defensa)
-**Versiones vigentes:** documento maestro **1.1-rc** · registro de revisiones v0.20 · PDF `Proyecto_Aurora_Informe_Final.pdf` (167 páginas)
+**Actualización:** 24-11-2026 (iteración 12: despliegue de la 2.10.1)
+**Versiones vigentes:** documento maestro **1.2-rc** · registro de revisiones v0.21 · PDF `Proyecto_Aurora_Informe_Final.pdf` (167 páginas)
 **Estado general:** informe completo en versión candidata, con los cinco ajustes de la rúbrica aplicados. Quedan los
-pendientes del equipo (abajo y registro, secciones 4.15 y 4.16). Traspaso al siguiente agente: `../HANDOFF_ITERACION_12.md`.
+pendientes del equipo (abajo y registro, secciones 4.15 y 4.16). Traspaso al siguiente agente: `../HANDOFF_ITERACION_13.md`.
+
+## Iteración 12 — Despliegue de la corrección (maestro 1.2-rc)
+
+Decidida por el usuario el 24-11-2026 («Desplegar la corrección»).
+
+- **Código:** la corrección `9043857` entró a `main` como **2.10.1** (`eecc255`, autoría del equipo; 316 pruebas, lint y
+  typecheck sin errores). Imágenes publicadas con «Publicar imágenes» y desplegadas por Session Manager con respaldo previo
+  (`backups/aurora-20261124T022416Z.sql.gz`). Sin migraciones. Verificado: sitio y `/api/health` en 200, inicio de sesión
+  responde. Volver atrás: `AURORA_VERSION=sha-d945a06…` (`docs/ESTADO_AWS.md` en `main`).
+- **Informe:** 12.1.3 («se desplegó… el rendimiento en ese entorno no se ha medido»), XIII (versión publicada 2.10.1) y
+  Tabla 58 de 14.3.1. Registro v0.21, sección 4.17 (D-12-01; N-11-07 cerrada; N-12-01 rendimiento en AWS sin medir;
+  N-12-02 sin etiqueta `v2.10.1`). PDF de 167 páginas.
+- **Sin cambios:** las «314 pruebas» del resumen, de XVI y del anexo corresponden a la ejecución del 23-11 (evidencia
+  `pruebas_2026-11-23`); la de 316 está en 12.1.3.
 
 ## Iteración 11 — Plantilla y rúbrica de defensa (maestro 1.1-rc)
 
