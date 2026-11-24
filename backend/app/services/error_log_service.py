@@ -54,7 +54,7 @@ def record_error(
     user_id: int | None = None,
 ) -> None:
     """Guarda el error en una sesión propia; si falla, solo lo deja en el log (nunca rompe la respuesta)."""
-    from app.deps import SessionLocal
+    from app.deps import AuxSessionLocal
 
     if exc is not None:
         error_type = f"{type(exc).__module__}.{type(exc).__qualname__}"
@@ -62,7 +62,7 @@ def record_error(
     else:
         error_type, message, location = f"HTTP_{status_code}", None, None
     try:
-        with SessionLocal() as db:
+        with AuxSessionLocal() as db:
             db.add(
                 ErrorLog(
                     method=method[:10],

@@ -4,6 +4,7 @@ import logging
 import time
 import uuid
 
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -35,10 +36,10 @@ def _route_template(request: Request) -> str:
 
 def _store_metric(method: str, path: str, status_code: int, duration_ms: float) -> None:
     from app.db.models.review import RequestMetric
-    from app.deps import SessionLocal
+    from app.deps import AuxSessionLocal
 
     try:
-        with SessionLocal() as db:
+        with AuxSessionLocal() as db:
             db.add(RequestMetric(method=method, path=path, status_code=status_code, duration_ms=duration_ms))
             db.commit()
     except Exception:  # la métrica nunca debe romper la request
@@ -46,6 +47,9 @@ def _store_metric(method: str, path: str, status_code: int, duration_ms: float) 
 
 
 class ProcessTimeMiddleware(BaseHTTPMiddleware):
+    # Las escrituras en la base (métrica y error) son síncronas: se ejecutan en el pool de hilos para no
+    # bloquear el bucle de eventos. Si esperaran una conexión dentro del bucle con el pool agotado, las
+    # solicitudes que ocupan las conexiones no podrían terminar (interbloqueo bajo carga concurrente).
     async def dispatch(self, request: Request, call_next):
         from app.services.error_log_service import record_error
 
@@ -57,14 +61,23 @@ class ProcessTimeMiddleware(BaseHTTPMiddleware):
         except Exception as exc:  # error no controlado: se registra y se responde sin detalles internos
             path = _route_template(request)
             logger.exception("Error no controlado %s en %s %s", request_id, request.method, path)
-            record_error(request.method, path, 500, request_id, exc, getattr(request.state, "user_id", None))
+            await run_in_threadpool(
+                record_error,
+                request.method,
+                path,
+                500,
+                request_id,
+                exc,
+                getattr(request.state, "user_id", None),
+            )
             response = JSONResponse(
                 status_code=500,
                 content={"detail": GENERIC_ERROR.format(request_id=request_id), "request_id": request_id},
             )
         else:
             if response.status_code >= 500:
-                record_error(
+                await run_in_threadpool(
+                    record_error,
                     request.method,
                     _route_template(request),
                     response.status_code,
@@ -84,5 +97,5 @@ class ProcessTimeMiddleware(BaseHTTPMiddleware):
         path = _route_template(request)
         logger.info("%s %s -> %s %.1fms", request.method, path, response.status_code, elapsed_ms)
         if settings.REQUEST_METRICS_ENABLED and request.method != "OPTIONS" and path != "/health":
-            _store_metric(request.method, path, response.status_code, elapsed_ms)
+            await run_in_threadpool(_store_metric, request.method, path, response.status_code, elapsed_ms)
         return response
