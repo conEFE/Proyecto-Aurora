@@ -1,8 +1,14 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 13-11-2026. Desplegada la **2.10.0** (imágenes `sha-18183f5…`, mismo código salvo el número de versión;
+Actualizado: 24-11-2026 (2.10.1). Antes, 13-11-2026: desplegada la **2.10.0** (imágenes `sha-18183f5…`, mismo código salvo el número de versión;
 ver `AURORA_VERSION` en el servidor). **Modelo real conectado** (PC de Juan por Tailscale; si está apagado, IA
 simulada).
+
+**24-11-2026: desplegada la 2.10.1** (`eecc255`, imágenes `sha-eecc255…`; versión anterior `sha-d945a06…`; respaldo
+previo `backups/aurora-20261124T022416Z.sql.gz`). Corrige el bloqueo total de la API con ~50 usuarios concurrentes
+(pool auxiliar para métricas y errores; detalle en `docs/CHANGELOG_SPRINTS.md`). Sin migraciones. Verificado: sitio y
+`/api/health` en 200, inicio de sesión responde. **Volver atrás:** `AURORA_VERSION=sha-d945a06062ade5ed943f4ae8971f1a8ec802ab38`
+en `deploy/.env` y `dc pull && dc up -d`. El rendimiento bajo carga en el servidor (`t4g.micro`) **no está medido**.
 
 **16-11-2026: baja de `hospital-norte`** (prueba real de aurora-admin): respaldo final en su bucket
 (`aurora-inst-hospital-norte-databucket-hfaajok0r13s`, que se conserva), pila borrada (servidor, IP y DNS) y 11
