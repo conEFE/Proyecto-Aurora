@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Infraestructura cloud desplegada</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  #lienzo { width: 1600px; }
+  .ext { display: grid; grid-template-columns: 250px 1fr 280px 300px; gap: 22px; margin-bottom: 46px; }
+  .aws { display: grid; grid-template-columns: 220px 1fr 300px; gap: 46px; }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+  .ec2 { background: #f0fdf4; border-color: #15803d; }
+  .datos { background: #fffbeb; border-color: #b45309; margin-top: 46px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: auto auto; gap: 16px 34px; }
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; }
+</style></head>
+<body><div id="lienzo">
+<h1>Infraestructura cloud desplegada: entorno de demostración en AWS</h1>
+<p class="sub">Proyecto de AWS con plan gratuito y créditos, región us-east-2 (Ohio). Estado al 24-11-2026: versión 2.10.2, base de datos en Amazon RDS, monitoreo con alarmas por correo. Datos ficticios.</p>
+<div class="ext">
+ <div class="caja c-ext" id="usr"><b>Usuarios</b><span class="det">Navegador web: https://demo.auroracare.cl</span></div>
+ <div class="caja c-ext" id="gh"><b>GitHub</b><span class="det">Repositorio; GitHub Actions (CI, publicación de imágenes, escaneo ZAP); imágenes de contenedor en GHCR</span></div>
+ <div class="caja c-ia c-ext" id="gpu"><b>Equipo con GPU (fuera de AWS)</b><span class="det">Servicio de inferencia CNN + YOLO</span></div>
+ <div class="caja c-ext" id="mail"><b>Correo del equipo</b><span class="det">Avisos de alarma y de vuelta a la normalidad</span></div>
+</div>
+<div class="zona" id="aws"><div class="rot">AWS — región us-east-2 <small>(el proyecto no admite recursos en otras regiones)</small></div>
+ <div class="aws">
+  <div class="col">
+   <div class="caja c-op" id="r53"><b>Route 53</b><span class="det">Zona auroracare.cl; registro demo → IP elástica 13.184.207.158 (dominio inscrito en NIC Chile)</span></div>
+   <div class="caja c-seg" id="sg"><b>Grupo de seguridad aurora-web</b><span class="det">Entrada solo 80/443; sin SSH</span></div>
+   <div class="caja c-seg" id="sgdb"><b>Grupo de seguridad aurora-rds</b><span class="det">5432 solo desde el servidor</span></div>
+  </div>
+  <div>
+   <div class="zona ec2" id="ec2"><div class="rot">EC2 aurora-prod <small>t4g.micro arm64 · disco cifrado · IMDSv2</small></div>
+    <div class="g3">
+     <div class="caja c-pres" id="web"><b>Contenedor web</b><span class="det">Caddy: HTTPS (Let's Encrypt), sitio React, proxy /api, encabezados de seguridad</span></div>
+     <div class="caja c-neg" id="api"><b>Contenedor backend</b><span class="det">API FastAPI 2.10.2; un proceso, hasta 10 solicitudes simultáneas</span></div>
+     <div class="caja c-op" id="ts"><b>Agente Tailscale</b><span class="det">Red privada hacia el equipo con GPU</span></div>
+     <div class="caja c-op" id="bkp"><b>Respaldo diario</b><span class="det">backup_db.sh (03:15 Chile): volcado de la base a S3</span></div>
+     <div></div>
+     <div class="caja c-op" id="mon"><b>Chequeo de disponibilidad</b><span class="det">monitor_salud.sh cada minuto: /api/health por la dirección pública</span></div>
+    </div>
+   </div>
+   <div class="zona datos" id="datos"><div class="rot">Datos <small>(sin acceso público)</small></div>
+    <div class="g2">
+     <div class="caja c-dat" id="rds"><b>Amazon RDS aurora-demo-db</b><span class="det">PostgreSQL 16 · db.t4g.micro · 20 GB cifrados · respaldo automático de 1 día · protección contra borrado</span></div>
+     <div class="caja c-dat" id="s3"><b>Amazon S3 (bucket privado)</b><span class="det">images/: imágenes cifradas (Fernet + SSE-KMS), versionado · backups/: volcados diarios, 35 días</span></div>
+    </div>
+   </div>
+  </div>
+  <div class="col">
+   <div class="caja c-op" id="cwl"><b>CloudWatch Logs</b><span class="det">/aurora/prod (contenedores, 30 días) · /aurora/monitor (chequeos)</span></div>
+   <div class="caja c-op" id="alm"><b>Alarmas de CloudWatch</b><span class="det">Sin respuesta de /health (menos de 3 OK en 5 min o sin datos) · falla de la instancia</span></div>
+   <div class="caja c-op" id="sns"><b>Amazon SNS aurora-alertas</b><span class="det">Aviso por correo</span></div>
+   <div class="caja c-seg" id="iam"><b>IAM · Secrets Manager · Session Manager</b><span class="det">Rol del servidor de mínimo privilegio; clave maestra de RDS administrada; operación sin SSH</span></div>
+   <div class="caja c-op" id="bud"><b>Presupuesto</b><span class="det">USD 15 al mes; alertas al 85 % y 100 %</span></div>
+  </div>
+ </div>
+</div>
+<div class="leyenda"><span>tráfico de la aplicación</span><span class="d">operación, respaldo y despliegue</span><span class="p">registros y monitoreo</span></div>
+<script>
+const GAP = '@aws:t:-23';
+window.FLECHAS = [
+ {de:'usr', a:'r53', lado_de:'b:0.3', lado_a:'t:0.3', recto:true, estilo:'d', txt:'DNS'},
+ {de:'usr', a:'web', lado_de:'b:0.8', lado_a:'t:0.5', via:[[null, GAP],['b', GAP]], txt:'HTTPS 443', dx:20},
+ {de:'web', a:'api', lado_de:'r:0.5', lado_a:'l:0.5', txt:'/api', dx:-14, dy:-6},
+ {de:'api', a:'ts', lado_de:'r:0.5', lado_a:'l:0.5'},
+ {de:'ts', a:'gpu', lado_de:'t:0.5', lado_a:'b:0.5', via:[[null, GAP],['b', GAP]], txt:'POST /predict (Tailscale)', dx:-200, dy:-6},
+ {de:'gh', a:'api', lado_de:'b:0.55', lado_a:'t:0.5', via:[[null, '@aws:t:-10'],['b','@aws:t:-10']], estilo:'d', txt:'imágenes', dx:6, dy:24},
+ {de:'api', a:'rds', lado_de:'b:0.15', lado_a:'t', recto:true, txt:'SQL/TLS 5432', dx:6, dy:-50},
+ {de:'api', a:'s3', lado_de:'b:0.85', lado_a:'t', recto:true, txt:'HTTPS', dx:6, dy:-50},
+ {de:'bkp', a:'s3', lado_de:'b:0.5', lado_a:'t:0.85', via:[[null, '@datos:t:-20'],['b','@datos:t:-20']], estilo:'d', txt:'volcado de la base', dx:-60},
+ {de:'mon', a:'cwl', lado_de:'r:0.5', lado_a:'l:0.5', via:[['@ec2:r:23', null],['@ec2:r:23','b']], estilo:'p'},
+ {de:'cwl', a:'alm', lado_de:'b', lado_a:'t', recto:true, estilo:'p'},
+ {de:'alm', a:'sns', lado_de:'b', lado_a:'t', recto:true, estilo:'p'},
+ {de:'sns', a:'mail', lado_de:'r:0.5', lado_a:'r:0.5', via:[['@aws:r:16', null],['@aws:r:16','b']], estilo:'p'},
+];
+</script>
+</div></body></html>

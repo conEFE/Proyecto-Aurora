@@ -1,9 +1,25 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 24-11-2026 (iteración 14: seguridad, restauración y monitoreo)
-**Versiones vigentes:** documento maestro **1.4-rc** · registro de revisiones v0.23 · PDF `Proyecto_Aurora_Informe_Final.pdf` (170 páginas)
+**Actualización:** 24-11-2026 (iteración 15: diagramas y capturas)
+**Versiones vigentes:** documento maestro **1.5-rc** · registro de revisiones v0.24 · PDF `Proyecto_Aurora_Informe_Final.pdf` (186 páginas)
 **Estado general:** informe completo en versión candidata, con los cinco ajustes de la rúbrica aplicados. Quedan los
-pendientes del equipo (abajo y registro, secciones 4.15 y 4.16). Traspaso al siguiente agente: `../HANDOFF_ITERACION_15.md`.
+pendientes del equipo (abajo y registro, secciones 4.15 y 4.16). Traspaso al siguiente agente: `../HANDOFF_ITERACION_16.md`.
+
+## Iteración 15 — Diagramas y capturas (maestro 1.5-rc)
+
+Pedida por el usuario («faltan un montón de BPMN, el diagrama de la arquitectura y el cloud»), con U1 y U2 reenviados.
+
+| Capítulo | Figura | Origen |
+|---|---|---|
+| V (Proceso de negocio afectado) | BPMN del proceso de atención y priorización (página horizontal) | U1, figura 2 |
+| VIII | Organigrama (con nota de roles reales y QA no incorporado); proceso de negocio (horizontal) | U1, figuras 7 y 8 |
+| X | Diagrama cloud desplegado (reemplaza la figura de infraestructura; horizontal) | Nuevo, `herramientas/diagramas_it15/cloud.html` |
+| X | Infraestructura de U1 y de U2 «diseño, no implementado tal cual» | U1 figura 6; U2 figura 8 |
+| X | Arquitectura por capas (reemplaza la figura-tabla) y arquitectura de aplicaciones de U1 «diseño» | Nuevo `arquitectura.html`; U1 figura 5 |
+| 10.7.1 | Componente de análisis (CNN + YOLO) | Redibujado (`cnn.html`): U2 decía 512 × 512, el código usa 672 × 1024 |
+| Anexo nuevo | 8 capturas de la 2.10.2 (local, datos ficticios, IA simulada) | `figuras/capturas_2.10.2/` |
+
+Diagramas: HTML + `render.cjs` (Playwright) → PNG. Registro 4.20. VII: se retiró la frase «los diagramas de la formulación no se reproducen».
 
 ## Iteración 14 — Escaneo de seguridad, restauración y monitoreo (maestro 1.4-rc)
 
