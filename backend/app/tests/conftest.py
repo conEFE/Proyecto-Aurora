@@ -57,7 +57,7 @@ from sqlalchemy import text  # noqa: E402
 
 from app.auth.security import hash_password  # noqa: E402
 from app.db.models.user import User, UserRole  # noqa: E402
-from app.deps import SessionLocal, engine  # noqa: E402
+from app.deps import SessionLocal, aux_engine, engine  # noqa: E402
 
 
 def alembic_config() -> Config:
@@ -72,6 +72,7 @@ def _schema():
     command.upgrade(alembic_config(), "head")
     yield
     engine.dispose()
+    aux_engine.dispose()
 
 
 def truncate_all():

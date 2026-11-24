@@ -707,6 +707,23 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## 2.10.1 — corrección de bloqueo bajo carga y prueba de carga (24-11-2026)
+
+Sin migraciones ni cambios de API.
+
+- **Corrección (bloqueo de la API con ~50 usuarios concurrentes)**: el middleware guardaba la métrica de cada
+  solicitud (y los errores 5xx) pidiendo una conexión al **mismo pool** que usa el endpoint, que retiene la suya hasta
+  enviar la respuesta. Con más de 15 solicitudes a la vez por proceso (pool de 5 + 10), todas retenían una conexión y
+  esperaban otra: la API dejaba de responder (100 % de solicitudes con tiempo agotado en la prueba). Ahora esas
+  escrituras usan un **pool auxiliar** (`app/deps.py`: `aux_engine`, 2 + 3 conexiones, espera máxima de 5 s; si se
+  satura, la métrica se descarta y queda en el log) y se ejecutan en el pool de hilos, sin bloquear el bucle de eventos.
+- **Carga de imágenes sin bloquear a los demás usuarios**: `POST /cases/{id}/images` es asíncrono y cifraba, subía a
+  S3 y escribía en la base dentro del bucle de eventos; ahora lo hace en el pool de hilos.
+- **`scripts/load_test.py`**: prueba de carga simple (httpx) con p50/p95/máximo y errores por endpoint, para el
+  entorno local o de pruebas con datos ficticios. Resultados en
+  `docs/informe_final/evidencias/rendimiento_2026-11-24/`.
+- Pruebas: `test_middleware_pool.py` (pool auxiliar separado y métrica escrita con él). Suite: 316 pruebas.
+
 ## Sin número de versión — contraseña temporal generada y más datos de demostración (16-11-2026)
 
 - **Generar contraseña temporal** en «Nuevo usuario» y en «Restablecer contraseña» (Administración): botón «Generar»

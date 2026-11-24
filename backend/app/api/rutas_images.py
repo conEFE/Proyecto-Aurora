@@ -3,6 +3,7 @@ from typing import Literal
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Request, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from app.auth.rbac import require_roles
 from app.db.models.image import ExamType
@@ -30,8 +31,17 @@ async def upload_image(
 ):
     """Sube una imagen (PNG o JPEG, máx. MAX_UPLOAD_MB). La inferencia corre en segundo plano."""
     content = await file.read()
-    image = image_service.upload_image(
-        db, case_id, file.filename or "imagen", content, exam_type, laterality, actor, client_ip(request)
+    # Cifrado, almacenamiento (S3) y base de datos son síncronos: en el pool de hilos para no bloquear el bucle
+    image = await run_in_threadpool(
+        image_service.upload_image,
+        db,
+        case_id,
+        file.filename or "imagen",
+        content,
+        exam_type,
+        laterality,
+        actor,
+        client_ip(request),
     )
     background_tasks.add_task(image_service.run_inference_task, image.id)
     return image_service.to_out(image, actor)
