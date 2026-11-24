@@ -1,0 +1,15 @@
+03:43:15 aurora-carga-gen cpu=39.73% mem=41.91MiB / 910MiB aurora-backend-1 cpu=103.20% mem=129.2MiB / 910MiB aurora-web-1 cpu=0.91% mem=39.09MiB / 910MiB  mem_libre=336MB health=200/0.163701
+03:44:18 aurora-carga-gen cpu=0.63% mem=52.57MiB / 910MiB aurora-backend-1 cpu=106.29% mem=128.9MiB / 910MiB aurora-web-1 cpu=0.27% mem=38.82MiB / 910MiB  mem_libre=316MB health=200/0.320856
+03:45:21 aurora-carga-gen cpu=1.91% mem=56.2MiB / 910MiB aurora-backend-1 cpu=102.77% mem=129.2MiB / 910MiB aurora-web-1 cpu=0.86% mem=39.04MiB / 910MiB  mem_libre=311MB health=200/0.194438
+03:46:24 aurora-carga-gen cpu=2.41% mem=55.62MiB / 910MiB aurora-backend-1 cpu=103.85% mem=130.1MiB / 910MiB aurora-web-1 cpu=1.20% mem=39.2MiB / 910MiB  mem_libre=321MB health=200/0.044128
+03:47:26 aurora-carga-gen cpu=6.19% mem=55.71MiB / 910MiB aurora-backend-1 cpu=106.92% mem=129.1MiB / 910MiB aurora-web-1 cpu=2.94% mem=39.04MiB / 910MiB  mem_libre=309MB health=200/0.039210
+03:48:29 aurora-carga-gen cpu=2.40% mem=55.77MiB / 910MiB aurora-backend-1 cpu=105.95% mem=131.3MiB / 910MiB aurora-web-1 cpu=2.19% mem=39.06MiB / 910MiB  mem_libre=312MB health=200/0.068643
+03:49:32 aurora-carga-gen cpu=1.30% mem=55.76MiB / 910MiB aurora-backend-1 cpu=103.66% mem=137.1MiB / 910MiB aurora-web-1 cpu=0.82% mem=39.01MiB / 910MiB  mem_libre=310MB health=200/0.244506
+03:50:34 aurora-carga-gen cpu=1.50% mem=56.11MiB / 910MiB aurora-backend-1 cpu=101.59% mem=136.7MiB / 910MiB aurora-web-1 cpu=0.37% mem=39.03MiB / 910MiB  mem_libre=311MB health=200/0.262111
+03:51:37 aurora-carga-gen cpu=2.92% mem=56.1MiB / 910MiB aurora-backend-1 cpu=108.11% mem=134.1MiB / 910MiB aurora-web-1 cpu=2.20% mem=39.03MiB / 910MiB  mem_libre=320MB health=200/0.065196
+03:52:40 aurora-carga-gen cpu=0.21% mem=56.18MiB / 910MiB aurora-backend-1 cpu=101.98% mem=137.9MiB / 910MiB aurora-web-1 cpu=0.12% mem=39.12MiB / 910MiB  mem_libre=312MB health=200/0.089760
+03:53:43 aurora-carga-gen cpu=15.08% mem=56.15MiB / 910MiB aurora-backend-1 cpu=102.22% mem=132.3MiB / 910MiB aurora-web-1 cpu=6.84% mem=39.2MiB / 910MiB  mem_libre=311MB health=200/0.287464
+03:54:45 aurora-carga-gen cpu=3.96% mem=56.25MiB / 910MiB aurora-backend-1 cpu=104.50% mem=137MiB / 910MiB aurora-web-1 cpu=1.83% mem=39.16MiB / 910MiB  mem_libre=305MB health=200/0.089505
+03:55:48 aurora-carga-gen cpu=0.46% mem=56.25MiB / 910MiB aurora-backend-1 cpu=102.25% mem=137.2MiB / 910MiB aurora-web-1 cpu=0.21% mem=39.09MiB / 910MiB  mem_libre=317MB health=200/0.045802
+03:56:51 aurora-carga-gen cpu=4.46% mem=56.26MiB / 910MiB aurora-backend-1 cpu=103.74% mem=141.1MiB / 910MiB aurora-web-1 cpu=2.00% mem=38.23MiB / 910MiB  mem_libre=307MB health=200/0.090449
+03:57:53 aurora-backend-1 cpu=0.12% mem=138.4MiB / 910MiB aurora-web-1 cpu=0.00% mem=37.78MiB / 910MiB  mem_libre=379MB health=200/0.037769
