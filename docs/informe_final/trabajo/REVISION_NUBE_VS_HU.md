@@ -34,6 +34,10 @@ sin responder, y al SLA-01, que promete p95 ≤ 3 s con 50 usuarios. Está **cor
 prueba de regresión, 316 pruebas en verde) pero **no desplegado**: `demo.auroracare.cl` sigue en la 2.10.0 con el
 defecto. En una demostración con pocos usuarios no se nota; con un curso entero entrando a la vez, sí podría.
 
+Con la corrección, la meta p95 ≤ 3 s se cumple en local hasta 50 usuarios virtuales (p95 1.592 ms) y **no con 100**
+(p95 3.974 ms, 59 errores por saturación, sin bloqueo). La `t4g.micro` tiene menos capacidad que el entorno local:
+antes de un piloto hay que dimensionar (procesos, pool, instancia) y medir allí.
+
 ## Qué implementaría ahora, en orden
 
 0. **Desplegar la corrección del bloqueo bajo carga** (requiere fusionar la rama y el despliegue habitual por

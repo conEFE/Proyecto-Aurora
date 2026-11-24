@@ -89,7 +89,7 @@ for f in glob.glob(os.path.join(evid, "carga_*.json")):
     d = json.load(open(f, encoding="utf-8")); res[d["usuarios_virtuales"]] = d
 assert 100 in res and 10 in res, sorted(res)
 r100 = res[100]; t100 = r100["total"]
-fmt = lambda v: ("%.0f" % v) if v >= 100 else ("%.1f" % v).replace(".", ",")
+fmt = lambda v: f"{round(v):,}".replace(",", ".") if v >= 100 else ("%.1f" % v).replace(".", ",")
 p95_100 = t100["p95_ms"]; ok100 = p95_100 <= 3000 and t100["errors"] == 0
 peor = max(r100["endpoints"].items(), key=lambda kv: kv[1]["p95_ms"])
 
@@ -104,7 +104,9 @@ RENDIMIENTO = [
         "El endpoint más lento fue %s, con un p95 de %s ms. El inicio de sesión, medido aparte por su límite de intentos, tuvo una mediana cercana a %s ms, explicada por el costo deliberado de bcrypt. ")
        % (round(r100["duracion_s"] / 60), fmt(p95_100), "bajo" if p95_100 <= 3000 else "sobre", t100["errors"],
           peor[0].replace("GET ", ""), fmt(peor[1]["p95_ms"]), fmt(r100["login"]["p50_ms"]))
-      + "Como los usuarios virtuales no esperan entre acciones, la carga es más intensa que la de 100 usuarios clínicos reales."),
+      + ("Con 50 usuarios el p95 fue de %s ms, con %d errores. " % (fmt(res[50]["total"]["p95_ms"]), res[50]["total"]["errors"]))
+      + ("En consecuencia, PC-01 no se aprueba: en este entorno la meta se cumple hasta 50 usuarios virtuales. Con 100, el servicio no se bloqueó, pero se saturó: el rendimiento bajó a %s solicitudes por segundo y los errores correspondieron a esperas de más de 30 s por una conexión libre a la base de datos. " % (fmt(t100["req_por_s"])) if not ok100 else "")
+      + "Como los usuarios virtuales no esperan entre acciones, la carga es más intensa que la de igual número de usuarios clínicos reales, por lo que el resultado no se traduce directamente en un número de usuarios soportados."),
  ("p", "Esta evidencia tiene alcance limitado: el servidor y el generador de carga compartieron la máquina, no se incluyeron la carga de imágenes ni la inferencia, y el entorno local tiene más capacidad que la instancia t4g.micro del entorno de demostración, cuyo rendimiento no se midió. La prueba de estrés PC-02 no se ejecutó."),
 ]
 insert_before(find_para("Matriz de trazabilidad", "Ttulo4"), R(RENDIMIENTO))
@@ -121,7 +123,7 @@ assert text_of(ms[i + 3].group(0)) == "Planificado; no implementado"
 set_text(ms[i + 3], "Implementado (24-11-2026); ejecutado solo en entorno local")
 ms, i = row_after("Pruebas de carga", "Locust")
 set_text(ms[i + 1], "Script de carga propio (backend/scripts/load_test.py); Locust no adoptado")
-cell("Sin medición real ni prueba de carga", "Sin medición en el entorno de demostración; prueba local con p95 de %s ms (100 usuarios)" % fmt(p95_100))
+cell("Sin medición real ni prueba de carga", "Sin medición en el entorno de demostración; prueba local: p95 de %s ms con 50 usuarios y %s ms con 100" % (fmt(res[50]["total"]["p95_ms"]), fmt(p95_100)))
 ms, i = row_after("PC-01", "RNF03")
 assert text_of(ms[i + 3].group(0)) == "Locust (no implementado)" and text_of(ms[i + 4].group(0)) == "No ejecutado"
 set_text(ms[i + 4], estado_pc01)
@@ -130,17 +132,17 @@ set_text(ms[i + 3], "backend/scripts/load_test.py (entorno local)")
 ms, i = row_after("PC-02", "RNF02, RNF04")
 assert text_of(ms[i + 3].group(0)) == "Locust (no implementado)"
 set_text(ms[i + 3], "No implementada")
-cell("No ejecutadas: herramienta no implementada", "PC-01 ejecutada el 24-11-2026 en entorno local (p95 %s ms con 100 usuarios); PC-02 no ejecutada" % fmt(p95_100))
-cell("Sin evidencia: PC-01 no ejecutado", "Evidencia parcial: PC-01 ejecutado en entorno local, no en el entorno de demostración")
+cell("No ejecutadas: herramienta no implementada", "PC-01 ejecutada el 24-11-2026 en entorno local: p95 %s ms con 100 usuarios (no cumple; sí con 50); PC-02 no ejecutada" % fmt(p95_100))
+cell("Sin evidencia: PC-01 no ejecutado", "Evidencia parcial: PC-01 en entorno local cumple con 50 usuarios y no con 100; sin medición en el entorno de demostración")
 rep("No acreditan rendimiento bajo carga, disponibilidad del servicio, resistencia a ataques dinámicos, usabilidad ni desempeño clínico, cuyas pruebas no se han ejecutado. En consecuencia, los indicadores de rendimiento y disponibilidad del capítulo XI no cuentan aún con medición.",
     "El rendimiento bajo carga solo se midió en un entorno local (apartado siguiente); no se acreditan la disponibilidad del servicio, la resistencia a ataques dinámicos, la usabilidad ni el desempeño clínico, cuyas pruebas no se han ejecutado. En consecuencia, los indicadores de rendimiento y disponibilidad del capítulo XI no cuentan aún con medición en el entorno de demostración.")
 rep("Quedan pendientes las pruebas de carga y de seguridad dinámica, la validación clínica formal del modelo y un piloto con una institución de salud.",
-    "Una prueba de carga local con 100 usuarios virtuales obtuvo un percentil 95 de %s ms. Quedan pendientes la prueba de carga en el entorno de demostración, el escaneo dinámico de seguridad, la validación clínica formal del modelo y un piloto con una institución de salud." % fmt(p95_100))
+    "Una prueba de carga local cumplió la meta de tiempo de respuesta hasta 50 usuarios virtuales (percentil 95 de " + fmt(res[50]["total"]["p95_ms"]) + " ms) y la superó con 100 (%s ms). Quedan pendientes la prueba de carga en el entorno de demostración, el escaneo dinámico de seguridad, la validación clínica formal del modelo y un piloto con una institución de salud." % fmt(p95_100))
 rep("Load and dynamic security testing, a formal clinical validation of the model and a pilot with a healthcare institution remain pending.",
-    "A local load test with 100 virtual users yielded a 95th percentile of %s ms. Load testing in the demonstration environment, dynamic security scanning, a formal clinical validation of the model and a pilot with a healthcare institution remain pending." % ("%.0f" % p95_100 if p95_100 >= 100 else ("%.1f" % p95_100)))
+    "A local load test met the response-time target up to 50 virtual users (95th percentile of " + ("%.0f" % res[50]["total"]["p95_ms"]) + " ms) and exceeded it with 100 (%s ms). Load testing in the demonstration environment, dynamic security scanning, a formal clinical validation of the model and a pilot with a healthcare institution remain pending." % ("%.0f" % p95_100 if p95_100 >= 100 else ("%.1f" % p95_100)))
 rep("con pruebas de carga y carga de imágenes DICOM pendientes;", "con pruebas de carga y carga de imágenes DICOM pendientes (la prueba de carga se ejecutó después, el 24-11-2026, en entorno local);")
 rep("• Ejecutar las pruebas de carga y estrés y el escaneo dinámico de seguridad, y registrar sus resultados antes de un piloto.",
-    "• Repetir la prueba de carga en el entorno de demostración, ejecutar la prueba de estrés y el escaneo dinámico de seguridad, y registrar sus resultados antes de un piloto.")
+    "• Dimensionar la capacidad para la meta de rendimiento (procesos de la API, tamaño del pool de conexiones y de la instancia), repetir la prueba de carga en el entorno de demostración, ejecutar la prueba de estrés y el escaneo dinámico de seguridad, y registrar sus resultados antes de un piloto.")
 rep("y la ejecución de la prueba de carga.", "y la ejecución de la prueba de carga en ese entorno.")
 
 # copia de respaldo: el proyecto de AWS no permite acciones entre regiones; la alternativa es una copia fuera de AWS

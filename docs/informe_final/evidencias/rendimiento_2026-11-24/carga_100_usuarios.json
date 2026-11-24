@@ -1,0 +1,71 @@
+{
+  "fecha_utc": "2026-11-24T02:06:13+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "usuarios_virtuales": 100,
+  "duracion_s": 901.9,
+  "python": "3.13.18",
+  "plataforma": "Linux-6.18.44-fc-v819-x86_64-with-glibc2.39",
+  "login": {
+    "muestras": 3,
+    "p50_ms": 239.1,
+    "max_ms": 261.5
+  },
+  "total": {
+    "requests": 42803,
+    "errors": 59,
+    "req_por_s": 47.5,
+    "p50_ms": 1860.9,
+    "p95_ms": 3974.4,
+    "max_ms": 30087.8
+  },
+  "endpoints": {
+    "GET /cases": {
+      "requests": 7177,
+      "errors": 18,
+      "p50_ms": 2092.9,
+      "p95_ms": 4208.9,
+      "max_ms": 30087.8,
+      "mean_ms": 2370.1
+    },
+    "GET /triage/queue": {
+      "requests": 7159,
+      "errors": 32,
+      "p50_ms": 1844.6,
+      "p95_ms": 4008.0,
+      "max_ms": 30005.1,
+      "mean_ms": 2183.4
+    },
+    "GET /patients/page": {
+      "requests": 7147,
+      "errors": 8,
+      "p50_ms": 2038.0,
+      "p95_ms": 4129.1,
+      "max_ms": 30002.3,
+      "mean_ms": 2278.8
+    },
+    "GET /cases/{id}": {
+      "requests": 7120,
+      "errors": 1,
+      "p50_ms": 1699.3,
+      "p95_ms": 3732.0,
+      "max_ms": 30001.3,
+      "mean_ms": 1920.4
+    },
+    "GET /notifications": {
+      "requests": 7108,
+      "errors": 0,
+      "p50_ms": 1561.7,
+      "p95_ms": 3614.8,
+      "max_ms": 29631.2,
+      "mean_ms": 1789.7
+    },
+    "GET /dashboard/metrics": {
+      "requests": 7092,
+      "errors": 0,
+      "p50_ms": 1870.8,
+      "p95_ms": 3984.2,
+      "max_ms": 29995.7,
+      "mean_ms": 2084.8
+    }
+  }
+}

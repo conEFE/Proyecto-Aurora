@@ -39,7 +39,8 @@ for u in sorted(res):
     L.append("| %d | %d s | %s | %d | %s | %s | %s | %s | `%s` |" % (u, round(r["duracion_s"]), miles(t["requests"]), t["errors"],
              num(t["req_por_s"]), num(t["p50_ms"]), num(t["p95_ms"]), num(t["max_ms"]), f))
 r100 = res[max(res)][1]
-L += ["", "PC-01 (100 usuarios, 15 minutos): p95 de %s ms con %d errores; meta p95 ≤ 3 s." % (num(r100["total"]["p95_ms"]), r100["total"]["errors"]),
+L += ["", "PC-01 (100 usuarios, 15 minutos): p95 de %s ms con %d errores: **no cumple** la meta p95 ≤ 3 s. La meta se cumple hasta 50 usuarios." % (num(r100["total"]["p95_ms"]), r100["total"]["errors"]),
+      "Con 100 usuarios no hubo bloqueo (el servicio atendió los 15 minutos) sino saturación: los errores son esperas de más de 30 s por una conexión libre (`QueuePool ... timeout 30`).",
       "Inicio de sesión (bcrypt): mediana ≈ %s ms. Detalle por endpoint en cada JSON." % num(r100["login"]["p50_ms"]), "",
       "## Limitaciones",
       "- Usuarios virtuales sin tiempo de espera entre acciones: carga más intensa que el uso clínico real.",

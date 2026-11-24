@@ -1,7 +1,7 @@
 # Handoff — después de la iteración 11 del Informe Final (Proyecto Aurora)
 
 **Fecha:** 24-11-2026 · **Rama:** `claude/bold-maxwell-13fkwp` · **Punto de partida:** maestro **1.1-rc**, registro **v0.20**,
-PDF de __PAGS__ páginas. Reemplaza a `HANDOFF_ITERACION_11.md` (que queda como historia).
+PDF de 167 páginas. Reemplaza a `HANDOFF_ITERACION_11.md` (que queda como historia).
 
 Lee este documento, luego `trabajo/ESTADO_ITERACION.md`, `PLAN_INFORME_FINAL.md` y `trabajo/REVISION_NUBE_VS_HU.md`.
 
@@ -12,7 +12,8 @@ Lee este documento, luego `trabajo/ESTADO_ITERACION.md`, `PLAN_INFORME_FINAL.md`
   12.1.3 prueba de rendimiento local; 14.3.1 factibilidad técnica, operativa, económica, legal y ambiental.
 - **Código:** la prueba de carga encontró un bloqueo total de la API con ~50 usuarios. Corregido en `9043857`
   (`backend/app/deps.py`, `middleware.py`, `error_log_service.py`, `api/rutas_images.py`; prueba
-  `test_middleware_pool.py`; 316 pruebas, 0 fallos). PC-01 local (100 usuarios, 15 min): p95 de __P95__ ms.
+  `test_middleware_pool.py`; 316 pruebas, 0 fallos). PC-01 local (100 usuarios, 15 min): p95 de 3.974 ms, **no cumple** la meta de 3 s (sí hasta 50 usuarios;
+  con 100 hubo saturación, no bloqueo).
   Evidencia en `evidencias/rendimiento_2026-11-24/` (incluye la corrida previa a la corrección).
 - Revisión de nube frente a historias de usuario: `trabajo/REVISION_NUBE_VS_HU.md`.
 
@@ -23,7 +24,9 @@ Lee este documento, luego `trabajo/ESTADO_ITERACION.md`, `PLAN_INFORME_FINAL.md`
    habitual por Session Manager (`docs/ESTADO_AWS.md`). Si se despliega, actualizar en el informe XII (12.1.3: «no se ha
    desplegado») y XIII (versión publicada).
 2. **Inferencia el día de la defensa:** PC de Juan encendido y conectado, o mover el modelo a AWS (`t4g.medium`, CPU).
-3. **Monitoreo y alarmas** (chequeo de salud de Route 53 + alarma + SNS) y **prueba de restauración**: requieren acceso
+3. **Capacidad para la meta de rendimiento:** con 100 usuarios virtuales la meta no se cumple en local; la
+   `t4g.micro` de la demostración tiene menos capacidad. Dimensionar (procesos, pool, instancia) y medir en ese entorno.
+4. **Monitoreo y alarmas** (chequeo de salud de Route 53 + alarma + SNS) y **prueba de restauración**: requieren acceso
    a AWS. Con resultados, actualizar K3 (XI), 13.1–13.2 (XIII) y la Tabla de resultados de XII.
 
 ### Pendientes documentales del equipo (registro, secciones 4.15 y 4.16)

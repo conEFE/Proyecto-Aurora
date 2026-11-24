@@ -94,7 +94,7 @@ la documentación final entre el 20-11 y el 05-12-2026 y la entrega entre el 01-
 | 8 | Revisión de I–V con la evidencia acumulada: introducción, resumen/abstract, criterios de aceptación, matriz de interesados | Resultados de iteraciones 3–7 | **Hecha (23-11)** |
 | 9 | XVI Conclusiones, XVII Referencias y glosario (APA normalizado), XVIII Anexos | Todas las fuentes | **Hecha (23-11)** |
 | 10 | Cierre editorial: leyendas y numeración de tablas/figuras, TDC e índices, retiro de «Control de integración», PDF final, cierre del registro | — | **Hecha (23-11)**; quedan pendientes del equipo |
-| 11 | Ajustes por plantilla y rúbrica de defensa (EA5): (a) revertir título 10.4.3 y mover 10.8 a 10.7.1; (b) comparación con soluciones existentes e innovación (cap. V o IV); (c) estudio de factibilidad integral técnica, operativa, económica, legal y ambiental (recuperando U2); (d) integración del stack en IX y sustentabilidad en 8.3; (e) prueba de rendimiento local (p95) en XI/XII | Plantilla, rúbrica, U2 «Estudio de factibilidad», fuentes externas para (b) y ambiental; aprobación del equipo; correcciones del docente (opcional) | **Planificada**; detalle en `HANDOFF_ITERACION_11.md` |
+| 11 | Ajustes por plantilla y rúbrica de defensa (EA5): (a) revertir título 10.4.3 y mover 10.8 a 10.7.1; (b) comparación con soluciones existentes e innovación (cap. V o IV); (c) estudio de factibilidad integral técnica, operativa, económica, legal y ambiental (recuperando U2); (d) integración del stack en IX y sustentabilidad en 8.3; (e) prueba de rendimiento local (p95) en XI/XII | Plantilla, rúbrica, U2 «Estudio de factibilidad», fuentes externas para (b) y ambiental; aprobación del equipo; correcciones del docente (opcional) | **Hecha (24-11)**; incluye corrección de un bloqueo bajo carga en el backend |
 
 Las iteraciones 2 a 5 dependen sobre todo del repositorio y pueden avanzar sin esperar al equipo. Las
 iteraciones 6 y 7 necesitan datos que solo tiene el equipo; conviene pedirlos desde ya.
@@ -109,7 +109,9 @@ iteraciones 6 y 7 necesitan datos que solo tiene el equipo; conviene pedirlos de
 | Presupuesto vigente y su fuente (Equipo Proyecto Aurora 2026b) | It. 6 | Equipo |
 | Aprobación para renumerar IDs duplicados N-03-16 a N-03-21 del registro | Higiene del registro | Usuario |
 | Fecha real de entrega del informe | Calendario de este plan | Usuario |
-| Aprobación de los cinco ajustes de la iteración 11 | It. 11 | Usuario |
+| Aprobación de los cinco ajustes de la iteración 11 | It. 11 (resuelto 24-11) | Usuario |
+| Despliegue de la corrección del bloqueo bajo carga (`9043857`) en el entorno de demostración | Coherencia entre informe y demostración | Equipo |
+| Monitoreo y alarmas de disponibilidad; prueba de restauración (ver `trabajo/REVISION_NUBE_VS_HU.md`) | Medición de K3; cierre de XIII | Equipo (acceso a AWS) |
 | Correcciones del docente a U1 y U2 (para verificar U1-xx/U2-xx) | Verificación de observaciones | Usuario |
 | Fuentes reales sobre soluciones existentes (p. ej., productos comerciales de IA en mamografía) y sobre impacto ambiental | It. 11 (b) y (c) | Agente con búsqueda web / equipo |
 
@@ -129,3 +131,4 @@ iteraciones 6 y 7 necesitan datos que solo tiene el equipo; conviene pedirlos de
 | 9 | 23-11-2026 | v0.13 | v0.18 | Capítulos XVI, XVII y XVIII redactados: conclusiones y recomendaciones, glosario y 56 referencias APA, anexos 1 a 4 y material complementario; observaciones N-17-01 a N-17-05. |
 | 10 | 23-11-2026 | 1.0-rc | v0.19 | Cierre editorial: páginas horizontales, índices de tablas y figuras, tabla de historias, portada, retiro del control interno; PDF de 160 páginas. Pendientes del equipo consolidados en el registro (4.15). |
 | — | 23-11-2026 | 1.0-rc | v0.19 | Revisión contra plantilla (95 títulos presentes; 2 desvíos) y rúbrica EA5 (ind. 4 no cubierto; 2, 3, 5 y 6 parciales). Sin cambios en el maestro; se planifica la iteración 11. |
+| 11 | 24-11-2026 | 1.1-rc | v0.20 | Ajustes por plantilla y rúbrica EA5 (4.8, 8.3.1, 9.2.1, 10.7.1, 12.1.3, 14.3.1); PC-01 local no cumplido con 100 usuarios (p95 3.974 ms; sí con 50) tras corregir un bloqueo bajo carga en el backend; revisión de nube frente a HU; PDF de 167 páginas. |
