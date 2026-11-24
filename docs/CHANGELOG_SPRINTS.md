@@ -707,6 +707,14 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## Sin número de versión — encabezados del sitio tras el escaneo ZAP (24-11-2026)
+
+- Escaneo OWASP ZAP baseline (workflow «ZAP baseline», 24-11-2026): 0 alertas altas, 1 media y 3 bajas, todas de
+  encabezados del sitio estático. Detalle en `docs/informe_final/evidencias/zap_2026-11-24/` (rama del informe).
+- `deploy/Caddyfile`: `Cross-Origin-Opener-Policy` y `Cross-Origin-Resource-Policy` en `same-origin` (2 bajas).
+- Riesgo aceptado: `style-src 'unsafe-inline'` (media; la landing inyecta un `<style>` y `script-src 'self'` sigue
+  bloqueando scripts en línea) y sin `Cross-Origin-Embedder-Policy` (baja; solo hace falta para `SharedArrayBuffer`).
+
 ## 2.10.2 — límite de solicitudes simultáneas (24-11-2026)
 
 Sin migraciones ni cambios de API. Encontrado al medir la 2.10.1 en AWS (un proceso, `t4g.micro`).
