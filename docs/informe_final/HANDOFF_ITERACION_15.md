@@ -50,7 +50,7 @@ de K5 en el código; confirmar CU18 y PI-06…PS-08; N-11-02 (dispositivo médic
 se puede precisar en 14.3.1); correcciones del docente a U1/U2 para verificar U1-xx/U2-xx; lectura y aceptación de 1.0.
 
 ### Siguiente iteración posible (12), solo si el equipo entrega insumos
-- Integrar los resultados de despliegue, alarmas, restauración o ZAP en XI–XIII y en la síntesis de factibilidad.
+- ~~Integrar despliegue, alarmas, restauración y ZAP en XI–XIII~~ (hecho en las iteraciones 12 a 14).
 - Textos personales (dedicatoria, agradecimientos) y correcciones del docente.
 - Exportar PDF final y cerrar la versión 1.0.
 
