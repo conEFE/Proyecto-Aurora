@@ -707,6 +707,23 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
+## 2.10.2 — límite de solicitudes simultáneas (24-11-2026)
+
+Sin migraciones ni cambios de API. Encontrado al medir la 2.10.1 en AWS (un proceso, `t4g.micro`).
+
+- **Bloqueo con espera entre hilos y conexiones**: con más solicitudes simultáneas que conexiones (pool de 5 + 10),
+  una solicitud ya autenticada retenía su conexión mientras esperaba un hilo para el endpoint, y los 40 hilos
+  esperaban conexiones. Solo el tiempo de espera del pool (30 s) deshacía el ciclo: la API, incluido `/health`,
+  dejaba de responder mientras hubiera carga y tardaba minutos en recuperarse (reproducido en local con 100
+  clientes que abandonan sus solicitudes).
+- **`ConcurrencyLimitMiddleware`** (`app/middleware.py`): atiende a la vez como máximo `MAX_CONCURRENT_REQUESTS`
+  (10 por proceso); las demás esperan en cola en el bucle de eventos, sin ocupar hilos ni conexiones, y pasado
+  `REQUEST_QUEUE_TIMEOUT_SECONDS` (20 s) reciben **503** «El servicio está ocupado…» con `Retry-After: 5`.
+  `/health` y `OPTIONS` no pasan por el límite, y `/health` es asíncrono (responde aunque la API esté saturada).
+- Local, un proceso, 100 usuarios por 60 s: 0 errores, p95 3.101 ms, máximo 3,4 s (antes, esperas de 30 s).
+- Pruebas: `test_concurrency_limit.py` (cola y 503, `/health` exento, liberación ante errores, límite menor que el
+  pool). Suite: 321 pruebas.
+
 ## 2.10.1 — corrección de bloqueo bajo carga y prueba de carga (24-11-2026)
 
 Sin migraciones ni cambios de API.
