@@ -1,8 +1,17 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 24-11-2026 (2.10.1). Antes, 13-11-2026: desplegada la **2.10.0** (imágenes `sha-18183f5…`, mismo código salvo el número de versión;
+Actualizado: 24-11-2026 (2.10.2). Antes, 13-11-2026: desplegada la **2.10.0** (imágenes `sha-18183f5…`, mismo código salvo el número de versión;
 ver `AURORA_VERSION` en el servidor). **Modelo real conectado** (PC de Juan por Tailscale; si está apagado, IA
 simulada).
+
+**24-11-2026: desplegada la 2.10.2** (`1ec7904`, imágenes `sha-1ec7904…`; respaldo previo
+`backups/aurora-20261124T032923Z.sql.gz`). Limita las solicitudes simultáneas (10 por proceso; el resto en cola, 503
+tras 20 s): la 2.10.1 aún se bloqueaba con 100 usuarios en un proceso. **Prueba de carga en este servidor** (copia de
+la base en el esquema temporal `carga`, ya borrado): ≈ 20 solicitudes/s; p95 ≤ 3 s hasta 25 usuarios virtuales;
+PC-01 (100 usuarios, 15 min) sin errores ni bloqueo, pero p95 de 15 s. Evidencia en la rama del informe
+(`docs/informe_final/evidencias/rendimiento_aws_2026-11-24/`). **Volver atrás:**
+`AURORA_VERSION=sha-eecc25555781e407bef724cfb18941e66ead78fc` (2.10.1). Para más capacidad: más procesos
+(`WEB_CONCURRENCY`, requiere más memoria) o una instancia mayor.
 
 **24-11-2026: desplegada la 2.10.1** (`eecc255`, imágenes `sha-eecc255…`; versión anterior `sha-d945a06…`; respaldo
 previo `backups/aurora-20261124T022416Z.sql.gz`). Corrige el bloqueo total de la API con ~50 usuarios concurrentes
