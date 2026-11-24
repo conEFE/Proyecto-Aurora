@@ -1,9 +1,25 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 24-11-2026 (iteración 13: rendimiento en AWS y 2.10.2)
-**Versiones vigentes:** documento maestro **1.3-rc** · registro de revisiones v0.22 · PDF `Proyecto_Aurora_Informe_Final.pdf` (169 páginas)
+**Actualización:** 24-11-2026 (iteración 14: seguridad, restauración y monitoreo)
+**Versiones vigentes:** documento maestro **1.4-rc** · registro de revisiones v0.23 · PDF `Proyecto_Aurora_Informe_Final.pdf` (170 páginas)
 **Estado general:** informe completo en versión candidata, con los cinco ajustes de la rúbrica aplicados. Quedan los
-pendientes del equipo (abajo y registro, secciones 4.15 y 4.16). Traspaso al siguiente agente: `../HANDOFF_ITERACION_14.md`.
+pendientes del equipo (abajo y registro, secciones 4.15 y 4.16). Traspaso al siguiente agente: `../HANDOFF_ITERACION_15.md`.
+
+## Iteración 14 — Escaneo de seguridad, restauración y monitoreo (maestro 1.4-rc)
+
+Elegida por el usuario: restauración, ZAP y monitoreo con alarmas (aprobó usar su correo para las alertas).
+
+- **ZAP** (workflow `zap.yml`, sobre el stack levantado en el CI, no sobre la demo): 0 altas, 1 media, 3 bajas. COOP y
+  CORP agregados en `deploy/Caddyfile` (`a2f4da4`, desplegado); aceptados `style-src 'unsafe-inline'` y la falta de COEP.
+  Evidencia: `evidencias/zap_2026-11-24/`. La API autenticada no quedó cubierta.
+- **Restauración:** volcado diario de las 06:15 UTC restaurado en un esquema temporal: 19 tablas coincidentes, 258
+  imágenes en S3, 5 descifradas con hash correcto, ≈ 3 s. Evidencia: `evidencias/restauracion_2026-11-24/`.
+- **Monitoreo:** `deploy/monitor_salud.sh` (crontab, cada minuto) → CloudWatch Logs `/aurora/monitor` → métrica
+  `Aurora/ChequeosOK` → alarma `aurora-demo-sin-respuesta` y `aurora-ec2-estado` → SNS `aurora-alertas` (correo de
+  Felipe, confirmado). Todo en us-east-2 (SNS en us-east-1 está bloqueado por la política del proyecto, así que no se usa
+  el chequeo de Route 53). Probado: ALARM durante la instalación y OK a las 13:36 UTC.
+- **Informe:** nuevo 12.1.5 (Tabla 45; la Matriz de trazabilidad pasa a 12.1.6); resumen, abstract, XI (K3), XII (PS-04),
+  XIII (Tabla de disponibilidad, continuidad), 14.3.1, XV (riesgos) y XVI. Registro 4.19.
 
 ## Iteración 13 — Rendimiento en el entorno de demostración (maestro 1.3-rc)
 
