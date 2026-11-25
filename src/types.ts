@@ -1,9 +1,31 @@
-export type Role = 'ADMIN' | 'MEDICO' | 'ADMINISTRATIVO';
+export type Role = 'ADMIN' | 'MEDICO' | 'ADMINISTRATIVO' | 'JEFATURA';
 
 export const ROLE_LABELS: Record<Role, string> = {
   ADMIN: 'Administrador',
   MEDICO: 'Médico',
   ADMINISTRATIVO: 'Administrativo',
+  JEFATURA: 'Jefatura y finanzas',
+};
+
+export type Specialty =
+  | 'MEDICINA_GENERAL'
+  | 'GINECOLOGIA'
+  | 'ONCOLOGIA'
+  | 'MASTOLOGIA'
+  | 'RADIOLOGIA'
+  | 'CIRUGIA_GENERAL'
+  | 'MEDICINA_FAMILIAR'
+  | 'OTRA';
+
+export const SPECIALTY_LABELS: Record<Specialty, string> = {
+  MEDICINA_GENERAL: 'Medicina general',
+  GINECOLOGIA: 'Ginecología',
+  ONCOLOGIA: 'Oncología',
+  MASTOLOGIA: 'Mastología',
+  RADIOLOGIA: 'Radiología',
+  CIRUGIA_GENERAL: 'Cirugía general',
+  MEDICINA_FAMILIAR: 'Medicina familiar',
+  OTRA: 'Otra especialidad',
 };
 
 export interface Me {
@@ -11,6 +33,10 @@ export interface Me {
   rut: string;
   email: string;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
+  specialty?: Specialty | null;
+  email_verified?: boolean;
   role: Role;
   must_change_password: boolean;
   created_at?: string | null;
@@ -23,23 +49,36 @@ export interface UserAccount {
   rut: string;
   email: string;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
   role: Role;
+  specialty?: Specialty | null;
   is_active: boolean;
   created_at?: string | null;
   last_login_at?: string | null;
   must_change_password?: boolean;
   locked_until?: string | null;
+  email_verified_at?: string | null;
+  /** Solo en la respuesta de creación: si se envió el link de activación. */
+  activation_sent?: boolean | null;
 }
 
 export interface UserCreateInput {
   rut: string;
   email: string;
-  full_name: string;
-  password: string;
+  first_name: string;
+  last_name: string;
+  /** Opcional: sin contraseña, el usuario la define desde el link de activación. */
+  password?: string;
   role: Role;
+  specialty?: Specialty | null;
+  send_activation?: boolean;
 }
 
-export type UserUpdateInput = Partial<Omit<UserCreateInput, 'rut'>> & { is_active?: boolean };
+export type UserUpdateInput = Partial<Omit<UserCreateInput, 'rut' | 'send_activation'>> & {
+  is_active?: boolean;
+  full_name?: string;
+};
 
 export type Sex = 'F' | 'M' | 'O';
 
@@ -436,6 +475,36 @@ export interface Reviewer {
   id: number;
   full_name: string;
   is_active: boolean;
+  specialty?: Specialty | null;
+}
+
+/** Indicadores de gestión de un médico (comparador de jefatura y finanzas). */
+export interface DoctorStats {
+  id: number;
+  full_name: string;
+  specialty: Specialty | null;
+  is_active: boolean;
+  reviews: number;
+  reports_signed: number;
+  cases_closed: number;
+  overrides: number;
+  reviews_per_week: number | null;
+  avg_review_hours: number | null;
+  p95_review_hours: number | null;
+  open_assigned: number;
+  alta_late: number;
+  ai_validations: number;
+  ai_agreement_rate: number | null;
+  triage_agreement_rate: number | null;
+}
+
+export interface DoctorComparison {
+  date_from: string | null;
+  date_to: string | null;
+  weeks: number;
+  alta_pending_threshold_hours: number;
+  doctors: DoctorStats[];
+  team: DoctorStats | null;
 }
 
 /** Fila del detalle de casos del dashboard (solo el código anónimo). */

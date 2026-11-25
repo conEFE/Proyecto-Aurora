@@ -5,10 +5,14 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from app.auth.bearer import get_authenticated_user, get_current_user
+from app.config import settings
 from app.db.models.user import User
 from app.deps import get_db
-from app.services import auth_service
+from app.schemas.users import ActivateRequest, ActivationPreview
+from app.services import activation_service, auth_service
 from app.services.audit_service import client_ip
+from app.services.auth_service import RateLimitedError
+from app.utils.rate_limit import login_limiter
 
 router = APIRouter()
 
@@ -31,6 +35,10 @@ class MeResponse(BaseModel):
     rut: str
     email: str
     full_name: str
+    first_name: str = ""
+    last_name: str = ""
+    specialty: str | None = None
+    email_verified: bool = False
     role: str
     must_change_password: bool = False
     created_at: datetime | None = None
@@ -77,6 +85,10 @@ def _me(user: User) -> MeResponse:
         rut=user.rut,
         email=user.email,
         full_name=user.full_name,
+        first_name=user.first_name or "",
+        last_name=user.last_name or "",
+        specialty=user.specialty.value if user.specialty else None,
+        email_verified=user.email_verified_at is not None,
         role=user.role.value,
         must_change_password=bool(user.must_change_password),
         created_at=user.created_at,
@@ -114,3 +126,27 @@ def change_password(
     return auth_service.change_password(
         db, current_user, data.current_password, data.new_password, client_ip(request)
     )
+
+
+def _activation_limit(request: Request) -> None:
+    allowed, retry_after, _ = login_limiter.hit(
+        f"activate:{client_ip(request) or 'desconocida'}", settings.LOGIN_RATE_LIMIT_PER_MINUTE
+    )
+    if not allowed:
+        raise RateLimitedError(f"Demasiados intentos. Espere {retry_after} segundos", retry_after)
+
+
+@router.get("/activation", response_model=ActivationPreview)
+def activation_preview(token: str, request: Request, db: Session = Depends(get_db)):
+    """Valida un link de activación (sin consumirlo) y devuelve el nombre y email para la pantalla."""
+    _activation_limit(request)
+    user = activation_service.preview(db, token)
+    return ActivationPreview(first_name=user.first_name, email=user.email)
+
+
+@router.post("/activate", response_model=TokenResponse)
+def activate(data: ActivateRequest, request: Request, db: Session = Depends(get_db)):
+    """Activa la cuenta desde el link del email: verifica el email, define la contraseña e inicia sesión."""
+    _activation_limit(request)
+    user = activation_service.activate(db, data.token, data.password, client_ip(request))
+    return auth_service.issue_token(user)

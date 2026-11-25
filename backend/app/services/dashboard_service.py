@@ -10,12 +10,21 @@ from app.config import settings
 from app.db.models.case import Case, CaseStatus
 from app.db.models.error_log import ErrorLog
 from app.db.models.image import Image
-from app.db.models.review import AI_VERDICTS, TRIAGE_ASSESSMENTS, AIValidation, ClinicalReview, RequestMetric
+from app.db.models.review import (
+    AI_VERDICTS,
+    TRIAGE_ASSESSMENTS,
+    AIValidation,
+    ClinicalReview,
+    ReportSignature,
+    RequestMetric,
+)
 from app.db.models.triage import TriageLevel, TriageResult
-from app.db.models.user import User, UserRole
+from app.db.models.user import MedicalSpecialty, User, UserRole
 from app.schemas.reviews import (
     DashboardCase,
     DashboardMetrics,
+    DoctorComparison,
+    DoctorStats,
     ModelPerformanceReport,
     ModelVersionPerformance,
     Reviewer,
@@ -305,7 +314,13 @@ def metrics(
 def reviewers(db: Session) -> list[Reviewer]:
     """Médicos (activos o no) para filtrar el dashboard por quien revisa."""
     rows = db.query(User).filter(User.role == UserRole.MEDICO).order_by(User.full_name).all()
-    return [Reviewer(id=u.id, full_name=u.full_name, is_active=u.is_active) for u in rows]
+    return [
+        Reviewer(
+            id=u.id, full_name=u.full_name, is_active=u.is_active,
+            specialty=u.specialty.value if u.specialty else None,
+        )
+        for u in rows
+    ]
 
 
 def case_rows(
@@ -370,3 +385,192 @@ def case_rows(
         )
     rows.sort(key=lambda r: (not r.late, -r.waiting_hours))
     return rows
+
+
+def _in_range(col, date_from: datetime | None, date_to: datetime | None):
+    conds = []
+    if date_from:
+        conds.append(col >= date_from)
+    if date_to:
+        conds.append(col <= date_to)
+    return conds
+
+
+def compare_doctors(
+    db: Session,
+    medico_ids: list[int] | None = None,
+    specialty: MedicalSpecialty | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    alta_pending_hours: int | None = None,
+    include_inactive: bool = False,
+    now: datetime | None = None,
+) -> DoctorComparison:
+    """Comparador de médicos para jefatura y finanzas: productividad, tiempos, carga y concordancia.
+
+    La actividad (revisiones, firmas, cierres, overrides, validaciones) se cuenta por la fecha en que ocurrió;
+    la carga (asignados abiertos y ALTA atrasados) es la de ahora. No expone datos de pacientes.
+    """
+    now = now or datetime.now(timezone.utc)
+    hours = alta_pending_hours if alta_pending_hours is not None else settings.ALTA_PENDING_HOURS
+
+    q = db.query(User).filter(User.role == UserRole.MEDICO)
+    if not include_inactive and not medico_ids:
+        q = q.filter(User.is_active.is_(True))
+    if specialty is not None:
+        q = q.filter(User.specialty == specialty)
+    if medico_ids:
+        q = q.filter(User.id.in_(medico_ids))
+    doctors = q.order_by(User.full_name).all()
+    ids = [d.id for d in doctors]
+
+    start = _aware(date_from) if date_from else None
+    if start is None and ids:
+        first = (
+            db.query(func.min(ClinicalReview.created_at)).filter(ClinicalReview.medico_id.in_(ids)).scalar()
+        )
+        start = _aware(first) if first else None
+    end = _aware(date_to) if date_to else now
+    weeks = max(1.0, (end - start).total_seconds() / (7 * 86400)) if start else 1.0
+
+    def empty() -> dict:
+        return {
+            "reviews": 0, "signed": 0, "closed": 0, "overrides": 0, "hours": [],
+            "open": 0, "late": 0, "val": 0, "val_ok": 0, "val_eval": 0, "ta": 0, "ta_ok": 0,
+        }
+
+    acc = {i: empty() for i in ids}
+    if ids:
+        reviews = (
+            db.query(ClinicalReview)
+            .filter(ClinicalReview.medico_id.in_(ids), *_in_range(ClinicalReview.created_at, date_from, date_to))
+            .all()
+        )
+        case_ids = {rv.case_id for rv in reviews}
+        first_triage: dict[int, datetime] = {}
+        if case_ids:
+            for case_id, first in (
+                db.query(TriageResult.case_id, func.min(TriageResult.computed_at))
+                .filter(TriageResult.case_id.in_(case_ids))
+                .group_by(TriageResult.case_id)
+                .all()
+            ):
+                first_triage[case_id] = first
+        for rv in reviews:
+            a = acc[rv.medico_id]
+            a["reviews"] += 1
+            if rv.case_id in first_triage and rv.created_at:
+                a["hours"].append((_aware(rv.created_at) - _aware(first_triage[rv.case_id])).total_seconds() / 3600)
+            if rv.triage_assessment in TRIAGE_ASSESSMENTS:
+                a["ta"] += 1
+                a["ta_ok"] += 1 if rv.triage_assessment == "APROPIADO" else 0
+
+        for medico_id, n in (
+            db.query(ReportSignature.medico_id, func.count(ReportSignature.id))
+            .filter(ReportSignature.medico_id.in_(ids), *_in_range(ReportSignature.signed_at, date_from, date_to))
+            .group_by(ReportSignature.medico_id)
+            .all()
+        ):
+            acc[medico_id]["signed"] = n
+
+        for medico_id, n in (
+            db.query(TriageResult.override_by, func.count(TriageResult.id))
+            .filter(TriageResult.override_by.in_(ids), *_in_range(TriageResult.computed_at, date_from, date_to))
+            .group_by(TriageResult.override_by)
+            .all()
+        ):
+            acc[medico_id]["overrides"] = n
+
+        for medico_id, verdict in (
+            db.query(AIValidation.medico_id, AIValidation.verdict)
+            .filter(AIValidation.medico_id.in_(ids), *_in_range(AIValidation.created_at, date_from, date_to))
+            .all()
+        ):
+            a = acc[medico_id]
+            a["val"] += 1
+            if verdict != "NO_EVALUABLE":
+                a["val_eval"] += 1
+                a["val_ok"] += 1 if verdict == "CONCORDANTE" else 0
+
+        # Cierres del período: casos asignados al médico o revisados por él
+        reviewed_by = dict(
+            db.query(ClinicalReview.case_id, ClinicalReview.medico_id)
+            .filter(ClinicalReview.medico_id.in_(ids))
+            .all()
+        )
+        closed = (
+            db.query(Case.id, Case.assigned_medico_id)
+            .filter(Case.status == CaseStatus.CERRADO, *_in_range(Case.closed_at, date_from, date_to))
+            .filter(or_(Case.assigned_medico_id.in_(ids), Case.id.in_(list(reviewed_by) or [-1])))
+            .all()
+        )
+        for case_id, assigned in closed:
+            owner = reviewed_by.get(case_id) or assigned
+            if owner in acc:
+                acc[owner]["closed"] += 1
+
+        # Carga actual
+        cutoff = now - timedelta(hours=hours)
+        open_cases = (
+            db.query(Case.id, Case.assigned_medico_id, Case.created_at)
+            .filter(Case.assigned_medico_id.in_(ids), Case.status != CaseStatus.CERRADO)
+            .all()
+        )
+        levels = {}
+        if open_cases:
+            levels = dict(
+                db.query(TriageResult.case_id, TriageResult.final_level)
+                .filter(TriageResult.case_id.in_([c.id for c in open_cases]), TriageResult.is_current.is_(True))
+                .all()
+            )
+        for case_id, medico_id, created_at in open_cases:
+            a = acc[medico_id]
+            a["open"] += 1
+            if levels.get(case_id) == TriageLevel.ALTA and created_at and _aware(created_at) < cutoff:
+                a["late"] += 1
+
+    def build(base: dict, a: dict, divisor: int = 1) -> DoctorStats:
+        hrs = a["hours"]
+        return DoctorStats(
+            **base,
+            reviews=round(a["reviews"] / divisor) if divisor > 1 else a["reviews"],
+            reports_signed=round(a["signed"] / divisor) if divisor > 1 else a["signed"],
+            cases_closed=round(a["closed"] / divisor) if divisor > 1 else a["closed"],
+            overrides=round(a["overrides"] / divisor) if divisor > 1 else a["overrides"],
+            reviews_per_week=round(a["reviews"] / divisor / weeks, 2),
+            avg_review_hours=round(sum(hrs) / len(hrs), 2) if hrs else None,
+            p95_review_hours=percentile(hrs, 95),
+            open_assigned=round(a["open"] / divisor) if divisor > 1 else a["open"],
+            alta_late=round(a["late"] / divisor) if divisor > 1 else a["late"],
+            ai_validations=round(a["val"] / divisor) if divisor > 1 else a["val"],
+            ai_agreement_rate=_ratio(a["val_ok"], a["val_eval"]),
+            triage_agreement_rate=_ratio(a["ta_ok"], a["ta"]),
+        )
+
+    rows = [
+        build(
+            {
+                "id": d.id, "full_name": d.full_name, "is_active": d.is_active,
+                "specialty": d.specialty.value if d.specialty else None,
+            },
+            acc[d.id],
+        )
+        for d in doctors
+    ]
+    team = None
+    if doctors:
+        total = empty()
+        for a in acc.values():
+            for k, v in a.items():
+                total[k] = total[k] + v
+        team = build(
+            {"id": 0, "full_name": "Promedio del equipo", "is_active": True, "specialty": None}, total, len(doctors)
+        )
+    return DoctorComparison(
+        date_from=date_from,
+        date_to=date_to,
+        weeks=round(weeks, 2),
+        alta_pending_threshold_hours=hours,
+        doctors=rows,
+        team=team,
+    )

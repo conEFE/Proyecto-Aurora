@@ -1,5 +1,6 @@
 from app.db.models.audit_log import AuditLog
 from app.db.models.case import Case
+from app.db.models.email_token import EmailToken
 from app.db.models.error_log import ErrorLog
 from app.db.models.image import Image
 from app.db.models.inference_result import InferenceResult
@@ -7,12 +8,14 @@ from app.db.models.patient import Patient
 from app.db.models.privacy import ConsentEvent, ConsentText, DataSubjectRequest
 from app.db.models.review import AIValidation, ClinicalReview, Report, ReportSignature, RequestMetric
 from app.db.models.triage import Notification, TriageConfig, TriageLevel, TriageResult
-from app.db.models.user import User, UserRole
+from app.db.models.user import MedicalSpecialty, User, UserRole
 
 __all__ = [
     "AuditLog",
     "User",
     "UserRole",
+    "MedicalSpecialty",
+    "EmailToken",
     "Case",
     "ErrorLog",
     "Image",

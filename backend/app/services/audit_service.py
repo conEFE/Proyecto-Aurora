@@ -28,6 +28,8 @@ ACTIONS = {
     "CONSENT_WITHDRAW",
     "BLOCK",
     "UNBLOCK",
+    "ACCOUNT_ACTIVATE",
+    "ACTIVATION_RESEND",
 }
 
 

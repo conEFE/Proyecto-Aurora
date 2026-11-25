@@ -3,7 +3,7 @@ import { Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type { Me } from '../types';
-import { ROLE_LABELS } from '../types';
+import { ROLE_LABELS, SPECIALTY_LABELS } from '../types';
 import { cn } from '../lib/cn';
 import PasswordInput from './PasswordInput';
 import ChangePassword from './ChangePassword';
@@ -49,7 +49,7 @@ export default function Profile({ me, onUpdated }: ProfileProps) {
     <div className={pageClass}>
       <DetailHeader
         title={me.full_name}
-        status={<span className="text-sm font-semibold text-brand">{ROLE_LABELS[me.role]}</span>}
+        status={<span className="text-sm font-semibold text-brand">{ROLE_LABELS[me.role]}{me.specialty ? ` · ${SPECIALTY_LABELS[me.specialty]}` : ''}</span>}
         meta={<>RUT {me.rut} · {me.email}</>}
       />
 

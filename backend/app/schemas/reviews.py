@@ -182,6 +182,7 @@ class Reviewer(BaseModel):
     id: int
     full_name: str
     is_active: bool
+    specialty: str | None = None
 
 
 class DashboardCase(BaseModel):
@@ -198,3 +199,38 @@ class DashboardCase(BaseModel):
     # Desde la creación hasta la revisión, o hasta ahora si aún no se revisa
     waiting_hours: float
     late: bool
+
+
+class DoctorStats(BaseModel):
+    """Indicadores de gestión de un médico en el período (sin datos de pacientes)."""
+
+    id: int
+    full_name: str
+    specialty: str | None
+    is_active: bool
+    # Actividad del período
+    reviews: int
+    reports_signed: int
+    cases_closed: int
+    overrides: int
+    reviews_per_week: float | None
+    # Tiempo desde el primer triage del caso hasta la revisión del médico (horas)
+    avg_review_hours: float | None
+    p95_review_hours: float | None
+    # Carga actual (no depende del período): casos asignados sin cerrar y ALTA atrasados
+    open_assigned: int
+    alta_late: int
+    # Calidad: concordancia con la IA (por imagen) y triage evaluado como apropiado
+    ai_validations: int
+    ai_agreement_rate: float | None
+    triage_agreement_rate: float | None
+
+
+class DoctorComparison(BaseModel):
+    date_from: datetime | None
+    date_to: datetime | None
+    weeks: float
+    alta_pending_threshold_hours: int
+    doctors: list[DoctorStats]
+    # Promedio del equipo (todos los médicos que cumplen el filtro), para comparar a cada uno
+    team: DoctorStats | None

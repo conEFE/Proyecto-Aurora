@@ -965,6 +965,40 @@ Solo frontend (más el título de la API): no cambia la base de datos ni los end
 
 ---
 
+## 2.11.0 — Jefatura y finanzas, comparador de médicos, ficha del médico y activación por correo
+
+- **Rol nuevo `JEFATURA` («Jefatura y finanzas»)**: entra al **Comparador de médicos**, al Dashboard (métricas
+  agregadas, sin desempeño del modelo) y a Mi perfil. No ve pacientes, casos, cola de triage ni administración
+  (la autorización es por lista permitida, así que el rol nuevo queda fuera de todo lo clínico por defecto).
+- **Comparador de médicos** (`GET /dashboard/doctors/compare`, JEFATURA y ADMIN): por médico, revisiones, revisiones
+  por semana, reportes firmados, casos cerrados, tiempo medio y p95 desde el triage hasta la revisión, casos abiertos
+  asignados, ALTA atrasados, ajustes de triage, concordancia con la IA y triage apropiado, más el **promedio del
+  equipo**. Filtros por período y especialidad. Pantalla `/comparador-medicos`: barras lado a lado de hasta 4 médicos
+  con la marca del promedio, tabla ordenable de todos y exportación a CSV (Excel en español). Sin datos de pacientes.
+- **Ficha del médico**: nombre y apellidos por separado (`users.first_name`, `users.last_name`; `full_name` se mantiene
+  y se recalcula) y **especialidad** en un dropdown (Medicina general, Ginecología, Oncología, Mastología, Radiología,
+  Cirugía general, Medicina familiar, Otra), obligatoria para médicos. Formulario de usuario reordenado (rol y
+  especialidad, nombre, apellidos, RUT con dígito verificador, correo con validación de formato). La ficha del usuario
+  permite corregir el nombre y la especialidad, y la tabla de usuarios muestra la especialidad.
+- **Activación por correo**: al crear una cuenta se envía un **link de un solo uso** (vence en 48 h,
+  `ACTIVATION_TOKEN_HOURS`) que confirma el correo y deja definir la contraseña (`/activar?token=…`,
+  `GET /auth/activation`, `POST /auth/activate`, con límite por IP). Solo se guarda el hash SHA-256 del token
+  (tabla `email_tokens`). El ADMIN puede **reenviar el link** (invalida los anteriores) y sigue pudiendo asignar una
+  contraseña temporal. Cambiar el correo de un usuario lo deja sin verificar. Auditoría: `ACCOUNT_ACTIVATE`,
+  `ACTIVATION_RESEND`.
+- **Envío de correos** (`app/services/email_service.py`): `EMAIL_PROVIDER=console` (escribe el correo y el link en el
+  log; desarrollo y pruebas) o `smtp` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_STARTTLS`,
+  `EMAIL_FROM`, `PUBLIC_APP_URL`). La contraseña SMTP va solo en `backend/.env`.
+- **Migración `e7f1a2b3c412`** (reversible): valor `JEFATURA` en `userrole`, columnas de nombre, especialidad y
+  `email_verified_at` (las cuentas existentes quedan verificadas; el nombre se divide en el primer espacio) y la
+  tabla `email_tokens`. El `downgrade` se niega si hay usuarios JEFATURA.
+- Seeds: usuario de Jefatura de prueba (`10000006`) y especialidades en los médicos de demostración.
+- Pruebas (`test_jefatura_activacion.py`): ficha y especialidad obligatoria, link de activación (un solo uso,
+  vencido, reenvío, contraseña temporal sin link), correo cambiado sin verificar, permisos de JEFATURA y conteos del
+  comparador.
+
+---
+
 ## Pendiente para S8 (no implementado, según la regla 2)
 Pruebas de carga con Locust y soporte DICOM en la carga (el servicio del modelo ya lee DICOM; la plataforma
 todavía no lo acepta). De S7 queda ejecutar el

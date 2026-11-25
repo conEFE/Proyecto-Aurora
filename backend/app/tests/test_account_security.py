@@ -133,6 +133,7 @@ def _create_user(client, admin_token, password="Temporal-2026a"):
             "full_name": "Médica Nueva",
             "password": password,
             "role": "MEDICO",
+            "specialty": "ONCOLOGIA",
         },
         headers=auth(admin_token),
     )
@@ -373,11 +374,12 @@ def test_security_headers(client):
     assert len(r.headers["X-Request-ID"]) == 32
 
 
-PUBLIC = {("/health", "GET"), ("/auth/login", "POST")}
+# Activación por link del email: públicas por diseño, protegidas por el token de un solo uso y el límite por IP
+PUBLIC = {("/health", "GET"), ("/auth/login", "POST"), ("/auth/activation", "GET"), ("/auth/activate", "POST")}
 
 
 def test_every_route_requires_authentication(client):
-    """A01: ninguna ruta de la API (salvo login y health) responde sin token."""
+    """A01: ninguna ruta de la API (salvo login, health y la activación por email) responde sin token."""
     from app.main import app
 
     checked = 0

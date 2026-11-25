@@ -21,7 +21,7 @@ def test_overview_counts_accounts_and_security(client, tokens, users, db):
 
     body = client.get("/admin/overview", headers=auth(tokens["ADMIN"])).json()
     assert body["users_total"] == 6 and body["users_active"] == 5
-    assert body["users_by_role"] == {"MEDICO": 3, "ADMIN": 1, "ADMINISTRATIVO": 1}
+    assert body["users_by_role"] == {"MEDICO": 3, "ADMIN": 1, "ADMINISTRATIVO": 1, "JEFATURA": 0}
     assert body["users_pending_password"] == 1
     assert body["users_locked"] == 1
     # Los dos nuevos sin ingreso cuentan como sin uso; el inactivo no se cuenta

@@ -11,7 +11,7 @@ Uso (desde backend/, con las migraciones aplicadas):
 import io
 import os
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -26,7 +26,7 @@ from app.db.models.case import Case  # noqa: E402
 from app.db.models.image import ExamType  # noqa: E402
 from app.db.models.patient import Patient  # noqa: E402
 from app.db.models.triage import TriageResult  # noqa: E402
-from app.db.models.user import User, UserRole  # noqa: E402
+from app.db.models.user import MedicalSpecialty, User, UserRole  # noqa: E402
 from app.deps import SessionLocal  # noqa: E402
 from app.schemas.cases import CaseCreate  # noqa: E402
 from app.services import (  # noqa: E402
@@ -39,10 +39,12 @@ from app.services import (  # noqa: E402
 from app.services.password_policy import policy_errors  # noqa: E402
 from app.utils.rut import compute_dv  # noqa: E402
 
+# (RUT sin DV, rol, nombre, apellido, email, especialidad)
 USERS = [
-    ("10000003", UserRole.ADMIN, "Admin Demo", "admin@aurora-demo.cl"),
-    ("10000004", UserRole.MEDICO, "Dra. Valentina Demo", "medico@aurora-demo.cl"),
-    ("10000005", UserRole.ADMINISTRATIVO, "Carlos Demo", "administrativo@aurora-demo.cl"),
+    ("10000003", UserRole.ADMIN, "Admin", "Demo", "admin@aurora-demo.cl", None),
+    ("10000004", UserRole.MEDICO, "Valentina", "Demo", "medico@aurora-demo.cl", MedicalSpecialty.GINECOLOGIA),
+    ("10000005", UserRole.ADMINISTRATIVO, "Carlos", "Demo", "administrativo@aurora-demo.cl", None),
+    ("10000006", UserRole.JEFATURA, "Patricia", "Demo", "jefatura@aurora-demo.cl", None),
 ]
 
 # (nombre, apellido, edad, antecedente familiar, cáncer previo)
@@ -103,13 +105,18 @@ def main() -> int:
             return 0
 
         users = {}
-        for body, role, name, email in USERS:
+        now = datetime.now(timezone.utc)
+        for body, role, first_name, last_name, email, specialty in USERS:
             u = db.query(User).filter(User.rut == rut(body)).first()
             if u is None:
                 u = User(
                     rut=rut(body),
                     email=email,
-                    full_name=name,
+                    first_name=first_name,
+                    last_name=last_name,
+                    full_name=f"{first_name} {last_name}",
+                    specialty=specialty,
+                    email_verified_at=now,
                     password_hash=hash_password(password),
                     role=role,
                 )

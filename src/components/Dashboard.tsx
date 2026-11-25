@@ -573,12 +573,12 @@ export default function Dashboard({ me }: { me: Me }) {
     const range = apiRange(ranges.current);
     const [r, m, prev, q, inf] = await Promise.all([
       apiClient.getDashboard({ ...range, alta_pending_hours: hours, level, medico_id: medicoId }),
-      apiClient.getModelPerformance(range),
+      me.role === 'JEFATURA' ? Promise.resolve({ data: null }) : apiClient.getModelPerformance(range),
       ranges.previous
         ? apiClient.getDashboard({ ...apiRange(ranges.previous), alta_pending_hours: hours, level, medico_id: medicoId })
         : Promise.resolve(null),
       clinical ? apiClient.getQueue(true) : Promise.resolve(null),
-      me.role === 'ADMINISTRATIVO' ? Promise.resolve(null) : apiClient.getInferenceStatus(),
+      me.role === 'ADMINISTRATIVO' || me.role === 'JEFATURA' ? Promise.resolve(null) : apiClient.getInferenceStatus(),
     ]);
     if (r.data) {
       setData(r.data);

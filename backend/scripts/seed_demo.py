@@ -38,7 +38,7 @@ from app.db.models.patient import Patient  # noqa: E402
 from app.db.models.privacy import ConsentEvent  # noqa: E402
 from app.db.models.review import AIValidation, ClinicalReview  # noqa: E402
 from app.db.models.triage import Notification, TriageLevel, TriageResult  # noqa: E402
-from app.db.models.user import User, UserRole  # noqa: E402
+from app.db.models.user import MedicalSpecialty, User, UserRole  # noqa: E402
 from app.deps import SessionLocal  # noqa: E402
 from app.schemas.cases import CaseCreate  # noqa: E402
 from app.schemas.reviews import AIValidationIn, ReviewIn  # noqa: E402
@@ -54,10 +54,11 @@ from app.utils.rut import compute_dv  # noqa: E402
 
 RUT_BASE = 40_000_000
 # Médicos ficticios que reparten las revisiones (RUT de prueba, distintos de los pacientes)
+# (RUT sin DV, nombre, apellido, especialidad)
 DEMO_REVIEWERS = [
-    (39_000_001, "Dra. Camila Ensayo"),
-    (39_000_002, "Dr. Andrés Piloto"),
-    (39_000_003, "Dra. Inés Muestra"),
+    (39_000_001, "Camila", "Ensayo", MedicalSpecialty.ONCOLOGIA),
+    (39_000_002, "Andrés", "Piloto", MedicalSpecialty.RADIOLOGIA),
+    (39_000_003, "Inés", "Muestra", MedicalSpecialty.MEDICINA_GENERAL),
 ]
 
 FIRST_NAMES = [
@@ -214,13 +215,16 @@ def align_history(db, patients: list[Patient], rng: random.Random) -> int:
 def ensure_reviewers(db, n: int) -> list[User]:
     """Crea (si no existen) los médicos ficticios que reparten las revisiones. Nadie conoce su contraseña."""
     out = []
-    for body, name in DEMO_REVIEWERS[:n]:
+    for body, first_name, last_name, specialty in DEMO_REVIEWERS[:n]:
         user = db.query(User).filter(User.rut == rut(body)).first()
         if user is None:
             user = User(
                 rut=rut(body),
                 email=f"medico.{body}@aurora-demo.cl",
-                full_name=name,
+                first_name=first_name,
+                last_name=last_name,
+                full_name=f"{first_name} {last_name}",
+                specialty=specialty,
                 password_hash=hash_password(secrets.token_urlsafe(32)),
                 role=UserRole.MEDICO,
                 must_change_password=True,

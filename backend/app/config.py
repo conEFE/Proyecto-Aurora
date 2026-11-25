@@ -61,6 +61,20 @@ class Settings(BaseSettings):
     # Documentación interactiva (/docs, /redoc, /openapi.json); desactivar en producción
     ENABLE_API_DOCS: bool = True
 
+    # Emails (activación de cuentas). EMAIL_PROVIDER: "console" (escribe el email en el log; desarrollo y pruebas)
+    # o "smtp" (SMTP_*). La contraseña SMTP va solo en .env, nunca en el repositorio.
+    EMAIL_PROVIDER: str = "console"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_STARTTLS: bool = True
+    EMAIL_FROM: str = "Aurora <no-responder@auroracare.cl>"
+    # URL pública de la interfaz, para armar los links de los emails
+    PUBLIC_APP_URL: str = "http://localhost:5173"
+    # Horas de validez del link de activación
+    ACTIVATION_TOKEN_HOURS: int = 48
+
     @field_validator("SECRET_KEY")
     @classmethod
     def secret_key_not_empty(cls, v: str) -> str:

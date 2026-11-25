@@ -6,6 +6,8 @@ import PatientsPanel from './components/PatientsPanel';
 import CaseManagement from './components/CaseManagement';
 import Dashboard from './components/Dashboard';
 import AdminPanel from './components/AdminPanel';
+import ActivateAccount from './components/ActivateAccount';
+import DoctorComparator from './components/DoctorComparator';
 import Landing from './components/Landing';
 import Login from './components/Login';
 import TriageQueue from './components/TriageQueue';
@@ -28,6 +30,7 @@ const SECTION_PATHS: Record<Section, string> = {
   config: '/parametros',
   privacy: '/privacidad',
   panel: '/administracion',
+  doctors: '/comparador-medicos',
   profile: '/perfil',
 };
 
@@ -37,11 +40,12 @@ const SECTION_ROLES: Record<Section, Role[]> = {
   queue: CLINICAL,
   patients: CLINICAL,
   cases: CLINICAL,
-  dashboard: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'],
+  dashboard: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN', 'JEFATURA'],
   config: ['MEDICO', 'ADMIN'],
   privacy: CLINICAL,
   panel: ['ADMIN'],
-  profile: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'],
+  doctors: ['JEFATURA', 'ADMIN'],
+  profile: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN', 'JEFATURA'],
 };
 
 const TITLES: Record<Section, string> = {
@@ -53,11 +57,18 @@ const TITLES: Record<Section, string> = {
   config: 'Parámetros',
   privacy: 'Privacidad',
   panel: 'Administración',
+  doctors: 'Comparador de médicos',
   profile: 'Mi perfil',
 };
 
+function homeSection(me: Me): Section {
+  if (me.role === 'ADMIN') return 'panel';
+  if (me.role === 'JEFATURA') return 'doctors';
+  return 'home';
+}
+
 function homePath(me: Me): string {
-  return me.role === 'ADMIN' ? SECTION_PATHS.panel : SECTION_PATHS.home;
+  return SECTION_PATHS[homeSection(me)];
 }
 
 function sectionOf(pathname: string): Section | null {
@@ -199,6 +210,17 @@ function App() {
     );
   }
 
+  // Link de activación del email: se atiende con o sin sesión abierta
+  if (location.pathname === '/activar') {
+    return (
+      <ActivateAccount
+        token={new URLSearchParams(location.search).get('token') ?? ''}
+        onActivated={() => loadMe('/')}
+        onGoToLogin={() => navigate(me ? '/' : '/ingresar', { replace: true })}
+      />
+    );
+  }
+
   if (!me) {
     const from = (location.state as { from?: string } | null)?.from;
     return (
@@ -226,7 +248,7 @@ function App() {
     <div className="min-h-screen bg-background lg:flex">
       <SessionKeeper />
       <Header
-        currentSection={section ?? (me.role === 'ADMIN' ? 'panel' : 'home')}
+        currentSection={section ?? homeSection(me)}
         onSectionChange={(s) => navigate(SECTION_PATHS[s])}
         onOpenCase={openCase}
         me={me}
@@ -246,6 +268,7 @@ function App() {
           <Route path="/privacidad/pacientes/:id" element={<Guard me={me} section="privacy"><PrivacyRoute me={me} /></Guard>} />
           <Route path="/perfil" element={<Guard me={me} section="profile"><Profile me={me} onUpdated={setMe} /></Guard>} />
           <Route path="/administracion" element={<Guard me={me} section="panel"><AdminRoute me={me} /></Guard>} />
+          <Route path="/comparador-medicos" element={<Guard me={me} section="doctors"><DoctorComparator /></Guard>} />
           <Route path="/administracion/usuarios/:id" element={<Guard me={me} section="panel"><AdminRoute me={me} /></Guard>} />
           <Route path="*" element={<Navigate to={homePath(me)} replace />} />
         </Routes>

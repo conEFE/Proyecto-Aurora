@@ -56,6 +56,7 @@ def _new_user(role="MEDICO", rut="15555555-6"):
         "full_name": "Dra. Ficticia",
         "password": "OtraClave-456",
         "role": role,
+        "specialty": "GINECOLOGIA" if role == "MEDICO" else None,
     }
 
 
