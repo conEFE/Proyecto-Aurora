@@ -20,6 +20,8 @@ services:
     environment:
       ENABLE_API_DOCS: "false"
       ALLOWED_ORIGINS: ${PUBLIC_URL:?Defina PUBLIC_URL (https://su-dominio) en deploy/.env}
+      # Links de los correos de activación (https://su-dominio/activar?token=...)
+      PUBLIC_APP_URL: ${PUBLIC_URL:?Defina PUBLIC_URL (https://su-dominio) en deploy/.env}
     logging: *cloudwatch
 
   web:

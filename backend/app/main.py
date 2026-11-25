@@ -17,7 +17,7 @@ from app.api import (
     rutas_triage,
 )
 from app.config import settings
-from app.middleware import ProcessTimeMiddleware
+from app.middleware import ConcurrencyLimitMiddleware, ProcessTimeMiddleware
 from app.services.errors import DomainError
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -25,13 +25,19 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 _docs = settings.ENABLE_API_DOCS
 app = FastAPI(
     title="Aurora Care API",
-    version="2.10.0",
+    version="2.10.2",
     docs_url="/docs" if _docs else None,
     redoc_url="/redoc" if _docs else None,
     openapi_url="/openapi.json" if _docs else None,
 )
 
 app.add_middleware(ProcessTimeMiddleware)
+# Fuera de ProcessTimeMiddleware (las solicitudes en cola no ocupan nada) y dentro de CORS (el 503 lleva sus encabezados)
+app.add_middleware(
+    ConcurrencyLimitMiddleware,
+    limit=settings.MAX_CONCURRENT_REQUESTS,
+    queue_timeout=settings.REQUEST_QUEUE_TIMEOUT_SECONDS,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins_list,
@@ -49,7 +55,7 @@ async def domain_error_handler(_: Request, exc: DomainError):
 
 
 @app.get("/health")
-def health():
+async def health():  # sin base de datos ni hilos: responde aunque la API esté saturada
     """Estado de la API."""
     return {"status": "ok", "message": "API is running"}
 

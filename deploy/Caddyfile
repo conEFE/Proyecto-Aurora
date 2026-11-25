@@ -25,6 +25,10 @@
 			Referrer-Policy "no-referrer"
 			Permissions-Policy "camera=(), microphone=(), geolocation=()"
 			Strict-Transport-Security "max-age=31536000; includeSubDomains"
+			# Escaneo ZAP del 24-11-2026: aislar la ventana y los recursos de otros orígenes (todo el sitio es del mismo
+			# origen). No se agrega Cross-Origin-Embedder-Policy: solo hace falta para SharedArrayBuffer, que no se usa.
+			Cross-Origin-Opener-Policy "same-origin"
+			Cross-Origin-Resource-Policy "same-origin"
 		}
 		@static path /assets/*
 		header @static Cache-Control "public, max-age=31536000, immutable"

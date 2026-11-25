@@ -41,6 +41,11 @@ class Settings(BaseSettings):
 
     # Guarda la duración de cada request en request_metrics (p95 del dashboard)
     REQUEST_METRICS_ENABLED: bool = True
+    # Solicitudes atendidas a la vez por proceso. Debe ser menor que el pool de la base (5 + 10): si entraran
+    # más, unas retendrían su conexión esperando un hilo y otras ocuparían los hilos esperando una conexión.
+    # Las demás esperan en cola, sin ocupar hilos ni conexiones; pasado el plazo reciben 503.
+    MAX_CONCURRENT_REQUESTS: int = 10
+    REQUEST_QUEUE_TIMEOUT_SECONDS: float = 20
     # Casos ALTA sin revisar por más de estas horas se marcan en el dashboard
     ALTA_PENDING_HOURS: int = 24
 

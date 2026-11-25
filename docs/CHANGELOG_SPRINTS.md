@@ -707,9 +707,37 @@ Solo frontend: no cambia la API, la base de datos ni los flujos. Se trabajó con
 
 ---
 
-## Sin número de versión — corrección de bloqueo bajo carga y prueba de carga (24-11-2026)
+## Sin número de versión — encabezados tras el escaneo ZAP y monitoreo de disponibilidad (24-11-2026)
 
-Sin migraciones ni cambios de API. **No desplegado** en https://demo.auroracare.cl (sigue la 2.10.0).
+- Escaneo OWASP ZAP baseline (workflow «ZAP baseline», 24-11-2026): 0 alertas altas, 1 media y 3 bajas, todas de
+  encabezados del sitio estático. Detalle en `docs/informe_final/evidencias/zap_2026-11-24/` (rama del informe).
+- `deploy/Caddyfile`: `Cross-Origin-Opener-Policy` y `Cross-Origin-Resource-Policy` en `same-origin` (2 bajas).
+- **Monitoreo de disponibilidad**: `deploy/monitor_salud.sh` (crontab, cada minuto) deja el resultado de
+  `/api/health` en CloudWatch Logs (`/aurora/monitor`); alarmas `aurora-demo-sin-respuesta` y `aurora-ec2-estado`
+  avisan por correo con SNS (`aurora-alertas`, us-east-2). Detalle en `docs/ESTADO_AWS.md`.
+- Riesgo aceptado: `style-src 'unsafe-inline'` (media; la landing inyecta un `<style>` y `script-src 'self'` sigue
+  bloqueando scripts en línea) y sin `Cross-Origin-Embedder-Policy` (baja; solo hace falta para `SharedArrayBuffer`).
+
+## 2.10.2 — límite de solicitudes simultáneas (24-11-2026)
+
+Sin migraciones ni cambios de API. Encontrado al medir la 2.10.1 en AWS (un proceso, `t4g.micro`).
+
+- **Bloqueo con espera entre hilos y conexiones**: con más solicitudes simultáneas que conexiones (pool de 5 + 10),
+  una solicitud ya autenticada retenía su conexión mientras esperaba un hilo para el endpoint, y los 40 hilos
+  esperaban conexiones. Solo el tiempo de espera del pool (30 s) deshacía el ciclo: la API, incluido `/health`,
+  dejaba de responder mientras hubiera carga y tardaba minutos en recuperarse (reproducido en local con 100
+  clientes que abandonan sus solicitudes).
+- **`ConcurrencyLimitMiddleware`** (`app/middleware.py`): atiende a la vez como máximo `MAX_CONCURRENT_REQUESTS`
+  (10 por proceso); las demás esperan en cola en el bucle de eventos, sin ocupar hilos ni conexiones, y pasado
+  `REQUEST_QUEUE_TIMEOUT_SECONDS` (20 s) reciben **503** «El servicio está ocupado…» con `Retry-After: 5`.
+  `/health` y `OPTIONS` no pasan por el límite, y `/health` es asíncrono (responde aunque la API esté saturada).
+- Local, un proceso, 100 usuarios por 60 s: 0 errores, p95 3.101 ms, máximo 3,4 s (antes, esperas de 30 s).
+- Pruebas: `test_concurrency_limit.py` (cola y 503, `/health` exento, liberación ante errores, límite menor que el
+  pool). Suite: 321 pruebas.
+
+## 2.10.1 — corrección de bloqueo bajo carga y prueba de carga (24-11-2026)
+
+Sin migraciones ni cambios de API.
 
 - **Corrección (bloqueo de la API con ~50 usuarios concurrentes)**: el middleware guardaba la métrica de cada
   solicitud (y los errores 5xx) pidiendo una conexión al **mismo pool** que usa el endpoint, que retiene la suya hasta
