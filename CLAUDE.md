@@ -2,10 +2,11 @@
 
 Plataforma web de apoyo a la **detección temprana y priorización (triage)** de casos sospechosos de cáncer de mama. Es un proyecto de título (INACAP). La plataforma **apoya, no reemplaza**, el criterio médico.
 
-## Estado actual (24-11-2026)
+## Estado actual (25-11-2026)
 - **`main` desplegado en AWS** (us-east-2, plan gratuito): https://demo.auroracare.cl (también https://13-184-207-158.sslip.io).
-  Versión **2.10.2** (24-11-2026): corrige el bloqueo de la API bajo carga concurrente (2.10.1 y 2.10.2). La 2.10.0 (13-11-2026) trajo el rediseño completo con una dirección por pantalla, Dashboard y PDF ampliados y
-  Administración con resumen y bitácora legible. Detalle en `docs/CHANGELOG_SPRINTS.md`.
+  Versión **2.11.0** (25-11-2026): rol «Jefatura y finanzas» con comparador de médicos, ficha del médico con nombre,
+  apellidos y especialidad, y activación de cuentas por link de correo (`EMAIL_PROVIDER=console` en la demo: el link
+  queda en el log del backend). La 2.10.1 y la 2.10.2 corrigieron el bloqueo bajo carga. Detalle en `docs/CHANGELOG_SPRINTS.md`.
 - Estado del despliegue, recursos, comandos de operación y **plan para continuar**: **`docs/ESTADO_AWS.md`**.
   Léelo antes de tocar la infraestructura.
 - Sprints S1–S7 cerrados. S8: modelo de IA integrado como prototipo (opción B: PC con GPU vía Tailscale); quedan
