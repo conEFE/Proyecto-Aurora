@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import case as sql_case
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.models.case import Case, CaseStatus
 from app.db.models.image import Image
@@ -272,6 +272,7 @@ def queue(
         db.query(Case, TriageResult)
         .join(TriageResult, (TriageResult.case_id == Case.id) & TriageResult.is_current.is_(True))
         .filter(Case.status.in_(statuses))
+        .options(joinedload(Case.patient))  # el nombre del paciente sin una consulta por fila
         .order_by(level_order, TriageResult.score.desc(), Case.created_at.asc(), Case.id.asc())
         .all()
     )

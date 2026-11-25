@@ -116,3 +116,29 @@ El código no cambia: solo dónde corre el contenedor y la URL.
 
 En ambos casos el modelo corre en CPU: cada imagen tarda varios segundos en vez de menos de uno. Por eso
 `INFERENCE_TIMEOUT_SECONDS` es de 60.
+
+### 5.1 Respaldo en AWS para el día de la defensa (2.12.0)
+
+El PC de Juan sigue siendo el servicio principal (GPU, menos de un segundo por imagen). Si no responde, la plataforma
+usa el respaldo en AWS (CPU) y solo si ese tampoco responde, la IA simulada con su badge:
+
+```
+INFERENCE_URL=http://100.114.99.23:8080          # PC de Juan (Tailscale)
+INFERENCE_BACKUP_URL=http://<IP privada del respaldo>:8080
+INFERENCE_CONNECT_TIMEOUT_SECONDS=5              # PC apagado: pasa al respaldo en ~5 s
+```
+
+Medido en local (CPU, 2 núcleos): ≈ 900 MB de RAM de pico y ≈ 1 s por imagen de 2560 × 3328. No cabe junto a la
+plataforma en la `t4g.micro` (1 GB), así que el respaldo va en **una instancia aparte**:
+
+| Recurso | Valor |
+|---|---|
+| Instancia | `aurora-modelo-respaldo`, `t4g.small` (2 GB, arm64; la imagen `-inference` se publica para arm64), Amazon Linux 2023, IMDSv2, disco 10 GB gp3 cifrado, misma VPC y región (us-east-2) |
+| Red | Sin IP pública ni puerto abierto a internet. Grupo de seguridad: entrada TCP 8080 **solo** desde el grupo de seguridad de `aurora-prod`. Acceso por Session Manager |
+| Servicio | `docker run -d --restart unless-stopped -p 8080:8080 -e INFERENCE_API_TOKEN=<el mismo de la plataforma> ghcr.io/conefe/proyecto-aurora-inference:<etiqueta>` |
+| Uso | **Detenida** el resto del tiempo; se enciende la víspera de la defensa y se apaga después |
+| Costo aprox. | ≈ USD 0,017 por hora encendida (≈ USD 12 al mes si quedara siempre encendida) + ≈ USD 0,8 al mes por el disco detenido |
+
+Comprobación antes de la defensa (desde el servidor): `curl -s http://<IP privada>:8080/health` y, en la plataforma,
+`GET /inference/status` debe decir `source: "primary"` y `backup_reachable: true`. Para probar el respaldo, detener el
+servicio en el PC de Juan: el estado pasa a `source: "backup"` y el Dashboard muestra «Conectado (respaldo)».

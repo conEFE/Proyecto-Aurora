@@ -293,6 +293,9 @@ export interface InferenceStatus {
   device?: string | null;
   clinically_validated?: boolean;
   error?: string | null;
+  /** Con un servicio de respaldo configurado: desde dónde responde el modelo. */
+  source?: 'primary' | 'backup' | null;
+  backup_reachable?: boolean | null;
 }
 
 export interface CaseImage {

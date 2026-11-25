@@ -122,6 +122,50 @@ def test_fallback_uses_simulated_and_marks_it():
     assert out.message.startswith("[IA SIMULADA]") and "no estaba disponible" in out.message
 
 
+def test_backup_service_is_used_before_simulated():
+    seen = []
+    out = FallbackProvider(http_provider(down_handler), backup=http_provider(ok_handler(seen))).analyze(b"imagen")
+    assert out.is_simulated is False and out.model_version == PROTOTYPE
+    assert "respaldo" in out.message and len(seen) == 1
+
+
+def test_simulated_only_when_primary_and_backup_fail():
+    out = FallbackProvider(http_provider(down_handler), backup=http_provider(down_handler)).analyze(b"imagen")
+    assert out.is_simulated is True and "no estaba disponible" in out.message
+
+
+def test_status_reports_source_with_backup():
+    both = FallbackProvider(http_provider(ok_handler()), backup=http_provider(ok_handler())).status()
+    assert both["reachable"] is True and both["source"] == "primary" and both["backup_reachable"] is True
+    backup = FallbackProvider(http_provider(down_handler), backup=http_provider(ok_handler())).status()
+    assert backup["reachable"] is True and backup["source"] == "backup" and "error" not in backup
+    none = FallbackProvider(http_provider(down_handler), backup=http_provider(down_handler)).status()
+    assert none["reachable"] is False and none["source"] is None and none["backup_reachable"] is False
+
+
+def test_backup_without_simulated_raises_when_both_fail(monkeypatch):
+    from app.config import settings
+
+    providers.get_provider.cache_clear()
+    try:
+        monkeypatch.setattr(settings, "INFERENCE_PROVIDER", "http")
+        monkeypatch.setattr(settings, "INFERENCE_FALLBACK_SIMULATED", False)
+        monkeypatch.setattr(settings, "INFERENCE_BACKUP_URL", "http://respaldo.test:8080")
+        provider = providers.get_provider()
+        assert isinstance(provider, FallbackProvider) and provider.backup is not None
+        provider.primary = http_provider(down_handler)
+        provider.backup = http_provider(down_handler)
+        with pytest.raises(InferenceUnavailable):
+            provider.analyze(b"imagen")
+    finally:
+        providers.get_provider.cache_clear()
+
+
+def test_connect_timeout_is_short_and_read_timeout_long():
+    provider = HttpInferenceProvider("http://modelo.test:8080", TOKEN, 60.0, connect_timeout=5.0)
+    assert provider.timeout.connect == 5.0 and provider.timeout.read == 60.0
+
+
 def test_get_provider_from_settings(monkeypatch):
     from app.config import settings
 

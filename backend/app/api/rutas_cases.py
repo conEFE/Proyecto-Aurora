@@ -46,7 +46,7 @@ def list_cases(
     items, total = case_service.list_cases(
         db, status, patient_id, page, size, level, code, q=q, date_from=date_from, date_to=date_to
     )
-    return CasePage(items=[case_service.to_out(db, c) for c in items], total=total, page=page, size=size)
+    return CasePage(items=case_service.to_out_many(db, items), total=total, page=page, size=size)
 
 
 @router.get("/{case_id}", response_model=CaseOut)

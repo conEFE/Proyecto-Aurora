@@ -211,7 +211,7 @@ export default function AdminOverview({ overview: o, stats, privacy, inference, 
     },
     {
       label: 'Modelo de IA',
-      value: inference ? (modelOnline ? 'Conectado' : inference.provider === 'http' ? 'Sin conexión' : 'Simulado') : '—',
+      value: inference ? (modelOnline ? (inference.source === 'backup' ? 'Conectado (respaldo)' : 'Conectado') : inference.provider === 'http' ? 'Sin conexión' : 'Simulado') : '—',
       note: inference ? (
         modelOnline ? (
           `${inference.model_version ?? ''}${inference.clinically_validated ? '' : ' · prototipo'}`

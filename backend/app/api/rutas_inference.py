@@ -19,6 +19,9 @@ class InferenceStatus(BaseModel):
     device: str | None = None
     clinically_validated: bool = False
     error: str | None = None
+    # Con respaldo configurado: de dónde responde el modelo ("primary" o "backup") y si el respaldo responde
+    source: str | None = None
+    backup_reachable: bool | None = None
 
 
 @router.get("/status", response_model=InferenceStatus)

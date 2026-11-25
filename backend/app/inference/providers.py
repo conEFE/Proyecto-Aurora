@@ -96,11 +96,16 @@ class HttpInferenceProvider(InferenceProvider):
     """
 
     def __init__(
-        self, base_url: str, token: str = "", timeout: float = 60.0, client: httpx.Client | None = None
+        self,
+        base_url: str,
+        token: str = "",
+        timeout: float = 60.0,
+        client: httpx.Client | None = None,
+        connect_timeout: float | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.token = token
-        self.timeout = timeout
+        self.timeout = httpx.Timeout(timeout, connect=min(connect_timeout or timeout, timeout))
         self.client = client
 
     def _headers(self) -> dict[str, str]:
@@ -159,24 +164,56 @@ class HttpInferenceProvider(InferenceProvider):
 
 
 class FallbackProvider(InferenceProvider):
-    """Usa el servicio real y, si no responde, la IA simulada (con su marca): la plataforma nunca se queda sin
-    resultado porque el PC o la instancia del modelo estén apagados."""
+    """Usa el servicio real y, si no responde, el respaldo (si hay) y al final la IA simulada (con su marca): la
+    plataforma nunca se queda sin resultado porque el PC o la instancia del modelo estén apagados."""
 
-    def __init__(self, primary: HttpInferenceProvider, fallback: InferenceProvider | None = None):
+    def __init__(
+        self,
+        primary: HttpInferenceProvider,
+        fallback: InferenceProvider | None = None,
+        backup: HttpInferenceProvider | None = None,
+    ):
         self.primary = primary
+        self.backup = backup
         self.fallback = fallback or SimulatedProvider()
 
     def analyze(self, image_bytes: bytes) -> InferenceOutput:
         try:
             return self.primary.analyze(image_bytes)
         except InferenceUnavailable as exc:
-            logger.warning("Servicio de inferencia no disponible (%s); se usa la IA simulada", exc)
+            if self.backup is None:
+                logger.warning("Servicio de inferencia no disponible (%s); se usa la IA simulada", exc)
+            else:
+                logger.warning("Servicio de inferencia no disponible (%s); se usa el respaldo", exc)
+                try:
+                    output = self.backup.analyze(image_bytes)
+                    output.message = f"{output.message} (servicio de respaldo)".strip()
+                    return output
+                except InferenceUnavailable as backup_exc:
+                    logger.warning("Respaldo de inferencia no disponible (%s); se usa la IA simulada", backup_exc)
             output = self.fallback.analyze(image_bytes)
             output.message = f"{output.message}. El modelo no estaba disponible: resultado simulado"
             return output
 
     def status(self) -> dict[str, Any]:
-        return self.primary.status()
+        info = self.primary.status()
+        if self.backup is None:
+            return info
+        info["source"] = "primary" if info.get("reachable") else None
+        backup = self.backup.status()
+        info["backup_reachable"] = backup.get("reachable", False)
+        if not info.get("reachable") and backup.get("reachable"):
+            # El modelo real sigue disponible, desde el respaldo
+            info.pop("error", None)
+            info.update(backup, source="backup")
+        return info
+
+
+class _Unavailable(InferenceProvider):
+    """Último eslabón cuando la IA simulada está desactivada: propaga que no hay modelo disponible."""
+
+    def analyze(self, image_bytes: bytes) -> InferenceOutput:
+        raise InferenceUnavailable("Ni el servicio de inferencia ni su respaldo respondieron")
 
 
 # Nombre anterior (Sprint 4): se mantiene por compatibilidad
@@ -186,10 +223,22 @@ HttpYoloProvider = HttpInferenceProvider
 @lru_cache
 def get_provider() -> InferenceProvider:
     if settings.INFERENCE_PROVIDER == "http":
-        http = HttpInferenceProvider(
-            settings.INFERENCE_URL, settings.INFERENCE_API_TOKEN, settings.INFERENCE_TIMEOUT_SECONDS
-        )
-        return FallbackProvider(http) if settings.INFERENCE_FALLBACK_SIMULATED else http
+        def http(url: str) -> HttpInferenceProvider:
+            return HttpInferenceProvider(
+                url,
+                settings.INFERENCE_API_TOKEN,
+                settings.INFERENCE_TIMEOUT_SECONDS,
+                connect_timeout=settings.INFERENCE_CONNECT_TIMEOUT_SECONDS,
+            )
+
+        primary = http(settings.INFERENCE_URL)
+        backup = http(settings.INFERENCE_BACKUP_URL) if settings.INFERENCE_BACKUP_URL.strip() else None
+        if settings.INFERENCE_FALLBACK_SIMULATED:
+            return FallbackProvider(primary, backup=backup)
+        if backup is not None:
+            # Sin IA simulada: si ambos fallan, la imagen queda sin resultado (como antes sin respaldo)
+            return FallbackProvider(primary, fallback=_Unavailable(), backup=backup)
+        return primary
     return SimulatedProvider()
 
 

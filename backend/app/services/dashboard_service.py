@@ -234,12 +234,18 @@ def metrics(
         and _aware(c.created_at) < cutoff
     )
 
-    metric_q = db.query(RequestMetric.duration_ms)
+    # p95 y total calculados en la base: request_metrics crece con cada solicitud y traer todas las duraciones
+    # a Python hacía de este endpoint el más lento bajo carga. percentile_disc = método del rango más cercano.
+    metric_q = db.query(
+        func.count(RequestMetric.id),
+        func.percentile_disc(0.95).within_group(RequestMetric.duration_ms.asc()),
+    )
     if date_from:
         metric_q = metric_q.filter(RequestMetric.created_at >= date_from)
     if date_to:
         metric_q = metric_q.filter(RequestMetric.created_at <= date_to)
-    durations = [d for (d,) in metric_q.all()]
+    api_requests, api_p95 = metric_q.one()
+    api_requests = api_requests or 0
 
     # Errores 5xx del servidor (KPI K9)
     errors_q = db.query(func.count(ErrorLog.id))
@@ -293,10 +299,10 @@ def metrics(
         avg_triage_to_review_hours_by_level=avg_review,
         alta_pending_over_hours=alta_pending,
         alta_pending_threshold_hours=hours,
-        api_p95_ms=percentile(durations, 95),
-        api_requests=len(durations),
+        api_p95_ms=round(float(api_p95), 1) if api_p95 is not None else None,
+        api_requests=api_requests,
         server_errors=server_errors,
-        server_error_rate=round(server_errors / len(durations), 4) if durations else None,
+        server_error_rate=round(server_errors / api_requests, 4) if api_requests else None,
         override_ratio=round(overrides / triage_total, 4) if triage_total else None,
         triage_total=triage_total,
         triage_overrides=overrides,
