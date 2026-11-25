@@ -6,6 +6,7 @@ import {
   ListOrdered,
   LogOut,
   Moon,
+  Scale,
   Settings,
   ShieldCheck,
   SlidersHorizontal,
@@ -27,7 +28,7 @@ import ChangePassword from './ChangePassword';
 import Dialog from './Dialog';
 import { iconButton } from './ui';
 
-export type Section = 'home' | 'queue' | 'patients' | 'cases' | 'dashboard' | 'config' | 'privacy' | 'panel' | 'profile';
+export type Section = 'home' | 'queue' | 'patients' | 'cases' | 'dashboard' | 'config' | 'privacy' | 'panel' | 'doctors' | 'profile';
 
 interface HeaderProps {
   currentSection: Section;
@@ -51,11 +52,13 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'queue', label: 'Cola de triage', icon: ListOrdered, roles: CLINICAL },
   { id: 'patients', label: 'Pacientes', icon: Users, roles: CLINICAL },
   { id: 'cases', label: 'Casos', icon: FolderOpen, roles: CLINICAL },
-  { id: 'dashboard', label: 'Dashboard', icon: BarChart3, roles: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'] },
+  { id: 'doctors', label: 'Comparador de médicos', icon: Scale, roles: ['JEFATURA'] },
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3, roles: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN', 'JEFATURA'] },
   { id: 'config', label: 'Parámetros', icon: SlidersHorizontal, roles: ['MEDICO', 'ADMIN'] },
   { id: 'privacy', label: 'Privacidad', icon: ShieldCheck, roles: CLINICAL },
   { id: 'panel', label: 'Administración', icon: Settings, roles: ['ADMIN'] },
-  { id: 'profile', label: 'Mi perfil', icon: UserRound, roles: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'] },
+  { id: 'doctors', label: 'Comparador de médicos', icon: Scale, roles: ['ADMIN'] },
+  { id: 'profile', label: 'Mi perfil', icon: UserRound, roles: ['MEDICO', 'ADMINISTRATIVO', 'ADMIN', 'JEFATURA'] },
 ];
 
 /** Barra lateral fija: marca, secciones por rol, usuario, tema y salida. */
@@ -100,7 +103,7 @@ export default function Header({ currentSection, onSectionChange, onOpenCase, me
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent',
               )}
             >
-              <Icon aria-hidden className={cn('w-[18px] h-[18px]', isActive ? 'text-brand' : '')} />
+              <Icon aria-hidden className={cn('w-[18px] h-[18px] shrink-0', isActive ? 'text-brand' : '')} />
               {item.label}
               {item.id === 'queue' && alta !== null && alta > 0 && (
                 <span className="ml-auto inline-flex items-center gap-1 text-xs font-extrabold text-alta" aria-label={`${alta} casos de prioridad alta`}>

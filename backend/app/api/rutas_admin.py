@@ -13,8 +13,8 @@ from app.deps import get_db
 from app.schemas.admin import AdminOverview
 from app.schemas.audit import AuditPage
 from app.schemas.errors import ErrorLogPage, ErrorTypeCount
-from app.schemas.users import UserCreate, UserOut, UserUpdate
-from app.services import admin_overview_service, error_log_service, user_service
+from app.schemas.users import ResendResult, UserCreate, UserCreated, UserOut, UserUpdate
+from app.services import activation_service, admin_overview_service, error_log_service, user_service
 from app.services.audit_service import client_ip
 
 router = APIRouter()
@@ -56,15 +56,35 @@ def list_users(
     return user_service.list_users(db, role, active)
 
 
-@router.post("/users", response_model=UserOut, status_code=201)
+@router.post("/users", response_model=UserCreated, status_code=201)
 def create_user(
     data: UserCreate,
     request: Request,
     actor: User = Depends(admin_only),
     db: Session = Depends(get_db),
 ):
-    """Crea un usuario con su rol (reemplaza al signup público)."""
-    return user_service.create_user(db, data, actor, client_ip(request))
+    """Crea un usuario con su rol (reemplaza al signup público).
+
+    Envía por email un link de activación de un solo uso que verifica el email y permite definir la contraseña.
+    Si el ADMIN entrega además una contraseña temporal, el usuario puede ingresar con ella (y debe cambiarla).
+    """
+    user, token = user_service.create_user(db, data, actor, client_ip(request))
+    out = UserCreated.model_validate(user)
+    if token:
+        out.activation_sent = activation_service.send_activation(user.email, user.first_name, token)
+    return out
+
+
+@router.post("/users/{user_id}/resend-activation", response_model=ResendResult)
+def resend_activation(
+    user_id: int,
+    request: Request,
+    actor: User = Depends(admin_only),
+    db: Session = Depends(get_db),
+):
+    """Genera un link de activación nuevo (invalida los anteriores) y lo envía al email del usuario."""
+    user, token = activation_service.resend(db, user_id, actor, client_ip(request))
+    return ResendResult(sent=activation_service.send_activation(user.email, user.first_name, token))
 
 
 @router.patch("/users/{user_id}", response_model=UserOut)

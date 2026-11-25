@@ -21,7 +21,7 @@ import { cardClass, ghostButton, sectionTitle } from '../ui';
 export type AdminView = 'resumen' | 'usuarios' | 'auditoria' | 'errores';
 type Go = (view: AdminView, params?: Record<string, string>) => void;
 
-const ROLES: Role[] = ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'];
+const ROLES: Role[] = ['MEDICO', 'ADMINISTRATIVO', 'JEFATURA', 'ADMIN'];
 const isoDay = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 

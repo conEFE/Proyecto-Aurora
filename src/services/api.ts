@@ -1,6 +1,7 @@
 import type {
   AdminOverview,
   DashboardCase,
+  DoctorComparison,
   PatientStatusFilter,
   Reviewer,
   AdminStats,
@@ -495,6 +496,16 @@ class ApiClient {
     return this.request<Reviewer[]>('/dashboard/reviewers');
   }
 
+  /** Comparador de médicos (jefatura y administrador). Sin ids, todos los médicos activos. */
+  async compareDoctors(filters: { ids?: number[]; specialty?: string; from?: string; to?: string } = {}) {
+    const params = new URLSearchParams();
+    filters.ids?.forEach((id) => params.append('ids', String(id)));
+    if (filters.specialty) params.append('specialty', filters.specialty);
+    if (filters.from) params.append('from', filters.from);
+    if (filters.to) params.append('to', filters.to);
+    return this.request<DoctorComparison>(`/dashboard/doctors/compare?${params.toString()}`);
+  }
+
   async getModelPerformance(filters: { from?: string; to?: string } = {}) {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => {
@@ -525,6 +536,27 @@ class ApiClient {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+  }
+
+  async resendActivation(id: number) {
+    return this.request<{ sent: boolean }>(`/admin/users/${id}/resend-activation`, { method: 'POST' });
+  }
+
+  // --- Activación de cuenta (link del email; sin sesión) -------------------
+
+  async getActivation(token: string) {
+    return this.request<{ first_name: string; email: string }>(
+      `/auth/activation?token=${encodeURIComponent(token)}`,
+    );
+  }
+
+  async activateAccount(token: string, password: string) {
+    const r = await this.request<TokenResponse>('/auth/activate', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+    if (r.data?.access_token) this.setToken(r.data.access_token);
+    return r;
   }
 
   async unlockUser(id: number) {

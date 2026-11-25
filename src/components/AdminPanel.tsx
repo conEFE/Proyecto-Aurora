@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CheckCircle2, ChevronLeft, ChevronRight, LayoutDashboard, Loader2, ScrollText, ServerCrash, Unlock, UserCheck, UserPlus, Users, UserX } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, LayoutDashboard, Loader2, Mail, ScrollText, ServerCrash, Unlock, UserCheck, UserPlus, Users, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../services/api';
 import type {
@@ -13,10 +13,12 @@ import type {
   InferenceStatus,
   Page,
   Role,
+  Specialty,
   UserAccount,
   UserCreateInput,
+  UserUpdateInput,
 } from '../types';
-import { ROLE_LABELS } from '../types';
+import { ROLE_LABELS, SPECIALTY_LABELS } from '../types';
 import { isValidRut, normalizeRut } from '../utils/rut';
 import { PASSWORD_MIN_LENGTH, passwordHints } from '../utils/password';
 import { cn } from '../lib/cn';
@@ -42,27 +44,57 @@ import {
   thClass,
 } from './ui';
 
-const ROLES: Role[] = ['MEDICO', 'ADMINISTRATIVO', 'ADMIN'];
+const ROLES: Role[] = ['MEDICO', 'ADMINISTRATIVO', 'JEFATURA', 'ADMIN'];
+const SPECIALTIES = Object.keys(SPECIALTY_LABELS) as Specialty[];
 const isLocked = (u: UserAccount) => !!u.locked_until && new Date(u.locked_until).getTime() > Date.now();
 
-const EMPTY_USER: UserCreateInput = { rut: '', email: '', full_name: '', password: '', role: 'MEDICO' };
+const EMPTY_USER: UserCreateInput = { rut: '', email: '', first_name: '', last_name: '', password: '', role: 'MEDICO', specialty: null };
+// Validación básica en la interfaz; el backend valida el formato completo
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+type AccessMode = 'link' | 'temp';
 
 function UserForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () => void }) {
   const [form, setForm] = useState<UserCreateInput>(EMPTY_USER);
+  const [mode, setMode] = useState<AccessMode>('link');
+  const [alsoLink, setAlsoLink] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [touched, setTouched] = useState(false);
   const rutError = form.rut && !isValidRut(form.rut) ? 'RUT inválido: revise el dígito verificador.' : null;
+  const emailError = form.email && !EMAIL_RE.test(form.email.trim()) ? 'Correo inválido: revise el formato (nombre@dominio.cl).' : null;
+  const isMedico = form.role === 'MEDICO';
+  const specialtyError = touched && isMedico && !form.specialty ? 'Seleccione la especialidad del médico.' : null;
+  const passOk = mode === 'link' || passwordHints(form.password ?? '').every((h) => h.ok);
+  const complete =
+    !!form.rut && !!form.email && form.first_name.trim().length >= 2 && form.last_name.trim().length >= 2 &&
+    (!isMedico || !!form.specialty) && passOk;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (rutError) return;
+    setTouched(true);
+    if (rutError || emailError || !complete) return;
     setSaving(true);
     setError(null);
-    const r = await apiClient.createUser({ ...form, rut: normalizeRut(form.rut) });
+    const r = await apiClient.createUser({
+      ...form,
+      rut: normalizeRut(form.rut),
+      email: form.email.trim(),
+      first_name: form.first_name.trim(),
+      last_name: form.last_name.trim(),
+      specialty: isMedico ? form.specialty : null,
+      password: mode === 'temp' ? form.password : undefined,
+      send_activation: mode === 'link' || alsoLink,
+    });
     setSaving(false);
     if (r.data) {
-      toast.success(`Usuario ${form.full_name} creado`);
+      const name = `${form.first_name.trim()} ${form.last_name.trim()}`;
+      if (r.data.activation_sent === true) toast.success(`Usuario ${name} creado. Se envió el link de activación a ${r.data.email}`);
+      else if (r.data.activation_sent === false)
+        toast.warning(`Usuario ${name} creado, pero no se pudo enviar el correo. Reenvíe el link desde su ficha.`);
+      else toast.success(`Usuario ${name} creado`);
       setForm(EMPTY_USER);
+      setTouched(false);
       onCreated();
     } else {
       setError(r.error || 'No se pudo crear el usuario. Revise los datos.');
@@ -70,26 +102,9 @@ function UserForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: ()
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="space-y-4" noValidate>
       <ErrorMessage>{error}</ErrorMessage>
       <div className="grid sm:grid-cols-2 gap-4">
-        <div>
-          <label className={labelClass} htmlFor="u-rut">RUT</label>
-          <input id="u-rut" className={inputClass} value={form.rut} required
-            aria-invalid={rutError ? true : undefined} aria-describedby={rutError ? 'u-rut-error' : undefined}
-            onChange={(e) => setForm({ ...form, rut: e.target.value })} placeholder="12345678-5" />
-          {rutError && <p id="u-rut-error" className="mt-1 text-sm text-destructive">{rutError}</p>}
-        </div>
-        <div>
-          <label className={labelClass} htmlFor="u-name">Nombre completo</label>
-          <input id="u-name" className={inputClass} value={form.full_name} required minLength={3}
-            onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-        </div>
-        <div>
-          <label className={labelClass} htmlFor="u-email">Correo</label>
-          <input id="u-email" type="email" className={inputClass} value={form.email} required
-            onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        </div>
         <div>
           <label className={labelClass} htmlFor="u-role">Rol</label>
           <select id="u-role" className={inputClass} value={form.role}
@@ -99,17 +114,83 @@ function UserForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: ()
             ))}
           </select>
         </div>
-        <div className="sm:col-span-2">
-          <label className={labelClass} htmlFor="u-pass">Contraseña temporal</label>
-          <TempPasswordField id="u-pass" value={form.password} required minLength={PASSWORD_MIN_LENGTH}
-            aria-describedby="u-pass-hint"
-            onChange={(password) => setForm({ ...form, password })} autoComplete="new-password" />
-          <p id="u-pass-hint" className="mt-1 text-xs text-muted-foreground">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con letras y números. Cópiela antes de crear el usuario: no se vuelve a mostrar. Deberá cambiarla en su primer ingreso; entréguela por un canal seguro.</p>
+        {isMedico ? (
+          <div>
+            <label className={labelClass} htmlFor="u-specialty">Especialidad</label>
+            <select id="u-specialty" className={inputClass} value={form.specialty ?? ''} required
+              aria-invalid={specialtyError ? true : undefined} aria-describedby={specialtyError ? 'u-specialty-error' : undefined}
+              onChange={(e) => setForm({ ...form, specialty: (e.target.value || null) as Specialty | null })}>
+              <option value="">Seleccione…</option>
+              {SPECIALTIES.map((sp) => (
+                <option key={sp} value={sp}>{SPECIALTY_LABELS[sp]}</option>
+              ))}
+            </select>
+            {specialtyError && <p id="u-specialty-error" className="mt-1 text-sm text-destructive">{specialtyError}</p>}
+          </div>
+        ) : (
+          <div className="hidden sm:block" />
+        )}
+        <div>
+          <label className={labelClass} htmlFor="u-first">Nombre</label>
+          <input id="u-first" className={inputClass} value={form.first_name} required minLength={2} maxLength={75}
+            autoComplete="off" onChange={(e) => setForm({ ...form, first_name: e.target.value })} placeholder="Ana María" />
         </div>
+        <div>
+          <label className={labelClass} htmlFor="u-last">Apellidos</label>
+          <input id="u-last" className={inputClass} value={form.last_name} required minLength={2} maxLength={75}
+            autoComplete="off" onChange={(e) => setForm({ ...form, last_name: e.target.value })} placeholder="Pérez Soto" />
+        </div>
+        <div>
+          <label className={labelClass} htmlFor="u-rut">RUT</label>
+          <input id="u-rut" className={inputClass} value={form.rut} required
+            aria-invalid={rutError ? true : undefined} aria-describedby={rutError ? 'u-rut-error' : undefined}
+            onChange={(e) => setForm({ ...form, rut: e.target.value })} placeholder="12345678-5" />
+          {rutError && <p id="u-rut-error" className="mt-1 text-sm text-destructive">{rutError}</p>}
+        </div>
+        <div>
+          <label className={labelClass} htmlFor="u-email">Correo</label>
+          <input id="u-email" type="email" className={inputClass} value={form.email} required
+            aria-invalid={emailError ? true : undefined} aria-describedby={emailError ? 'u-email-error' : 'u-email-hint'}
+            onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="nombre@institucion.cl" />
+          {emailError ? (
+            <p id="u-email-error" className="mt-1 text-sm text-destructive">{emailError}</p>
+          ) : (
+            <p id="u-email-hint" className="mt-1 text-xs text-muted-foreground">Aquí llegará el link para activar la cuenta.</p>
+          )}
+        </div>
+        <fieldset className="sm:col-span-2">
+          <legend className={labelClass}>Acceso inicial</legend>
+          <div className="space-y-2">
+            <label className="flex items-start gap-2 text-sm">
+              <input type="radio" name="u-mode" className="mt-0.5" checked={mode === 'link'} onChange={() => setMode('link')} />
+              <span>
+                <strong>Enviar link de activación por correo</strong> (recomendado). El usuario confirma su correo y define
+                su propia contraseña. El link vence en 48 horas.
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="radio" name="u-mode" className="mt-0.5" checked={mode === 'temp'} onChange={() => setMode('temp')} />
+              <span><strong>Asignar una contraseña temporal</strong>, que deberá cambiar en su primer ingreso.</span>
+            </label>
+          </div>
+        </fieldset>
+        {mode === 'temp' && (
+          <div className="sm:col-span-2">
+            <label className={labelClass} htmlFor="u-pass">Contraseña temporal</label>
+            <TempPasswordField id="u-pass" value={form.password ?? ''} required minLength={PASSWORD_MIN_LENGTH}
+              aria-describedby="u-pass-hint"
+              onChange={(password) => setForm({ ...form, password })} autoComplete="new-password" />
+            <p id="u-pass-hint" className="mt-1 text-xs text-muted-foreground">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con letras y números. Cópiela antes de crear el usuario: no se vuelve a mostrar. Entréguela por un canal seguro.</p>
+            <label className="mt-2 flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={alsoLink} onChange={(e) => setAlsoLink(e.target.checked)} />
+              Enviar igual el link para verificar el correo
+            </label>
+          </div>
+        )}
       </div>
       <div className="flex justify-end gap-2">
         <button type="button" className={secondaryButton} onClick={onCancel}>Cancelar</button>
-        <button type="submit" disabled={saving || !!rutError} className={primaryButton}>
+        <button type="submit" disabled={saving || !!rutError || !!emailError} className={primaryButton}>
           {saving && <Loader2 aria-hidden className="w-4 h-4 animate-spin" />}
           Crear usuario
         </button>
@@ -292,6 +373,8 @@ function UserPage({ userId, meId, onBack }: { userId: number; meId: number; onBa
   const [activity, setActivity] = useState<AuditEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<Role>('MEDICO');
+  const [specialty, setSpecialty] = useState<Specialty | ''>('');
+  const [names, setNames] = useState({ first_name: '', last_name: '' });
   const [confirmOff, setConfirmOff] = useState(false);
   const [busy, setBusy] = useState(false);
   const self = userId === meId;
@@ -302,7 +385,11 @@ function UserPage({ userId, meId, onBack }: { userId: number; meId: number; onBa
       const found = u.data.find((x) => x.id === userId) ?? null;
       setUser(found);
       setNotFound(!found);
-      if (found) setRole(found.role);
+      if (found) {
+        setRole(found.role);
+        setSpecialty(found.specialty ?? '');
+        setNames({ first_name: found.first_name ?? '', last_name: found.last_name ?? '' });
+      }
     }
     if (a.data) setActivity(a.data.items);
     setError(u.error || a.error || null);
@@ -312,12 +399,22 @@ function UserPage({ userId, meId, onBack }: { userId: number; meId: number; onBa
     load();
   }, [load]);
 
-  const update = async (change: { role?: Role; is_active?: boolean }, ok: string) => {
+  const update = async (change: UserUpdateInput, ok: string) => {
     setBusy(true);
     const r = await apiClient.updateUser(userId, change);
     setBusy(false);
     if (r.error) setError(r.error);
     else toast.success(ok);
+    load();
+  };
+
+  const resend = async () => {
+    setBusy(true);
+    const r = await apiClient.resendActivation(userId);
+    setBusy(false);
+    if (r.error) setError(r.error);
+    else if (r.data?.sent) toast.success(`Link de activación enviado a ${user?.email}`);
+    else toast.warning('No se pudo enviar el correo. Revise la configuración de correo del servidor.');
     load();
   };
 
@@ -346,6 +443,7 @@ function UserPage({ userId, meId, onBack }: { userId: number; meId: number; onBa
     ['Cuenta creada', formatDateTime(user.created_at)],
     ['Último ingreso', formatDateTime(user.last_login_at)],
     ['Contraseña', user.must_change_password ? 'Cambio pendiente' : 'Definida por la persona'],
+    ['Correo', user.email_verified_at ? `Verificado el ${formatDateTime(user.email_verified_at)}` : 'Sin verificar'],
   ];
   if (isLocked(user)) rows.push(['Bloqueada hasta', formatDateTime(user.locked_until)]);
 
@@ -356,9 +454,19 @@ function UserPage({ userId, meId, onBack }: { userId: number; meId: number; onBa
         onBack={onBack}
         title={user.full_name}
         status={<UserState u={user} />}
-        meta={<>RUT {user.rut} · {ROLE_LABELS[user.role]} · {user.email}</>}
+        meta={
+          <>
+            RUT {user.rut} · {ROLE_LABELS[user.role]}
+            {user.specialty ? ` · ${SPECIALTY_LABELS[user.specialty]}` : ''} · {user.email}
+          </>
+        }
         actions={
           <>
+            {!user.email_verified_at && user.is_active && (
+              <button className={secondaryButton} disabled={busy} onClick={resend}>
+                <Mail aria-hidden className="w-4 h-4" /> Reenviar link de activación
+              </button>
+            )}
             {isLocked(user) && (
               <button className={secondaryButton} onClick={unlock}>
                 <Unlock aria-hidden className="w-4 h-4" /> Desbloquear
@@ -383,8 +491,34 @@ function UserPage({ userId, meId, onBack }: { userId: number; meId: number; onBa
 
       <div className="grid xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-6 items-start">
         <div className="space-y-6 min-w-0">
+          <section className={cn(cardClass, 'p-6 space-y-4')} aria-labelledby="up-names">
+            <h2 id="up-names" className={sectionTitle}>Datos personales</h2>
+            <div className="flex flex-wrap items-end gap-3">
+              <div>
+                <label htmlFor="up-first" className={labelClass}>Nombre</label>
+                <input id="up-first" className={cn(inputClass, 'w-56')} value={names.first_name} maxLength={75}
+                  onChange={(e) => setNames({ ...names, first_name: e.target.value })} />
+              </div>
+              <div>
+                <label htmlFor="up-last" className={labelClass}>Apellidos</label>
+                <input id="up-last" className={cn(inputClass, 'w-56')} value={names.last_name} maxLength={75}
+                  onChange={(e) => setNames({ ...names, last_name: e.target.value })} />
+              </div>
+              <button className={primaryButton}
+                disabled={
+                  busy || names.first_name.trim().length < 2 || names.last_name.trim().length < 2 ||
+                  (names.first_name.trim() === (user.first_name ?? '') && names.last_name.trim() === (user.last_name ?? ''))
+                }
+                onClick={() =>
+                  update({ first_name: names.first_name.trim(), last_name: names.last_name.trim() }, 'Nombre actualizado')
+                }>
+                Guardar nombre
+              </button>
+            </div>
+          </section>
+
           <section className={cn(cardClass, 'p-6 space-y-4')} aria-labelledby="up-role">
-            <h2 id="up-role" className={sectionTitle}>Rol</h2>
+            <h2 id="up-role" className={sectionTitle}>Rol y especialidad</h2>
             {self ? (
               <p className="text-sm text-muted-foreground">No puede cambiar su propio rol.</p>
             ) : (
@@ -396,11 +530,35 @@ function UserPage({ userId, meId, onBack }: { userId: number; meId: number; onBa
                     {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                   </select>
                 </div>
-                <button className={primaryButton} disabled={busy || role === user.role}
-                  onClick={() => update({ role }, `Rol de ${user.full_name}: ${ROLE_LABELS[role]}`)}>
-                  Guardar rol
+                {role === 'MEDICO' && (
+                  <div>
+                    <label htmlFor="up-specialty" className={labelClass}>Especialidad</label>
+                    <select id="up-specialty" className={cn(inputClass, 'w-56')} value={specialty}
+                      onChange={(e) => setSpecialty(e.target.value as Specialty | '')}>
+                      <option value="">Seleccione…</option>
+                      {SPECIALTIES.map((sp) => <option key={sp} value={sp}>{SPECIALTY_LABELS[sp]}</option>)}
+                    </select>
+                  </div>
+                )}
+                <button className={primaryButton}
+                  disabled={
+                    busy || (role === 'MEDICO' && !specialty) ||
+                    (role === user.role && (role !== 'MEDICO' || specialty === (user.specialty ?? '')))
+                  }
+                  onClick={() =>
+                    update(
+                      role === 'MEDICO' ? { role, specialty: specialty as Specialty } : { role },
+                      role === 'MEDICO' && specialty
+                        ? `${user.full_name}: ${ROLE_LABELS[role]} · ${SPECIALTY_LABELS[specialty as Specialty]}`
+                        : `Rol de ${user.full_name}: ${ROLE_LABELS[role]}`,
+                    )
+                  }>
+                  Guardar
                 </button>
               </div>
+            )}
+            {!self && user.role === 'MEDICO' && !user.specialty && (
+              <p className="text-sm text-media">Este médico no tiene especialidad registrada: selecciónela para el comparador.</p>
             )}
           </section>
 
@@ -588,12 +746,17 @@ function UsersView({ users, onOpenUser }: { users: UserAccount[] | null; onOpenU
                       <span className="block text-xs text-muted-foreground">{u.email}</span>
                     </td>
                     <td className={cn(tdClass, 'text-muted-foreground tabular-nums')}>{u.rut}</td>
-                    <td className={tdClass}>{ROLE_LABELS[u.role]}</td>
+                    <td className={tdClass}>
+                      {ROLE_LABELS[u.role]}
+                      {u.specialty && <span className="block text-xs text-muted-foreground">{SPECIALTY_LABELS[u.specialty]}</span>}
+                    </td>
                     <td className={tdClass}>
                       <UserState u={u} />
-                      {u.must_change_password && u.is_active && (
+                      {u.is_active && !u.email_verified_at ? (
+                        <span className="block text-xs text-muted-foreground">Correo sin verificar</span>
+                      ) : u.must_change_password && u.is_active ? (
                         <span className="block text-xs text-muted-foreground">Contraseña temporal sin cambiar</span>
-                      )}
+                      ) : null}
                     </td>
                     <td className={cn(tdClass, 'pr-5 tabular-nums')}>
                       {u.last_login_at ? (
@@ -736,7 +899,7 @@ export default function AdminPanel({ meId, userId = null, onOpenUser, onBack }: 
         )}
       </div>
 
-      <Dialog open={showForm} onOpenChange={setShowForm} title="Nuevo usuario" description="La persona podrá ingresar con su RUT y esta contraseña.">
+      <Dialog open={showForm} onOpenChange={setShowForm} title="Nuevo usuario" description="Complete la ficha. La persona recibirá por correo un link para activar su cuenta.">
         <UserForm
           onCancel={() => setShowForm(false)}
           onCreated={() => {

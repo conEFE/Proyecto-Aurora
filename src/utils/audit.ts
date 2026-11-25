@@ -16,7 +16,7 @@ export const AUDIT_GROUPS = {
   seguridad: { label: 'Alertas de seguridad', actions: ['LOGIN_FAIL', 'PASSWORD_CHANGE_FAIL', 'SIGN_FAIL'] },
   cambios: {
     label: 'Cambios',
-    actions: ['CREATE', 'UPDATE', 'DELETE', 'OVERRIDE', 'CONFIG_CHANGE', 'SIGN', 'PASSWORD_CHANGE', 'CONSENT_GRANT', 'CONSENT_WITHDRAW', 'BLOCK', 'UNBLOCK'],
+    actions: ['CREATE', 'UPDATE', 'DELETE', 'OVERRIDE', 'CONFIG_CHANGE', 'SIGN', 'PASSWORD_CHANGE', 'ACCOUNT_ACTIVATE', 'ACTIVATION_RESEND', 'CONSENT_GRANT', 'CONSENT_WITHDRAW', 'BLOCK', 'UNBLOCK'],
   },
   consultas: { label: 'Consultas y descargas', actions: ['VIEW', 'DOWNLOAD', 'EXPORT'] },
 } as const;
@@ -70,6 +70,10 @@ export function describeAudit(e: AuditEntry): AuditText {
       return { title: 'Ingreso fallido', detail: reason };
     case 'PASSWORD_CHANGE':
       return { title: 'Cambió su contraseña', detail: d.forced ? 'Cambio obligatorio del primer ingreso' : undefined };
+    case 'ACCOUNT_ACTIVATE':
+      return { title: 'Activó su cuenta', detail: 'Confirmó su email desde el link de activación' };
+    case 'ACTIVATION_RESEND':
+      return { title: 'Reenvió el link de activación' };
     case 'PASSWORD_CHANGE_FAIL':
       return { title: 'Cambio de contraseña fallido', detail: reason };
     case 'SIGN':
