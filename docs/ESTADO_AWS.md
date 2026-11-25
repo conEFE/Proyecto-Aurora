@@ -1,6 +1,6 @@
 # Estado del despliegue en AWS y plan para continuar
 
-Actualizado: 24-11-2026 (2.10.2, imágenes `sha-a2f4da4…`; monitoreo con alarmas). Antes, 13-11-2026: desplegada la **2.10.0** (imágenes `sha-18183f5…`, mismo código salvo el número de versión;
+Actualizado: 25-11-2026 (2.11.0, imágenes `sha-8a5e19f…`). Antes, 24-11-2026 (2.10.2, imágenes `sha-a2f4da4…`; monitoreo con alarmas). Antes, 13-11-2026: desplegada la **2.10.0** (imágenes `sha-18183f5…`, mismo código salvo el número de versión;
 ver `AURORA_VERSION` en el servidor). **Modelo real conectado** (PC de Juan por Tailscale; si está apagado, IA
 simulada).
 
@@ -16,6 +16,12 @@ simulada).
 - **Prueba de restauración (hecha):** volcado diario restaurado en un esquema temporal de la RDS; 19 tablas
   coincidentes, ≈ 3 s. Repetirla igual (ver la evidencia en la rama del informe, `restauracion_2026-11-24`).
 - **ZAP (hecho):** 0 altas; COOP y CORP agregados en `deploy/Caddyfile` (imagen `sha-a2f4da4…`, desplegada).
+
+**25-11-2026: desplegada la 2.11.0** (`8a5e19f`, imágenes `sha-8a5e19f…`; respaldo previo
+`backups/aurora-20261125T175152Z.sql.gz`; migración `e7f1a2b3c412` aplicada). Rol JEFATURA, comparador de médicos,
+especialidad y activación por correo. **Correo en modo `console`**: los links de activación quedan en
+`dc logs backend` (buscar `/activar?token=`). Para enviarlos de verdad, completar `EMAIL_PROVIDER=smtp` y `SMTP_*`
+en `deploy/.env` (la contraseña SMTP la escribe Felipe en el servidor, nunca en el chat) y `dc up -d backend`.
 
 **24-11-2026: desplegada la 2.10.2** (`1ec7904`, imágenes `sha-1ec7904…`; respaldo previo
 `backups/aurora-20261124T032923Z.sql.gz`). Limita las solicitudes simultáneas (10 por proceso; el resto en cola, 503
