@@ -1,9 +1,15 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 24-11-2026 (iteración 15: diagramas y capturas)
-**Versiones vigentes:** documento maestro **1.5-rc** · registro de revisiones v0.24 · PDF `Proyecto_Aurora_Informe_Final.pdf` (186 páginas)
+**Actualización:** 25-11-2026 (iteración 16: consistencia, citas, glosario y formato)
+**Versiones vigentes:** documento maestro **1.6-rc** · registro de revisiones v0.25 · PDF `Proyecto_Aurora_Informe_Final.pdf` (190 páginas)
 **Estado general:** informe completo en versión candidata, con los cinco ajustes de la rúbrica aplicados. Quedan los
-pendientes del equipo (abajo y registro, secciones 4.15 y 4.16). Traspaso al siguiente agente: `../HANDOFF_ITERACION_16.md`.
+pendientes del equipo (abajo y registro, secciones 4.15 y 4.16). Traspaso al siguiente agente: `../HANDOFF_ITERACION_17.md`.
+
+## Iteración 16 — Consistencia, citas, glosario y formato (maestro 1.6-rc)
+
+Aprobada por el usuario el 25-11-2026: puntos A1, A4, A5 y A6 de `trabajo/REVISION_COMPLETITUD_1.5.md`.
+Script `herramientas/iter16_consistencia.py`; registro 4.21. Quedan A2 (pruebas: 314 → 321), A3 (desarrollo del modelo
+de IA desde U2) y la sección B (insumos del equipo).
 
 ## Iteración 15 — Diagramas y capturas (maestro 1.5-rc)
 
