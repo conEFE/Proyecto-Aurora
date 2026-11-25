@@ -13,7 +13,7 @@
 </style></head>
 <body><div id="lienzo">
 <h1>Infraestructura cloud desplegada: entorno de demostración en AWS</h1>
-<p class="sub">Proyecto de AWS con plan gratuito y créditos, región us-east-2 (Ohio). Estado al 24-11-2026: versión 2.10.2, base de datos en Amazon RDS, monitoreo con alarmas por correo. Datos ficticios.</p>
+<p class="sub">Proyecto de AWS con plan gratuito y créditos, región us-east-2 (Ohio). Estado al 25-11-2026: versión 2.11.0, base de datos en Amazon RDS, monitoreo con alarmas por correo. Datos ficticios.</p>
 <div class="ext">
  <div class="caja c-ext" id="usr"><b>Usuarios</b><span class="det">Navegador web: https://demo.auroracare.cl</span></div>
  <div class="caja c-ext" id="gh"><b>GitHub</b><span class="det">Repositorio; GitHub Actions (CI, publicación de imágenes, escaneo ZAP); imágenes de contenedor en GHCR</span></div>
@@ -31,7 +31,7 @@
    <div class="zona ec2" id="ec2"><div class="rot">EC2 aurora-prod <small>t4g.micro arm64 · disco cifrado · IMDSv2</small></div>
     <div class="g3">
      <div class="caja c-pres" id="web"><b>Contenedor web</b><span class="det">Caddy: HTTPS (Let's Encrypt), sitio React, proxy /api, encabezados de seguridad</span></div>
-     <div class="caja c-neg" id="api"><b>Contenedor backend</b><span class="det">API FastAPI 2.10.2; un proceso, hasta 10 solicitudes simultáneas</span></div>
+     <div class="caja c-neg" id="api"><b>Contenedor backend</b><span class="det">API FastAPI 2.11.0; un proceso, hasta 10 solicitudes simultáneas</span></div>
      <div class="caja c-op" id="ts"><b>Agente Tailscale</b><span class="det">Red privada hacia el equipo con GPU</span></div>
      <div class="caja c-op" id="bkp"><b>Respaldo diario</b><span class="det">backup_db.sh (03:15 Chile): volcado de la base a S3</span></div>
      <div></div>

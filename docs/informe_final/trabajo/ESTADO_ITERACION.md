@@ -1,9 +1,26 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 25-11-2026 (iteración 16: consistencia, citas, glosario y formato)
-**Versiones vigentes:** documento maestro **1.6-rc** · registro de revisiones v0.25 · PDF `Proyecto_Aurora_Informe_Final.pdf` (190 páginas)
-**Estado general:** informe completo en versión candidata, con los cinco ajustes de la rúbrica aplicados. Quedan los
-pendientes del equipo (abajo y registro, secciones 4.15 y 4.16). Traspaso al siguiente agente: `../HANDOFF_ITERACION_17.md`.
+**Actualización:** 25-11-2026 (iteración 17: versiones 2.11.0 y 2.12.0, ejecución de pruebas y pendientes del equipo)
+**Versiones vigentes:** documento maestro **1.7-rc** · registro de revisiones v0.26 · PDF `Proyecto_Aurora_Informe_Final.pdf` (199 páginas)
+**Estado general:** todo lo que depende del código y del repositorio está integrado. Lo que falta depende del equipo y
+está en `PENDIENTES_EQUIPO.md`, con su archivo de insumos (`pendientes_equipo.json`) y el comando que los aplica
+(`../herramientas/completar_pendientes.sh`). Traspaso al siguiente agente: `../HANDOFF_ITERACION_18.md`.
+
+## Iteración 17 — Versiones 2.11.0 y 2.12.0, ejecución de pruebas y pendientes del equipo (maestro 1.7-rc)
+
+Pedida por el usuario el 25-11-2026 («haz las correcciones, deja todo listo para que pongamos solo lo que va faltando»).
+Script `herramientas/iter17_versiones.py`; registro 4.22.
+
+| Tema | Cambios | Evidencia |
+|---|---|---|
+| 2.11.0 (desplegada el 25-11) | Rol de jefatura y finanzas (VI, X, XVI); CU19 y CU20 (catálogo, diagrama, anexo; CU02 actualizado); comparador de médicos en XI; envío de correos en la tabla de componentes; tabla `email_tokens` (18 → 19 tablas): modelo físico, modelo lógico y diccionario regenerados | `herramientas/schema_modelos.json` (regenerado), `diagramas_cap10.py` |
+| A2: pruebas | 340 pruebas, 97% (servicios 94,5%): Tablas de resultados y por archivo, 5 casos nuevos en la matriz (PI-09* a PI-12*, PS-09*), trazabilidad, resumen, abstract, conclusiones y anexo | `evidencias/pruebas_2026-11-25/` |
+| 2.12.0 (sin desplegar) | Subsección «Optimización de consultas» en XII con tabla antes/después (23,4 → 94,6 solicitudes/s; p95 2.532 ms con 100 en local). Se dice que PC-01 falta en el entorno de demostración | `evidencias/rendimiento_2026-11-25/` |
+| Inferencia en la defensa | Decisión del equipo: PC de Juan como principal y AWS como respaldo. Servicio de respaldo configurable en 10.7.1, componentes, infraestructura («planificado»), continuidad, factibilidad, riesgos y recomendaciones | `docs/inferencia_remota.md` 5.1 |
+| Figuras | Modelo lógico, casos de uso, arquitectura e infraestructura cloud regenerados (2.11.0); 2 capturas de la 2.11.0 en el anexo | `figuras/capturas_2.11.0/`, `herramientas/capturas_2.11.0.cjs` |
+| Pendientes del equipo | Archivo de insumos y script que los aplica con textos para cada resultado (PC-01 aprobada o no). Se encontraron 2 marcas «[FALTA INFORMACIÓN…]» en el capítulo II (GLOBOCAN y GES) que no estaban en la lista | `trabajo/PENDIENTES_EQUIPO.md` |
+
+Tablas de 67 a 68 y figuras de 26 a 28. DOCX validado; PDF sin referencias rotas.
 
 ## Iteración 16 — Consistencia, citas, glosario y formato (maestro 1.6-rc)
 

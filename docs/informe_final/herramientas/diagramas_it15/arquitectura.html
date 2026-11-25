@@ -14,14 +14,14 @@
 </style></head>
 <body><div id="lienzo">
 <h1>Arquitectura de la solución: por capas (N-tier), monolito modular</h1>
-<p class="sub">Versión 2.10.2 desplegada en el entorno de demostración (24-11-2026). Solo la capa de lógica de negocio accede a los datos; el análisis automatizado es un servicio aparte, detrás de una interfaz de proveedor.</p>
+<p class="sub">Versión 2.11.0 desplegada en el entorno de demostración (25-11-2026). Solo la capa de lógica de negocio accede a los datos; el análisis automatizado es un servicio aparte, detrás de una interfaz de proveedor.</p>
 <div class="grid">
  <div class="capas">
   <div class="capa"><div class="nom c-ext" style="border:1.5px dashed #374151">Usuarios<small>Navegador web</small></div>
    <div class="fila">
     <div class="caja c-ext" id="u1"><b>Personal administrativo</b><span class="det">Pacientes, consentimiento, casos e imágenes</span></div>
     <div class="caja c-ext" id="u2"><b>Médico</b><span class="det">Cola de triage, revisión, validación de IA, firma, dashboard</span></div>
-    <div class="caja c-ext" id="u3"><b>Administrador</b><span class="det">Usuarios, parámetros de triage, bitácora, privacidad</span></div>
+    <div class="caja c-ext" id="u3"><b>Administrador · Jefatura y finanzas</b><span class="det">Usuarios, parámetros, bitácora, privacidad · dashboard y comparador de médicos</span></div>
    </div></div>
   <div class="capa"><div class="nom c-pres">Presentación<small>Contenedor web (Caddy)</small></div>
    <div class="fila">
@@ -40,12 +40,12 @@
    </div></div>
   <div class="capa"><div class="nom c-dat">Datos<small>Persistencia</small></div>
    <div class="fila">
-    <div class="caja c-dat" id="pg"><b>PostgreSQL 16 (Amazon RDS)</b><span class="det">18 tablas: pacientes, casos, triage, resultados y validaciones de IA, revisiones y firmas, consentimiento, bitácora append-only, métricas</span></div>
+    <div class="caja c-dat" id="pg"><b>PostgreSQL 16 (Amazon RDS)</b><span class="det">19 tablas: pacientes, casos, triage, resultados y validaciones de IA, revisiones y firmas, consentimiento, bitácora append-only, métricas, tokens de activación</span></div>
     <div class="caja c-dat" id="s3"><b>Almacenamiento de imágenes (Amazon S3)</b><span class="det">Cifrado en la aplicación (Fernet) y en reposo (SSE-KMS); versionado; también guarda los respaldos diarios</span></div>
    </div></div>
  </div>
  <div class="lado">
-  <div class="caja c-op"><b>Integración y entrega continua</b><span class="det">GitHub Actions: análisis estático, 321 pruebas, auditoría de dependencias, prueba de humo; imágenes en GHCR</span></div>
+  <div class="caja c-op"><b>Integración y entrega continua</b><span class="det">GitHub Actions: análisis estático, 340 pruebas, auditoría de dependencias, prueba de humo; imágenes en GHCR</span></div>
   <div class="caja c-op"><b>Operación</b><span class="det">Despliegue con Docker Compose por Session Manager; respaldo diario a S3; registros en CloudWatch Logs</span></div>
   <div class="caja c-op"><b>Monitoreo</b><span class="det">Chequeo de /health cada minuto; alarmas de CloudWatch con aviso por correo (SNS)</span></div>
   <div class="caja c-seg"><b>Seguridad</b><span class="det">Secretos fuera del repositorio; rol IAM de mínimo privilegio; DNS en Route 53; solo puertos 80/443 abiertos</span></div>

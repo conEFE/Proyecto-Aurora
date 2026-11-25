@@ -147,6 +147,10 @@ desde 40.000.000 y se puede repetir sin efecto.
 - **Opcional:** enlace de invitación para cuentas nuevas (no existe; hoy es contraseña temporal + cambio obligatorio).
 
 ### Prioridad alta
+0. **Antes de la defensa (25-11-2026):** desplegar la **2.12.0** (rama `claude/bold-maxwell-13fkwp`, aún no en `main`:
+   optimización de consultas y `INFERENCE_BACKUP_URL`), repetir PC-01 sobre una copia de la base y crear la instancia
+   de respaldo del modelo (`t4g.small`, detenida salvo en demostraciones; `docs/inferencia_remota.md`, sección 5.1).
+   Los resultados se cargan en el informe con `docs/informe_final/trabajo/pendientes_equipo.json`.
 1. **Actividad de RDS (+USD 20):** la base real ya está en RDS (16-11-2026). Revisar en *Earn AWS credits* si cuenta;
    si la actividad pide borrar la base, **no** usar `aurora-demo-db`: hacerla con una RDS de prueba aparte.
 2. ~~**Probar la restauración de un respaldo**~~ **Hecho el 24-11-2026** (ver arriba).

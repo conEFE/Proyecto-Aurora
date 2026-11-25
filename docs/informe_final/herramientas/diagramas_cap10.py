@@ -109,7 +109,7 @@ tabla = ('<table border="0" cellborder="1" cellspacing="0" cellpadding="7">'
  + fila("Presentación", "Aurora Web: React + TypeScript (SPA)<br/>cola de triage · casos · validación de IA · firma · dashboard · PDF (jsPDF)", "Caddy (TLS Let&apos;s Encrypt) en EC2", "#EEF3FA")
  + fila("Lógica de negocio", "API FastAPI – monolito modular (REST JSON + JWT)<br/>autenticación y roles · pacientes y casos · imágenes · motor de triage<br/>revisión, firma y reportes · dashboard · privacidad · auditoría", "Contenedor backend en EC2 t4g.micro", "#EAF5EC")
  + fila("Análisis automatizado", "Proveedor de inferencia (simulado | HTTP, con respaldo simulado)<br/>servicio CNN ResNet18 + YOLO11s – prototipo sin validación clínica", "Equipo con GPU vía Tailscale<br/>(movible a AWS cambiando la URL)", "#F3ECF8")
- + fila("Datos", "PostgreSQL – 18 tablas (casos, triage versionado, resultados y validaciones de IA, firmas, auditoría)<br/>almacenamiento de imágenes cifrado (local | S3)", "Amazon RDS PostgreSQL 16 · Amazon S3", "#FBF7E6")
+ + fila("Datos", "PostgreSQL – 19 tablas (casos, triage versionado, resultados y validaciones de IA, firmas, auditoría)<br/>almacenamiento de imágenes cifrado (local | S3)", "Amazon RDS PostgreSQL 16 · Amazon S3", "#FBF7E6")
  + fila("Operación", "Respaldo diario a S3 · registros centralizados · integración continua · DNS y secretos", "CloudWatch Logs · GitHub Actions · Route 53 · Secrets Manager", "#F2F2F2")
  + '</table>')
 render("cap10_arquitectura", f'digraph G {{ graph [{F}, label="Arquitectura de la solución – N-tier, monolito modular (software y hardware)", labelloc=t, fontsize=11]; node [{F}, shape=plaintext, fontsize=9]; t [label=<{tabla}>]; }}')
@@ -117,7 +117,7 @@ render("cap10_arquitectura", f'digraph G {{ graph [{F}, label="Arquitectura de l
 # --- Modelo lógico (entidades y relaciones) ---------------------------------
 d = json.load(open(schema_path, encoding="utf-8"))
 grupos = {
- "Identidad y acceso": ["users", "audit_log", "error_log", "request_metrics"],
+ "Identidad y acceso": ["users", "email_tokens", "audit_log", "error_log", "request_metrics"],
  "Pacientes y privacidad": ["patients", "consent_texts", "patient_consent_events", "data_subject_requests"],
  "Casos e imágenes": ["cases", "images", "inference_results", "ai_validations", "notifications"],
  "Triage": ["triage_configs", "triage_results"],
@@ -160,20 +160,22 @@ uc = [("CU01", "Iniciar sesión"), ("CU02", "Gestionar usuarios y roles"), ("CU0
       ("CU07", "Analizar imagen"), ("CU08", "Calcular triage"), ("CU09", "Consultar cola\\npriorizada"), ("CU10", "Sobrescribir nivel\\nde triage"),
       ("CU11", "Revisar caso y\\nregistrar resultado"), ("CU12", "Generar reporte\\nclínico PDF"), ("CU13", "Configurar parámetros\\nde triage"),
       ("CU14", "Visualizar dashboard\\nde métricas"), ("CU15", "Validar informe de IA\\npor imagen"), ("CU16", "Firmar reporte\\nclínico"),
-      ("CU17", "Cambiar contraseña"), ("CU18", "Gestionar solicitudes\\nde titulares de datos")]
-nuevos = {"CU17", "CU18"}
+      ("CU17", "Cambiar contraseña"), ("CU18", "Gestionar solicitudes\\nde titulares de datos"),
+      ("CU19", "Comparar desempeño\\nde médicos"), ("CU20", "Activar cuenta\\npor correo")]
+nuevos = {"CU17", "CU18", "CU19", "CU20"}
 L = [f'digraph UC {{ graph [{F}, rankdir=LR, nodesep=0.12, ranksep=1.1, fontsize=11, label="Diagrama de casos de uso – Plataforma Aurora (actualizado)", labelloc=t];',
      f' node [{F}, fontsize=8]; edge [{F}, fontsize=7, arrowhead=none, color="#555555"];',
      ' adm [shape=box, style="rounded", label="«actor»\\nPersonal\\nadministrativo"]; med [shape=box, style="rounded", label="«actor»\\nMédico"];',
-     ' admin [shape=box, style="rounded", label="«actor»\\nAdministrador\\ndel sistema"]; inf [shape=box, style="rounded,dashed", label="«system»\\nServicio de\\ninferencia"];',
+     ' admin [shape=box, style="rounded", label="«actor»\\nAdministrador\\ndel sistema"]; jef [shape=box, style="rounded", label="«actor»\\nJefatura\\ny finanzas"]; inf [shape=box, style="rounded,dashed", label="«system»\\nServicio de\\ninferencia"];',
      ' subgraph cluster_s { label="Plataforma Aurora"; style="rounded,filled"; fillcolor="#F8F9FB";']
 for cid, name in uc:
     fill = "#FFF4D6" if cid in nuevos else "#FFFFFF"
     L.append(f'  {cid} [shape=ellipse, style=filled, fillcolor="{fill}", label="{cid}\\n{name}"];')
 L.append(" }")
-rel = {"adm": ["CU01", "CU04", "CU05", "CU06", "CU09", "CU14", "CU17", "CU18"],
-       "med": ["CU01", "CU04", "CU05", "CU06", "CU09", "CU10", "CU11", "CU12", "CU13", "CU14", "CU15", "CU16", "CU17", "CU18"],
-       "admin": ["CU01", "CU02", "CU03", "CU14", "CU17"]}
+rel = {"adm": ["CU01", "CU04", "CU05", "CU06", "CU09", "CU14", "CU17", "CU18", "CU20"],
+       "med": ["CU01", "CU04", "CU05", "CU06", "CU09", "CU10", "CU11", "CU12", "CU13", "CU14", "CU15", "CU16", "CU17", "CU18", "CU20"],
+       "admin": ["CU01", "CU02", "CU03", "CU14", "CU17", "CU19", "CU20"],
+       "jef": ["CU01", "CU14", "CU17", "CU19", "CU20"]}
 for a, cus in rel.items():
     for c in cus:
         L.append(f" {a} -> {c};")
@@ -181,6 +183,6 @@ L += [' CU07 -> inf;',
       ' CU06 -> CU07 [style=dashed, arrowhead=open, label="«include»"]; CU07 -> CU08 [style=dashed, arrowhead=open, label="«include»"];',
       ' CU11 -> CU15 [style=dashed, arrowhead=open, label="«include»"]; CU12 -> CU16 [style=dashed, arrowhead=open, label="«include»"];',
       ' CU10 -> CU11 [style=dashed, arrowhead=open, label="«extend»"]; CU12 -> CU11 [style=dashed, arrowhead=open, label="«extend»"];',
-      ' {rank=same; adm; med; admin;}', "}"]
+      ' {rank=same; adm; med; admin; jef;}', "}"]
 render("cap10_casos_uso", "\n".join(L))
 print("ok casos de uso")

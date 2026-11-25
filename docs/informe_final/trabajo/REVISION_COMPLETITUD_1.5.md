@@ -5,7 +5,7 @@ el código y las iteraciones 12 a 15. Números de párrafo = orden en `word/docu
 
 ## A. Lo puedo corregir yo (sin insumos del equipo)
 
-**Estado (25-11-2026):** A1, A4, A5 y A6 corregidos en la iteración 16 (maestro 1.6-rc). Pendientes: A2 y A3.
+**Estado (25-11-2026):** A1, A4, A5 y A6 corregidos en la iteración 16 (maestro 1.6-rc); A2 en la iteración 17 (1.7-rc, 340 pruebas). Pendiente: A3 (requiere U2). La sección B pasó a `PENDIENTES_EQUIPO.md`.
 En A4, la cita «OMS, 2021» resultó correcta (la sigla se presenta en la primera cita, en IV) y se mantuvo.
 
 ### A1. Afirmaciones desactualizadas por las iteraciones 12 a 15

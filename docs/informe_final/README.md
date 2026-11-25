@@ -1,6 +1,6 @@
 # Informe Final — Proyecto Aurora
 
-Carpeta de trabajo del Informe de Proyecto de Título. **Para continuar, lee primero `HANDOFF_ITERACION_17.md`.** Luego `PLAN_INFORME_FINAL.md`: allí están
+Carpeta de trabajo del Informe de Proyecto de Título. **Para continuar, lee primero `HANDOFF_ITERACION_18.md`.** Luego `PLAN_INFORME_FINAL.md`: allí están
 las iteraciones, el mapa de fuentes y las reglas de trabajo.
 
 - `trabajo/`: documento maestro (único informe que se edita), registro de revisiones y estado de la iteración.
