@@ -22,6 +22,8 @@ Script `herramientas/iter17_versiones.py`; registro 4.22.
 
 Tablas de 67 a 68 y figuras de 26 a 28. DOCX validado; PDF sin referencias rotas.
 
+**17b (26-11-2026):** revisión de las 28 figuras. Regenerados los diagramas de componentes (envío de correos, proveedor con respaldo, 19 tablas, respaldo planificado en punteado) y de topología (rol de jefatura); `herramientas/iter17b_figuras.py`, registro 4.23. Pendiente de decisión: actualizar el corte de la carta Gantt de ejecución (hoy 23-11-2026).
+
 ## Iteración 16 — Consistencia, citas, glosario y formato (maestro 1.6-rc)
 
 Aprobada por el usuario el 25-11-2026: puntos A1, A4, A5 y A6 de `trabajo/REVISION_COMPLETITUD_1.5.md`.

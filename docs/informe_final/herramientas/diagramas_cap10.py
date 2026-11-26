@@ -25,14 +25,17 @@ render("cap10_componentes", f'''digraph G {{
  subgraph cluster_api {{ label="«container» backend – API FastAPI (monolito modular)"; style="rounded,filled"; fillcolor="#EAF5EC";
    rutas [label="Rutas REST\\nauth · patients · cases · images · triage\\nreports · dashboard · privacy · admin · inference"];
    auth [label="Autenticación y\\nautorización (JWT, roles)"];
-   neg [label="Servicios de negocio\\npacientes, casos, imágenes,\\nrevisión, reportes, privacidad"];
+   neg [label="Servicios de negocio\\npacientes, casos, imágenes, revisión,\\nreportes, privacidad, cuentas, comparador"];
    triage [label="Motor de triage\\n(reglas y parámetros versionados)"];
    audit [label="Auditoría\\n(bitácora append-only)"];
    stor [label="Almacenamiento\\nLocal | S3 cifrado"];
-   prov [label="Proveedor de inferencia\\nSimulado | HTTP (+ respaldo simulado)"];
+   prov [label="Proveedor de inferencia\\nprincipal → respaldo → simulado"];
+   mail [label="Envío de correos\\n(consola | SMTP)"];
  }}
- db [shape=cylinder, label="PostgreSQL\\n(Amazon RDS en demostración)\\n18 tablas", fillcolor="#E8EEF9"];
+ db [shape=cylinder, label="PostgreSQL\\n(Amazon RDS en demostración)\\n19 tablas", fillcolor="#E8EEF9"];
  s3 [shape=folder, label="Amazon S3\\nimágenes cifradas y respaldos", fillcolor="#E8EEF9"];
+ subgraph cluster_bkp {{ label="«container» respaldo (planificado, AWS)"; style="rounded,dashed"; fillcolor="#FFFFFF";
+   bkp [style="dashed,filled", fillcolor="#FFFFFF", label="Misma API, en CPU\\nsi el equipo con GPU\\nno responde"]; }}
  subgraph cluster_inf {{ label="«container» servicio de inferencia (equipo con GPU)"; style="rounded,filled"; fillcolor="#F3ECF8";
    inf [label="API FastAPI\\nPOST /predict · GET /health"]; cnn [label="CNN ResNet18\\n(probabilidad)"]; yolo [label="YOLO11s\\n(masas)"]; }}
  spa -> caddy [label="HTTPS 443"];
@@ -43,6 +46,8 @@ render("cap10_componentes", f'''digraph G {{
  stor -> s3 [label="HTTPS (SDK)"];
  prov -> inf [label="HTTP + token Bearer\\n(red Tailscale)"];
  inf -> cnn; inf -> yolo;
+ neg -> mail;
+ prov -> bkp [style=dashed];
 }}''')
 
 # --- Topología --------------------------------------------------------------
@@ -50,7 +55,7 @@ render("cap10_topologia", f'''digraph G {{
  graph [{F}, rankdir=LR, splines=true, nodesep=0.4, ranksep=0.7, fontsize=11, label="Topología de comunicaciones – entorno de demostración", labelloc=t];
  node [{F}, shape=box, style="rounded,filled", fillcolor="#FFFFFF", fontsize=9];
  edge [{F}, fontsize=8];
- usr [label="Usuarios\\n(administrativo, médico,\\nadministrador)\\nnavegador web"];
+ usr [label="Usuarios\\n(administrativo, médico,\\nadministrador, jefatura)\\nnavegador web"];
  dns [label="Route 53\\nzona auroracare.cl\\n(delegada desde NIC Chile)"];
  net [shape=ellipse, label="Internet"];
  subgraph cluster_aws {{ label="AWS – us-east-2 (Ohio)"; style="rounded,filled"; fillcolor="#F6F8FB";
@@ -108,7 +113,7 @@ tabla = ('<table border="0" cellborder="1" cellspacing="0" cellpadding="7">'
  + fila("Usuarios", "Personal administrativo · Médico · Administrador", "Navegador web; HTTPS 443", "#F2F2F2")
  + fila("Presentación", "Aurora Web: React + TypeScript (SPA)<br/>cola de triage · casos · validación de IA · firma · dashboard · PDF (jsPDF)", "Caddy (TLS Let&apos;s Encrypt) en EC2", "#EEF3FA")
  + fila("Lógica de negocio", "API FastAPI – monolito modular (REST JSON + JWT)<br/>autenticación y roles · pacientes y casos · imágenes · motor de triage<br/>revisión, firma y reportes · dashboard · privacidad · auditoría", "Contenedor backend en EC2 t4g.micro", "#EAF5EC")
- + fila("Análisis automatizado", "Proveedor de inferencia (simulado | HTTP, con respaldo simulado)<br/>servicio CNN ResNet18 + YOLO11s – prototipo sin validación clínica", "Equipo con GPU vía Tailscale<br/>(movible a AWS cambiando la URL)", "#F3ECF8")
+ + fila("Análisis automatizado", "Proveedor de inferencia (simulado | HTTP, con servicio de respaldo y respaldo simulado)<br/>servicio CNN ResNet18 + YOLO11s – prototipo sin validación clínica", "Equipo con GPU vía Tailscale<br/>(movible a AWS cambiando la URL)", "#F3ECF8")
  + fila("Datos", "PostgreSQL – 19 tablas (casos, triage versionado, resultados y validaciones de IA, firmas, auditoría)<br/>almacenamiento de imágenes cifrado (local | S3)", "Amazon RDS PostgreSQL 16 · Amazon S3", "#FBF7E6")
  + fila("Operación", "Respaldo diario a S3 · registros centralizados · integración continua · DNS y secretos", "CloudWatch Logs · GitHub Actions · Route 53 · Secrets Manager", "#F2F2F2")
  + '</table>')
