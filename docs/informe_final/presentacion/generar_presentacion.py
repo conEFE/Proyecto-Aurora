@@ -7,7 +7,7 @@ from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 
-exec(open("lib2.py", encoding="utf-8").read())
+exec(open("lib3.py", encoding="utf-8").read())
 
 FIG = "/home/user/Proyecto-Aurora/docs/informe_final/figuras/"
 RED, GRAY, PINK, TXT = RGBColor(0xC0, 0, 0), RGBColor(0xF2, 0xF2, 0xF2), RGBColor(0xFB, 0xED, 0xED), RGBColor(0x53, 0x53, 0x53)
@@ -75,10 +75,10 @@ set_text(sh(s, 15), ["Plataforma web que gestiona el caso del registro al report
                      "Triage automático con reglas que configuran los médicos",
                      "IA como insumo: el médico revisa, valida y decide"])
 set_text(sh(s, 16), "Aurora ordena y prioriza los casos; la decisión clínica sigue siendo del médico.")
-notes(s, "(60 s) La necesidad: la gestión inicial de un caso sospechoso reúne antecedentes, imágenes y plazos, y priorizar exige criterios explícitos y trazables. El impacto: en Chile hay más de cinco mil casos nuevos al año y las garantías GES fijan plazos máximos, por lo que priorizar a tiempo importa. La solución: una plataforma web que gestiona el caso completo, calcula un triage con reglas que configuran los médicos y usa la IA solo como un insumo más.")
+notes(s, "(45 s) La necesidad: la gestión inicial de un caso sospechoso reúne antecedentes, imágenes y plazos, y priorizar exige criterios explícitos y trazables. El impacto: en Chile hay más de cinco mil casos nuevos al año y las garantías GES fijan plazos máximos, por lo que priorizar a tiempo importa. La solución: una plataforma web que gestiona el caso completo, calcula un triage con reglas que configuran los médicos y usa la IA solo como un insumo más.")
 
 # ---- 2. Modelo CANVAS
-s = SL[2]
+s = SL[3]
 set_text(sh(s, 2), "Modelo de negocio"); set_text(sh(s, 3), "Modelo de negocio CANVAS")
 delete(s, *range(4, 17))
 W, G, X0, Y0, HT, HB = 4.57, 0.2, 1.5, 2.85, 6.9, 2.75
@@ -95,10 +95,10 @@ wb = (5 * W + 4 * G - G) / 2
 card(s, X0, Y0 + HT + G, wb, HB, "ESTRUCTURA DE COSTOS", ["Inversión inicial de $70 M · prototipo de $47,1 M (8 meses)", "Remuneraciones, licencias, nube (≈ USD 26/mes la demostración) y soporte"], strong=True)
 card(s, X0 + wb + G, Y0 + HT + G, wb, HB, "FUENTES DE INGRESOS", ["Suscripción de $1.200.000 al mes por establecimiento", "De 5 clientes ($72 M) en el año 1 a 26 ($374,4 M) en el año 5"], strong=True)
 textbox(s, X0, Y0 + HT + G + HB + 0.12, 23.66, 0.5, "Elaborado con los datos del informe: mercado, costos y flujo de caja (cap. XIV) y diferenciación (cap. IV). Destacados: los cinco elementos fundamentales.", size=18)
-notes(s, "(75 s) Los cinco elementos fundamentales están destacados. Segmentos: clínicas privadas medianas con imagenología, centros de diagnóstico mamario y oncológicos; el mercado disponible son 121 instituciones privadas. Propuesta de valor: gestionar el caso completo con una priorización que configuran los médicos, sin integraciones previas. Socios clave: AWS, la institución de referencia y su red, aún sin acuerdo formal, y médicos revisores. Ingresos: una suscripción de 1,2 millones al mes por establecimiento, de 5 a 26 clientes en cinco años. Costos: una inversión de 70 millones; el prototipo costó 47 millones en ocho meses.")
+notes(s, "(60 s) Los cinco elementos fundamentales están destacados. Segmentos: clínicas privadas medianas con imagenología, centros de diagnóstico mamario y oncológicos; el mercado disponible son 121 instituciones privadas. Propuesta de valor: gestionar el caso completo con una priorización que configuran los médicos, sin integraciones previas. Socios clave: AWS, la institución de referencia y su red, aún sin acuerdo formal, y médicos revisores. Ingresos: una suscripción de 1,2 millones al mes por establecimiento, de 5 a 26 clientes en cinco años. Costos: una inversión de 70 millones; el prototipo costó 47 millones en ocho meses.")
 
 # ---- 3. Tecnologías seleccionadas
-s = SL[3]
+s = SL[4]
 set_text(sh(s, 3), "Tecnologías seleccionadas")
 set_text(sh(s, 14), "PostgreSQL 16 (Amazon RDS) · imágenes cifradas con Fernet en S3")
 set_text(sh(s, 18), "PyTorch: CNN ResNet18 · Ultralytics YOLO11s")
@@ -106,18 +106,18 @@ set_text(sh(s, 19), "PROTOTIPO")
 set_text(sh(s, 22), "Docker · GitHub Actions · AWS · Caddy · Tailscale")
 set_text(sh(s, 23), "EN USO"); recolor_tag(s, 23, "2E8B57", "FFFFFF")
 set_text(sh(s, 29), "Servicios: GitHub Team, Figma y Microsoft 365; AWS con plan gratuito y créditos")
-notes(s, "(40 s) Interfaz en React con TypeScript; API en FastAPI con SQLAlchemy y Alembic; datos en PostgreSQL sobre Amazon RDS e imágenes cifradas en S3. La IA usa PyTorch con una CNN ResNet18 y YOLO11s, como prototipo. Se despliega con Docker y GitHub Actions en AWS, con Caddy para HTTPS y Tailscale para llegar al equipo con GPU. Todo el software base es de código abierto.")
+notes(s, "(30 s) Interfaz en React con TypeScript; API en FastAPI con SQLAlchemy y Alembic; datos en PostgreSQL sobre Amazon RDS e imágenes cifradas en S3. La IA usa PyTorch con una CNN ResNet18 y YOLO11s, como prototipo. Se despliega con Docker y GitHub Actions en AWS, con Caddy para HTTPS y Tailscale para llegar al equipo con GPU. Todo el software base es de código abierto.")
 
 # ---- 4. Evaluación y selección tecnológica
-s = SL[4]
+s = SL[5]
 set_text(sh(s, 3), "Evaluación y selección tecnológica")
 set_text(sh(s, 4), "CUANTITATIVA: CRITERIOS Y PESOS (AHP)")
 set_text(sh(s, 29), ["CUALITATIVA: EL CASO DE LA API",
                      "FastAPI y Django REST empatan con pesos iguales; se eligió FastAPI por su modelo asíncrono, la validación con Pydantic y la documentación automática."])
-notes(s, "(50 s) Ejemplo cuantitativo: una matriz ponderada con cinco criterios; los pesos salen de una comparación por pares (AHP) con razón de consistencia 0,013, bajo el límite de 0,10. Cada alternativa se puntuó de 1 a 5 con una escala anclada. Ejemplo cualitativo: en la API, FastAPI y Django REST empatan con pesos iguales; elegimos FastAPI por su modelo asíncrono, la validación con Pydantic y la documentación automática.")
+notes(s, "(45 s) Ejemplo cuantitativo: una matriz ponderada con cinco criterios; los pesos salen de una comparación por pares (AHP) con razón de consistencia 0,013, bajo el límite de 0,10. Cada alternativa se puntuó de 1 a 5 con una escala anclada. Ejemplo cualitativo: en la API, FastAPI y Django REST empatan con pesos iguales; elegimos FastAPI por su modelo asíncrono, la validación con Pydantic y la documentación automática.")
 
 # ---- 5. Casos de uso principales
-s = SL[5]
+s = SL[6]
 set_text(sh(s, 2), "Casos de uso"); set_text(sh(s, 3), "Casos de uso principales")
 put_image(s, 5, FIG + "cap10_casos_uso.png")
 set_text(sh(s, 7), ["CUATRO ROLES, MÍNIMO PRIVILEGIO", "Administrativo: pacientes, casos e imágenes", "Médico: triage, revisión, validación y firma",
@@ -125,11 +125,11 @@ set_text(sh(s, 7), ["CUATRO ROLES, MÍNIMO PRIVILEGIO", "Administrativo: pacient
 set_text(sh(s, 19), ["RF02 pacientes: CU04 · RF04 exámenes: CU06 · RF05 triage: CU08–CU10",
                      "RF06 reporte firmado: CU12 y CU16 · RF08 IA: CU07 y CU15",
                      "RF07 indicadores: CU14 y CU19 · RF01 acceso: CU01, CU02 y CU20"])
-notes(s, "(60 s) Son 20 casos de uso y cuatro actores con mínimo privilegio. La cadena principal responde al problema: cargar un examen (CU06) desencadena el análisis (CU07) y el triage (CU08), y el caso aparece ordenado en la cola (CU09). El médico revisa, valida la IA y firma el reporte. Cada caso de uso se traza a un requerimiento: por ejemplo, RF05 triage con CU08 a CU10 y RF06 reporte firmado con CU12 y CU16.")
+notes(s, "(35 s) Son 20 casos de uso y cuatro actores con mínimo privilegio. La cadena principal responde al problema: cargar un examen (CU06) desencadena el análisis (CU07) y el triage (CU08), y el caso aparece ordenado en la cola (CU09). El médico revisa, valida la IA y firma el reporte. Cada caso de uso se traza a un requerimiento: por ejemplo, RF05 triage con CU08 a CU10 y RF06 reporte firmado con CU12 y CU16.")
 
 # ---- 6. Arquitectura e infraestructura
-s = SL[6]
-set_text(sh(s, 3), "Arquitectura e infraestructura")
+s = SL[9]
+set_text(sh(s, 3), "Infraestructura desplegada en AWS")
 put_image(s, 5, FIG + "it15_cloud.png")
 set_text(sh(s, 7), ["AWS · US-EAST-2 (OHIO)", "EC2 con contenedores · RDS PostgreSQL privado y cifrado · S3 cifrado · Route 53 · CloudWatch"])
 set_text(sh(s, 8), "COMPONENTES Y CONTINUIDAD")
@@ -137,10 +137,10 @@ set_text(sh(s, 11), "Caddy: HTTPS y proxy inverso hacia la API")
 set_text(sh(s, 14), "Respaldo diario de la base en S3; restauración probada")
 set_text(sh(s, 17), "Chequeo de /health cada minuto con alarma por correo")
 set_text(sh(s, 20), "Modelo en PC con GPU por Tailscale; respaldo en AWS (2.12.0)")
-notes(s, "(60 s) El usuario entra por HTTPS a demo.auroracare.cl, resuelto por Route 53. Un servidor EC2 ejecuta los contenedores: Caddy termina TLS y sirve el sitio, y la API FastAPI atiende las solicitudes. La base PostgreSQL está en RDS, privada y cifrada; las imágenes van cifradas a S3. Hay respaldo diario de la base con restauración probada y un chequeo de disponibilidad cada minuto con alarma por correo. El modelo corre en un equipo con GPU por Tailscale; la versión 2.12.0 agrega un respaldo en AWS.")
+notes(s, "(40 s) El usuario entra por HTTPS a demo.auroracare.cl, resuelto por Route 53. Un servidor EC2 ejecuta los contenedores: Caddy termina TLS y sirve el sitio, y la API FastAPI atiende las solicitudes. La base PostgreSQL está en RDS, privada y cifrada; las imágenes van cifradas a S3. Hay respaldo diario de la base con restauración probada y un chequeo de disponibilidad cada minuto con alarma por correo. El modelo corre en un equipo con GPU por Tailscale; la versión 2.12.0 agrega un respaldo en AWS.")
 
 # ---- 7. Factibilidad económica
-s = SL[7]
+s = SL[10]
 set_text(sh(s, 2), "Factibilidad")
 set_text(sh(s, 33), ["Recursos humanos, licencias y operación", "$30.353.000"])
 set_text(sh(s, 34), ["Contingencia (25%)", "$9.414.928"])
@@ -149,10 +149,10 @@ set_text(sh(s, 36), ["Infraestructura en la nube", "$2.440.000"])
 set_text(sh(s, 39), "$47.074.638")
 set_text(sh(s, 41), ["SUPUESTOS", "Inversión inicial de $70 M", "Suscripción de $1.200.000 al mes", "De 5 a 26 clientes en 5 años", "VAN positivo con ≥ 75,2% de los clientes"])
 set_text(sh(s, 30), "El flujo acumulado se vuelve positivo en el año 3")
-notes(s, "(60 s) El prototipo costó 47 millones en ocho meses, la mayor parte en recursos humanos; la demostración en AWS cuesta cerca de 26 dólares al mes. Para la fase comercial, con una inversión de 70 millones y una suscripción de 1,2 millones mensuales, el VAN es de 134,8 millones a una tasa de 14%, la TIR de 45% y la inversión se recupera en 2,84 años. La variable crítica es la demanda: el VAN sigue positivo mientras se capte al menos el 75% de los clientes proyectados.")
+notes(s, "(45 s) El prototipo costó 47 millones en ocho meses, la mayor parte en recursos humanos; la demostración en AWS cuesta cerca de 26 dólares al mes. Para la fase comercial, con una inversión de 70 millones y una suscripción de 1,2 millones mensuales, el VAN es de 134,8 millones a una tasa de 14%, la TIR de 45% y la inversión se recupera en 2,84 años. La variable crítica es la demanda: el VAN sigue positivo mientras se capte al menos el 75% de los clientes proyectados.")
 
 # ---- 8. Demostración: guion
-s = SL[8]
+s = SL[12]
 set_text(sh(s, 2), "Demostración"); set_text(sh(s, 3), "Demostración del software")
 set_text(sh(s, 5), ["PASO 1 · ADMINISTRATIVO", "REGISTRO Y CARGA"])
 set_text(sh(s, 6), ["CU01 Iniciar sesión", "CU04 Paciente y consentimiento", "CU05 Crear el caso", "CU06 Cargar mamografías"])
@@ -165,7 +165,7 @@ set_text(sh(s, 16), "Cada paso de la demostración corresponde a un caso de uso 
 notes(s, "(30 s + demostración en vivo) Guion: como administrativo, ingresar, registrar un paciente con consentimiento, crear el caso y cargar las mamografías. La plataforma analiza las imágenes y calcula el nivel; el caso aparece en la cola. Como médico, revisar el caso, validar el resultado de la IA, ajustar el nivel si corresponde, firmar y descargar el reporte. Cerrar con el dashboard y el comparador de médicos.")
 
 # ---- 9. Capturas (respaldo de la demostración)
-s = SL[9]
+s = SL[13]
 set_text(sh(s, 2), "Demostración"); set_text(sh(s, 3), "Pantallas principales")
 set_text(sh(s, 4), "Datos ficticios · «IA SIMULADA» = resultado sin valor clínico")
 for sid, img, cap_sid, cap in [(6, "cap_cola.png", 7, "CU09 · Cola de triage priorizada"),
@@ -176,7 +176,7 @@ for sid, img, cap_sid, cap in [(6, "cap_cola.png", 7, "CU09 · Cola de triage pr
 notes(s, "(20 s, o en lugar de la demostración en vivo) Cola priorizada por nivel, puntaje y espera; el caso con el análisis, la validación médica y la explicación del nivel; el dashboard de indicadores, y el comparador de médicos para la jefatura.")
 
 # ---- 10. Conclusiones
-s = SL[10]
+s = SL[14]
 set_text(sh(s, 4), "Aurora es un prototipo funcional, desplegado, probado y declarado con transparencia.")
 set_text(sh(s, 7), "Plataformas y metodología elegidas con matrices ponderadas")
 set_text(sh(s, 10), "Triage configurable, revisión y firma; la IA es apoyo")
@@ -184,15 +184,15 @@ set_text(sh(s, 13), "AUC 0,838 por paciente; sin validación clínica todavía")
 set_text(sh(s, 16), "VAN de $134,8 M; el piloto es la prueba clave")
 set_text(sh(s, 17), "Próximos pasos: desplegar la 2.12.0, repetir la prueba de carga en AWS, validar el modelo con médicos y formalizar un piloto.")
 notes(s, "(30 s) En síntesis: decisiones con criterio, el médico decide, una IA medida y no prometida, y un proyecto viable si se valida la demanda. Próximos pasos: desplegar la 2.12.0, repetir la prueba de carga en AWS, validar el modelo con médicos y formalizar un piloto.")
-notes(SL[11], "(5 s) Gracias. Quedamos atentos a sus preguntas.")
+notes(SL[15], "(5 s) Gracias. Quedamos atentos a sus preguntas.")
 
 # ================================================================ RESPALDO
-s = SL[12]
+s = SL[16]
 set_text(sh(s, 2), "Diapositivas de respaldo"); set_text(sh(s, 3), "Para profundizar ante las preguntas de la comisión")
 notes(s, "Separador: lo que sigue se muestra solo si la comisión pregunta.")
 
 # ---- Requerimientos
-s = SL[13]
+s = SL[17]
 set_text(sh(s, 2), "Respaldo"); set_text(sh(s, 3), "Levantamiento y análisis de requerimientos")
 set_text(sh(s, 4), "12"); set_text(sh(s, 5), "historias de usuario priorizadas con MoSCoW")
 set_text(sh(s, 6), "9"); set_text(sh(s, 7), "requerimientos funcionales")
@@ -206,7 +206,7 @@ set_text(sh(s, 21), ["RNF05 · Trazabilidad", "Bitácora de acciones sobre los c
 notes(s, "Se usaron tres instrumentos: revisión bibliográfica y de soluciones existentes, reuniones del equipo y consultas informales con perfiles clínicos, que no constituyen una validación formal. Resultaron 12 historias de usuario priorizadas con MoSCoW, 9 requerimientos funcionales y 5 no funcionales, con criterios de aceptación y trazabilidad hasta los casos de prueba.")
 
 # ---- Objetivos
-s = SL[14]
+s = SL[18]
 set_text(sh(s, 2), "Respaldo"); set_text(sh(s, 3), "Objetivos del proyecto")
 set_text(sh(s, 4), "7 OBJETIVOS ESPECÍFICOS")
 objs = [("Arquitectura", "por capas, monolito modular: cumplido"), ("Acceso por rol", "JWT, 4 roles, bloqueo y límites: cumplido"),
@@ -228,19 +228,19 @@ for k, para in enumerate(sh(s, 45).text_frame.paragraphs):
 notes(s, "El objetivo general se cumplió en desarrollo y evaluación técnica: el prototipo está implementado, desplegado y verificado con 340 pruebas. De los siete específicos, el del análisis con IA se cumplió en su alcance, documentar y evaluar técnicamente, sin atribuir validación clínica.")
 
 # ---- Metodología (contenido de la U2, vigente)
-s = SL[15]
+s = SL[19]
 set_text(sh(s, 2), "Respaldo")
 notes(s, "Comparamos Scrumban, Scrum y Kanban con cuatro criterios ponderados; Scrumban obtiene 4,55. A nivel de proyecto mantenemos línea base, hitos y control de cambios; a nivel de ejecución, sprints de dos semanas con un tablero Kanban y límites de trabajo en curso. Cascada se descartó porque supone requisitos estables, algo que no ocurre con un componente de IA.")
 
 # ---- KPI
-s = SL[16]
+s = SL[20]
 set_text(sh(s, 2), "Respaldo")
 set_text(sh(s, 18), ["Desempeño de la IA *", "exactitud ≥ 0,85 (≥ 30 imágenes)"])
 set_text(sh(s, 38), "* K4 requiere un piloto; K5 se mide con la validación médica por imagen")
 notes(s, "Once indicadores SMART. La plataforma calcula K1, K2, K5, K6 y K11; K3 se mide con el chequeo de disponibilidad desde el 24-11. K5 se define como la exactitud del modelo frente a la validación médica, con meta de 0,85 y al menos 30 imágenes evaluables. Sin piloto no hay medición clínica real de K4 ni de K7.")
 
 # ---- SLA
-s = SL[17]
+s = SL[21]
 set_text(sh(s, 2), "Respaldo")
 set_text(sh(s, 6), ["Institución", "De referencia, sin acuerdo formal"])
 set_text(sh(s, 9), ["Vigencia", "Propuesta para un piloto"])
@@ -248,7 +248,7 @@ set_text(sh(s, 22), "Propuesta de diseño, no contractual: la firma con la insti
 notes(s, "Tres acuerdos de nivel de servicio propuestos: gestión de casos y triage con criticidad alta, y reportes y métricas con criticidad media, todos con 99% de disponibilidad mensual. Son metas de diseño: no hay un acuerdo firmado con una institución.")
 
 # ---- Plan de pruebas
-s = SL[18]
+s = SL[22]
 set_text(sh(s, 2), "Respaldo"); set_text(sh(s, 3), "Plan de pruebas y calidad")
 set_text(sh(s, 4), "31 CASOS DE PRUEBA EN 7 TIPOS")
 for desc, num, n, t in [(8, 7, "4", "pytest: reglas, umbrales y pesos"), (12, 11, "12", "casos, IA, comparador y consultas"),
@@ -265,7 +265,7 @@ set_text(sh(s, 45), ["NORMAS APLICADAS", "ISO/IEC 25010 y 29119, OWASP Top 10, L
 notes(s, "El plan tiene 31 casos en siete tipos, trazados a los requisitos. Las 340 pruebas automatizadas se aprobaron con 97% de cobertura; el escaneo OWASP ZAP no encontró riesgos altos y se verificó la restauración de un respaldo. Pendientes: prueba de estrés, escaneo activo autenticado y validación clínica del modelo.")
 
 # ---- Rendimiento
-s = SL[19]
+s = SL[23]
 set_text(sh(s, 2), "Respaldo"); set_text(sh(s, 3), "Rendimiento bajo carga")
 set_text(sh(s, 4), "4×"); set_text(sh(s, 5), "capacidad por proceso tras optimizar consultas")
 set_text(sh(s, 6), "2,53 s"); set_text(sh(s, 7), "p95 con 100 usuarios en local (meta ≤ 3 s)")
@@ -290,7 +290,7 @@ set_text(sh(s, 41), ["PRÓXIMO PASO", "Desplegar la 2.12.0 y repetir PC-01 en AW
 notes(s, "La prueba de carga detectó dos bloqueos, corregidos en la 2.10.1 y la 2.10.2. En AWS, con un proceso, la meta de 3 s se cumple hasta 25 usuarios; con 100, el p95 fue de 15 s sin errores. La 2.12.0 cuadruplicó la capacidad de un proceso en local; falta repetir la prueba en AWS.")
 
 # ---- Implementación y puesta en marcha
-s = SL[20]
+s = SL[24]
 set_text(sh(s, 2), "Respaldo"); set_text(sh(s, 3), "Plan de implementación y puesta en marcha")
 set_text(sh(s, 4), "99%"); set_text(sh(s, 5), "meta mensual: como máximo 7,3 h sin servicio no programado")
 set_text(sh(s, 6), "1 min"); set_text(sh(s, 7), "chequeo de /health con alarma por correo")
@@ -305,22 +305,22 @@ set_text(sh(s, 28), "Para un piloto faltan el acuerdo con la institución, la ca
 notes(s, "La meta de disponibilidad es 99% mensual. Hoy hay un chequeo de /health cada minuto con alarmas por correo, respaldo diario de la base a S3 y una restauración probada que tardó unos 3 segundos. Cada versión se despliega por Session Manager con un respaldo previo. Para un piloto faltan el acuerdo con la institución, la capacitación de usuarios y un monitor externo.")
 
 # ---- Mantención (contenido de la U2, vigente)
-s = SL[21]
+s = SL[25]
 set_text(sh(s, 2), "Respaldo")
 notes(s, "La mantención controla siete elementos de configuración con versiones semánticas, gestiona los cambios con solicitudes en ocho pasos y clasifica los incidentes en cuatro prioridades, con restablecimiento de los críticos en 4 horas. Todo cambio del triage requiere el visto bueno de un médico.")
 
 # ---- Arquitectura por capas
-s = SL[22]
-set_text(sh(s, 2), "Respaldo")
+s = SL[8]
+set_text(sh(s, 2), "Arquitectura"); set_text(sh(s, 3), "Arquitectura de la solución")
 put_image(s, 5, FIG + "it15_arquitectura.png")
 set_text(sh(s, 6), "Capas: usuarios · presentación · lógica · análisis · datos, con operación y seguridad transversales")
 set_text(sh(s, 8), ["MONOLITO MODULAR POR CAPAS", "Una API FastAPI con módulos separados; solo la lógica accede a los datos"])
 set_text(sh(s, 10), ["LAS HERRAMIENTAS SE COMPLEMENTAN", "React, Caddy, FastAPI, PostgreSQL y S3, con integración continua"])
 set_text(sh(s, 12), ["IA DESACOPLADA", "PC con GPU, respaldo en AWS (2.12.0) y, al final, IA simulada marcada"])
-notes(s, "Arquitectura por capas implementada como monolito modular. El análisis automatizado está detrás de una interfaz de proveedor: equipo con GPU, respaldo en AWS y, si nada responde, IA simulada marcada.")
+notes(s, "(40 s) Arquitectura por capas implementada como monolito modular. El análisis automatizado está detrás de una interfaz de proveedor: equipo con GPU, respaldo en AWS y, si nada responde, IA simulada marcada.")
 
 # ---- Componente de IA
-s = SL[23]
+s = SL[26]
 set_text(sh(s, 2), "Respaldo"); set_text(sh(s, 3), "Componente de IA")
 set_text(sh(s, 4), "0,838"); set_text(sh(s, 5), "AUC con división por paciente")
 set_text(sh(s, 6), "0,849"); set_text(sh(s, 7), "sensibilidad con umbral 0,35")
@@ -334,7 +334,7 @@ set_text(sh(s, 21), ["Uso real", "Requiere validación y licencia de YOLO"])
 notes(s, "CNN ResNet18 más YOLO11s. Reentrenado con división por paciente: AUC 0,838, sensibilidad 0,849 y especificidad 0,641 con umbral 0,35, en conjuntos públicos. Sin validación clínica.")
 
 # ---- Factibilidad en cinco dimensiones
-s = SL[24]
+s = SL[27]
 set_text(sh(s, 2), "Respaldo"); set_text(sh(s, 3), "Factibilidad en cinco dimensiones")
 set_text(sh(s, 6), "TÉCNICA Y OPERATIVA")
 set_text(sh(s, 7), ["Stack abierto, desplegado y con 340 pruebas", "Flujo en navegador con los roles existentes", "Condición: meta de rendimiento en AWS e inferencia fuera del PC"])
@@ -345,5 +345,106 @@ set_text(sh(s, 15), ["Consentimiento versionado, derechos de titulares y bitáco
 set_text(sh(s, 16), "Factible para la demostración; para operar con pacientes falta validar la demanda y el marco regulatorio.")
 notes(s, "Técnica y operativa, económica, legal y ambiental: factible para la demostración, con condiciones para operar con pacientes.")
 
-prs.save("Presentacion_Aurora_Defensa.pptx")
+
+# ================================================================ NUEVAS (más de una diapositiva por tema)
+import copy as _copy
+
+
+def _fill_tc(tc, text, bold=None):
+    txb = tc.find(qn("a:txBody")); ps = txb.findall(qn("a:p"))
+    for extra in ps[1:]:
+        txb.remove(extra)
+    p = ps[0]; runs = p.findall(qn("a:r"))
+    rpr = _copy.deepcopy(runs[0].find(qn("a:rPr"))) if runs and runs[0].find(qn("a:rPr")) is not None else None
+    for r in runs:
+        p.remove(r)
+    r = p.makeelement(qn("a:r"), {})
+    if rpr is not None:
+        if bold is not None:
+            rpr.set("b", "1" if bold else "0")
+        r.append(rpr)
+    t = r.makeelement(qn("a:t"), {}); t.text = text; r.append(t)
+    end = p.find(qn("a:endParaRPr"))
+    (end.addprevious(r) if end is not None else p.append(r))
+
+
+def reshape_table(shape, data, widths_in, x=None, y=None, size=None, first_col_bold=False, row_h=0.5):
+    """Rehace la tabla de la plantilla con `data` (fila 0 = encabezado), conservando el estilo de sus celdas."""
+    tbl = shape._element.find(".//" + qn("a:tbl"))
+    grid = tbl.find(qn("a:tblGrid")); trs = tbl.findall(qn("a:tr"))
+    head, body = trs[0], trs[1]
+    for tr in trs:
+        tbl.remove(tr)
+    for g in grid.findall(qn("a:gridCol")):
+        grid.remove(g)
+    for w in widths_in:
+        g = grid.makeelement(qn("a:gridCol"), {"w": str(int(Inches(w)))}); grid.append(g)
+    n = len(widths_in)
+    for i, row in enumerate(data):
+        tr = _copy.deepcopy(head if i == 0 else body)
+        tcs = tr.findall(qn("a:tc"))
+        while len(tcs) < n:
+            c = _copy.deepcopy(tcs[-1]); tcs[-1].addnext(c); tcs = tr.findall(qn("a:tc"))
+        for extra in tcs[n:]:
+            tr.remove(extra)
+        tcs = tr.findall(qn("a:tc"))
+        for j, (tc, val) in enumerate(zip(tcs, row)):
+            _fill_tc(tc, val, bold=(True if (i == 0 or (first_col_bold and j == 0)) else (False if i else None)))
+            if size:
+                for rp in tc.iter(qn("a:rPr")):
+                    rp.set("sz", str(size * 100))
+        tr.set("h", str(int(Inches(row_h))))
+        tbl.append(tr)
+    shape.width = Inches(sum(widths_in))
+    if x is not None: shape.left = Inches(x)
+    if y is not None: shape.top = Inches(y)
+
+
+# ---- 2. Diferenciación frente a soluciones existentes (Tabla 6 del informe)
+s = SL[2]
+set_text(sh(s, 2), "Problema"); set_text(sh(s, 3), "Soluciones existentes y diferenciación")
+delete(s, *range(4, 26))
+reshape_table(sh(s, 26), [
+    ["Dimensión", "IA comercial (Transpara, Lunit, ProFound)", "Proyecto Aurora"],
+    ["Objeto principal", "Analizar la imagen: hallazgos y puntaje por examen", "Gestionar el caso: paciente, consentimiento, exámenes, triage, revisión y reporte"],
+    ["Priorización", "Puntaje de la imagen", "Reglas clínicas configurables; el modelo es un insumo más"],
+    ["Integración", "PACS, estaciones de lectura y DICOM", "Solo navegador; no requiere HIS, RIS ni PACS"],
+    ["Condición regulatoria", "Autorización FDA 510(k) y marcado CE", "Prototipo sin autorización ni validación clínica"],
+    ["Trazabilidad", "Según el producto y la integración", "Consentimiento versionado, derechos de titulares y bitácora"],
+    ["Costo", "Licencia comercial", "Código abierto; suscripción de $1.200.000 al mes"]],
+    [4.6, 8.9, 10.16], x=1.5, y=2.9, size=25, first_col_bold=True, row_h=1.0)
+set_text(sh(s, 29), ["LA INNOVACIÓN ESTÁ EN EL FLUJO", "No en el algoritmo: Aurora integra el caso completo y deja la decisión en manos del médico."])
+move(s, 27, left=1.5, top=10.6, width=23.66, height=1.9); move(s, 28, left=1.8, top=11.05)
+move(s, 29, left=3.05, top=10.85, width=21.8, height=1.5)
+notes(s, "(40 s) Ya existen productos de IA autorizados para mamografía, como Transpara, Lunit o ProFound. Analizan la imagen, necesitan PACS y DICOM y se venden con licencia comercial. Aurora no compite en el algoritmo: gestiona el caso completo, prioriza con reglas clínicas configurables y funciona solo con un navegador. A diferencia de esos productos, es un prototipo sin autorización sanitaria.")
+
+# ---- 7. Casos de uso principales: tabla legible
+s = SL[7]
+set_text(sh(s, 2), "Casos de uso"); set_text(sh(s, 3), "Casos de uso y requerimientos")
+delete(s, *range(4, 26))
+reshape_table(sh(s, 26), [
+    ["Caso de uso", "Qué hace", "Actor", "Requerimiento"],
+    ["CU04 Registrar paciente", "Datos, antecedentes y consentimiento versionado", "Administrativo, médico", "RF02"],
+    ["CU05–CU06 Caso y exámenes", "Crea el caso y carga las mamografías cifradas", "Administrativo, médico", "RF03, RF04"],
+    ["CU07 Analizar imagen", "Resultado del modelo, marcado como prototipo", "Servicio de IA", "RF08"],
+    ["CU08–CU10 Triage", "Calcula el nivel; el médico puede ajustarlo con motivo", "Sistema, médico", "RF05"],
+    ["CU11 y CU15 Revisión", "Revisa el caso y valida el resultado de la IA", "Médico", "RF03, RF08"],
+    ["CU12 y CU16 Reporte", "Emite el PDF con la firma del médico", "Médico", "RF06"],
+    ["CU14 y CU19 Indicadores", "Dashboard y comparador de médicos", "Médico, jefatura", "RF07"],
+    ["CU18 Titulares de datos", "Acceso, rectificación, bloqueo y exportación", "Administrativo, médico", "RF09"]],
+    [6.6, 9.4, 4.9, 2.76], x=1.5, y=2.9, size=23, first_col_bold=True, row_h=0.95)
+delete(s, 27, 28)
+set_text(sh(s, 29), "Cada caso de uso tiene casos de prueba y trazabilidad hasta su requerimiento (matriz del capítulo XII).")
+move(s, 29, left=1.5, top=12.0, width=23.66, height=0.8)
+notes(s, "(40 s) Estos son los casos de uso principales y el requerimiento que cumple cada uno: registrar al paciente con consentimiento, crear el caso y cargar exámenes, analizar la imagen, calcular el triage, revisar y validar, firmar el reporte, consultar indicadores y gestionar los derechos de los titulares. Cada uno tiene pruebas trazadas a su requerimiento.")
+
+# ---- 11. Mercado, demanda y sensibilidad
+s = SL[11]
+set_text(sh(s, 2), "Factibilidad"); set_text(sh(s, 3), "Mercado, demanda y sensibilidad")
+set_text(sh(s, 8), "Cada caso supone al menos una mamografía diagnóstica, además de las de tamizaje.")
+set_text(sh(s, 9), "Fuente: GLOBOCAN 2024 (IARC, 2026)")
+set_text(sh(s, 27), "Penetración del mercado disponible (121 instituciones): de 4,1% en el año 1 a 21,5% en el año 5")
+notes(s, "(40 s) El mercado: en Chile hay más de cinco mil casos nuevos al año y 121 instituciones privadas como mercado disponible. La proyección parte con 5 clientes y llega a 26 en el año 5, una penetración de 21,5%. La sensibilidad muestra que la variable crítica es la demanda: con 30% menos clientes el VAN se vuelve negativo; se mantiene positivo mientras se capte al menos el 75,2% de los clientes proyectados.")
+
+prs.save("Presentacion_Aurora_Informe_Final.pptx")
 print("ok", len(prs.slides))

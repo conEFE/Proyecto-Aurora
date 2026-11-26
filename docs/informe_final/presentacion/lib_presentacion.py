@@ -6,7 +6,7 @@ from pptx.util import Inches
 from PIL import Image
 from pptx.oxml.ns import qn
 
-prs = Presentation("base2.pptx")
+prs = Presentation("base3.pptx")
 SL = list(prs.slides)
 
 
