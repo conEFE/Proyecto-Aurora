@@ -112,9 +112,11 @@ MARCAS = {
 for key, marca in MARCAS.items():
     item = (cfg.get("marcas_capitulo_II") or {}).get(key) or {}
     cita, ref = (item.get("cita") or "").strip().strip("()"), (item.get("referencia") or "").strip()
-    frase = item["afirmacion"]; nueva = (item.get("frase_corregida") or "").strip() or frase
     if escape(marca.strip()) not in x:
         done("Marca del capítulo II: %s" % key); continue
+    if not item.get("afirmacion"):
+        missing("Marca del capítulo II: %s (falta la sección en el JSON)" % key); continue
+    frase = item["afirmacion"]; nueva = (item.get("frase_corregida") or "").strip() or frase
     if not (cita and ref):
         missing("Marca del capítulo II: %s (cita y referencia)" % key); continue
     assert x.count(escape(frase)) == 1, frase[:60]
@@ -187,6 +189,17 @@ if pc.get("fecha") and f100:
     swap("La versión 2.12.0 obtuvo en local (25-11-2026) un p95 de 2.532 ms con 100 usuarios, por repetir en el entorno de demostración; PC-02 no ejecutada",
          "La versión 2.12.0 obtuvo un p95 de 2.532 ms con 100 usuarios en local (25-11-2026) y de %s ms en el entorno de demostración (%s): %s; PC-02 no ejecutada" % (p95_ms, fecha, "cumple" if cumple else "no cumple"),
          "XII: Tabla de resultados, fila de carga y estrés")
+    res = "cumple" if cumple else "no cumple"
+    for old, what in [
+        ("Entorno de demostración: p95 de 2.308 ms con 25 usuarios y 14.979 ms con 100 (0 errores); prueba local: 1.592 ms con 50 usuarios y 3.974 ms con 100", "XI: medición del indicador de rendimiento"),
+        ("Evidencia: PC-01 no cumple con 100 usuarios (p95 3.974 ms en local y 14.979 ms en el entorno de demostración); cumple hasta 50 usuarios en local y 25 en el entorno de demostración", "XII: trazabilidad de RNF03"),
+        ("Ejecutada el 24-11-2026: con 100 usuarios, p95 de 14,98 s y 0 errores; la meta se cumple hasta 25 usuarios", "XIII: fila de capacidad en la tabla de disponibilidad"),
+    ]:
+        swap(old, old + "; con la versión 2.12.0 (%s), p95 de %s ms con 100 usuarios y %d errores: %s" % (fecha, p95_ms, err, res), what)
+    swap("Inferencia en equipo personal; meta de rendimiento no cumplida con 100 usuarios (el entorno de demostración atiende unas 20 solicitudes por segundo); DICOM pendiente",
+         "Inferencia en equipo personal; DICOM pendiente" if cumple else
+         "Inferencia en equipo personal; meta de rendimiento no cumplida con 100 usuarios (p95 de %s s con la versión 2.12.0 en el entorno de demostración); DICOM pendiente" % p95_s,
+         "XIV: condición de la factibilidad técnica")
     if cumple:
         swap("Una optimización posterior de las consultas cuadruplicó la capacidad en una medición local y queda por confirmar en ese entorno.",
              "Tras una optimización posterior de las consultas, el entorno de demostración cumplió la meta con 100 usuarios (percentil 95 de %s s)." % p95_s, "Resumen")
