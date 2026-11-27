@@ -1,0 +1,71 @@
+{
+  "fecha_utc": "2026-11-24T03:36:51+00:00",
+  "base_url": "https://demo.auroracare.cl/api",
+  "usuarios_virtuales": 10,
+  "duracion_s": 60.4,
+  "python": "3.12.16",
+  "plataforma": "Linux-6.18.56-126.188.amzn2023.aarch64-aarch64-with-glibc2.41",
+  "login": {
+    "muestras": 3,
+    "p50_ms": 293.5,
+    "max_ms": 337.9
+  },
+  "total": {
+    "requests": 1251,
+    "errors": 0,
+    "req_por_s": 20.7,
+    "p50_ms": 451.4,
+    "p95_ms": 922.6,
+    "max_ms": 1337.9
+  },
+  "endpoints": {
+    "GET /cases": {
+      "requests": 212,
+      "errors": 0,
+      "p50_ms": 703.9,
+      "p95_ms": 1110.8,
+      "max_ms": 1337.9,
+      "mean_ms": 727.5
+    },
+    "GET /triage/queue": {
+      "requests": 211,
+      "errors": 0,
+      "p50_ms": 451.8,
+      "p95_ms": 878.1,
+      "max_ms": 1224.6,
+      "mean_ms": 511.8
+    },
+    "GET /patients/page": {
+      "requests": 209,
+      "errors": 0,
+      "p50_ms": 607.6,
+      "p95_ms": 953.1,
+      "max_ms": 1221.3,
+      "mean_ms": 634.5
+    },
+    "GET /cases/{id}": {
+      "requests": 207,
+      "errors": 0,
+      "p50_ms": 243.2,
+      "p95_ms": 500.7,
+      "max_ms": 731.1,
+      "mean_ms": 274.8
+    },
+    "GET /notifications": {
+      "requests": 207,
+      "errors": 0,
+      "p50_ms": 180.4,
+      "p95_ms": 416.3,
+      "max_ms": 645.7,
+      "mean_ms": 220.5
+    },
+    "GET /dashboard/metrics": {
+      "requests": 205,
+      "errors": 0,
+      "p50_ms": 471.6,
+      "p95_ms": 865.4,
+      "max_ms": 956.1,
+      "mean_ms": 514.7
+    }
+  }
+}

@@ -1,0 +1,110 @@
+# Instalador de Aurora para Windows (AuroraSetup-<versión>.exe, Inno Setup).
+# - prueba: ejecuta en Linux (pwsh + Docker) los mismos scripts que corre el instalador, con la misma estructura de
+#   carpetas, y verifica que Aurora responda y que el ADMIN pueda iniciar sesión.
+# - compilar: genera el .exe en Windows y lo deja como artefacto.
+# - publicar: si la prueba y la compilación pasan, lo sube al release «instalador-windows».
+name: instalador-windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+    paths: ["deploy/instalador-windows/**", "deploy/aws-consola/**", ".github/workflows/instalador-windows.yml"]
+
+permissions:
+  contents: write
+
+env:
+  APP_VERSION: "2.12.0"
+
+jobs:
+  prueba:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Armar la carpeta como la deja el instalador
+        run: |
+          D=$RUNNER_TEMP/Aurora
+          mkdir -p $D/app/deploy
+          cp deploy/instalador-windows/docker-compose.local.yml $D/
+          cp -r deploy/instalador-windows/scripts $D/
+          rsync -a --exclude venv --exclude __pycache__ --exclude inference_service --exclude .env backend $D/app/
+          cp -r src public Dockerfile .dockerignore package.json package-lock.json index.html vite.config.ts \
+                tsconfig*.json postcss.config.js tailwind.config.js eslint.config.js $D/app/
+          cp deploy/Caddyfile deploy/.env.example $D/app/deploy/
+          printf '%s\n' 11111111-1 "Admin Prueba" admin@example.com "ClaveTemporal123" > $RUNNER_TEMP/admin.txt
+      - name: Instalar (configurar.ps1)
+        env:
+          CI: "true"
+        run: pwsh -NoProfile -File $RUNNER_TEMP/Aurora/scripts/configurar.ps1 -DatosAdmin $RUNNER_TEMP/admin.txt -Puerto 8090
+      - name: Verificar
+        run: |
+          test ! -f $RUNNER_TEMP/admin.txt
+          curl -fsS http://localhost:8090/ | grep -qi "<html"
+          curl -fsS http://localhost:8090/api/health
+          curl -fsS -X POST http://localhost:8090/api/auth/login -H 'Content-Type: application/json' \
+               -d '{"rut":"11111111-1","password":"ClaveTemporal123"}' | grep -q access_token
+      - name: Detener y desinstalar
+        env:
+          CI: "true"
+        run: |
+          pwsh -NoProfile -File $RUNNER_TEMP/Aurora/scripts/detener.ps1
+          pwsh -NoProfile -File $RUNNER_TEMP/Aurora/scripts/desinstalar.ps1 -BorrarDatos
+      - name: Registros si falla
+        if: failure()
+        run: docker compose -p aurora-local logs --tail 100 || true
+
+  compilar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
+          & $iscc "/DAppVersion=$env:APP_VERSION" deploy\instalador-windows\aurora.iss
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AuroraSetup-${{ env.APP_VERSION }}
+          path: dist-instalador/*.exe
+
+  publicar:
+    needs: [prueba, compilar]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Publicar en el release «instalador-windows»
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          notes="Versión local de PRUEBA de Aurora para Windows: solo para recorrer el flujo, con IA SIMULADA y datos ficticios.
+          La plataforma real, con el modelo de IA conectado, está en https://demo.auroracare.cl.
+          Requiere Docker Desktop (el instalador ofrece instalarlo). Compilado desde ${GITHUB_SHA::7}."
+          if gh release view instalador-windows --repo "$REPO" > /dev/null 2>&1; then
+            gh release edit instalador-windows --repo "$REPO" --notes "$notes" --title "Aurora: versión local de prueba (Windows)"
+            gh release upload instalador-windows out/*.exe --repo "$REPO" --clobber
+          else
+            gh release create instalador-windows out/*.exe --repo "$REPO" --title "Aurora: versión local de prueba (Windows)" --notes "$notes" --latest=false
+          fi
+      - name: Publicar la plantilla de AWS en el release «aws-consola»
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          notes="Plantilla de CloudFormation para instalar Aurora en una cuenta de AWS desde la consola (manual de instalación, parte B).
+          Prototipo académico: IA SIMULADA y solo datos ficticios. La plataforma real está en https://demo.auroracare.cl."
+          if gh release view aws-consola --repo "$REPO" > /dev/null 2>&1; then
+            gh release edit aws-consola --repo "$REPO" --notes "$notes"
+            gh release upload aws-consola deploy/aws-consola/aurora-aws.yaml --repo "$REPO" --clobber
+          else
+            gh release create aws-consola deploy/aws-consola/aurora-aws.yaml --repo "$REPO" --title "Aurora: plantilla para AWS (consola)" --notes "$notes" --latest=false --target "$GITHUB_SHA"
+          fi

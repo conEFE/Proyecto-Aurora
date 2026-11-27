@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import func, text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.db.models.case import Case, CaseStatus
 from app.db.models.image import Image
@@ -53,17 +53,32 @@ def _get(db: Session, case_id: int) -> Case:
 
 
 def to_out(db: Session, case: Case) -> CaseOut:
+    return to_out_many(db, [case])[0]
+
+
+def to_out_many(db: Session, cases: list[Case]) -> list[CaseOut]:
+    """CaseOut de varios casos con dos consultas en total (cantidad de imágenes y nivel vigente), no dos por caso."""
     from app.db.models.triage import TriageResult
 
-    out = CaseOut.model_validate(case)
-    out.image_count = db.query(func.count(Image.id)).filter(Image.case_id == case.id).scalar() or 0
-    level = (
-        db.query(TriageResult.final_level)
-        .filter(TriageResult.case_id == case.id, TriageResult.is_current.is_(True))
-        .scalar()
+    ids = [c.id for c in cases]
+    if not ids:
+        return []
+    counts = dict(
+        db.query(Image.case_id, func.count(Image.id)).filter(Image.case_id.in_(ids)).group_by(Image.case_id).all()
     )
-    out.triage_level = level.value if level is not None else None
-    return out
+    levels = dict(
+        db.query(TriageResult.case_id, TriageResult.final_level)
+        .filter(TriageResult.case_id.in_(ids), TriageResult.is_current.is_(True))
+        .all()
+    )
+    items = []
+    for case in cases:
+        out = CaseOut.model_validate(case)
+        out.image_count = counts.get(case.id, 0)
+        level = levels.get(case.id)
+        out.triage_level = level.value if level is not None else None
+        items.append(out)
+    return items
 
 
 def create_case(db: Session, data: CaseCreate, actor: User, ip: str | None = None) -> Case:
@@ -135,7 +150,13 @@ def list_cases(
     if date_to is not None:
         query = query.filter(Case.created_at <= date_to)
     total = query.count()
-    items = query.order_by(Case.created_at.desc(), Case.id.desc()).offset((page - 1) * size).limit(size).all()
+    items = (
+        query.options(selectinload(Case.patient))  # el resumen del paciente de toda la página en una consulta
+        .order_by(Case.created_at.desc(), Case.id.desc())
+        .offset((page - 1) * size)
+        .limit(size)
+        .all()
+    )
     return items, total
 
 

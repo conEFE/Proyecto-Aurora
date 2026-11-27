@@ -1,0 +1,618 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1640" height="1500" viewBox="0 0 1640 1500" font-family="Helvetica, Arial, &apos;Liberation Sans&apos;, sans-serif"><rect width="1640" height="1500" fill="#fff"/><rect x="30.0" y="560.0" width="200.0" height="330.0" fill="#fff" stroke="#666666"/>
+<rect x="30.0" y="560.0" width="200.0" height="24" fill="#f5f5f5" stroke="#666666"/>
+<text x="130.0" y="576.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">users</text>
+<text x="35.0" y="597.0" font-size="10" font-weight="bold">PK</text>
+<text x="58.0" y="597.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="225.0" y="597.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="58.0" y="615.0" font-size="10.5">rut</text>
+<text x="225.0" y="615.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="633.0" font-size="10.5">email</text>
+<text x="225.0" y="633.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="651.0" font-size="10.5">full_name</text>
+<text x="225.0" y="651.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="669.0" font-size="10.5">first_name</text>
+<text x="225.0" y="669.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="687.0" font-size="10.5">last_name</text>
+<text x="225.0" y="687.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="705.0" font-size="10.5">specialty</text>
+<text x="225.0" y="705.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="723.0" font-size="10.5">email_verified_at</text>
+<text x="225.0" y="723.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="58.0" y="741.0" font-size="10.5">password_hash</text>
+<text x="225.0" y="741.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="759.0" font-size="10.5">role</text>
+<text x="225.0" y="759.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="777.0" font-size="10.5">is_active</text>
+<text x="225.0" y="777.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="58.0" y="795.0" font-size="10.5">created_at</text>
+<text x="225.0" y="795.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="58.0" y="813.0" font-size="10.5">last_login_at</text>
+<text x="225.0" y="813.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="58.0" y="831.0" font-size="10.5">must_change_password</text>
+<text x="225.0" y="831.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="58.0" y="849.0" font-size="10.5">password_changed_at</text>
+<text x="225.0" y="849.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="58.0" y="867.0" font-size="10.5">failed_login_attempts</text>
+<text x="225.0" y="867.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="58.0" y="885.0" font-size="10.5">locked_until</text>
+<text x="225.0" y="885.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="30.0" y="30.0" width="200.0" height="150.0" fill="#fff" stroke="#666666"/>
+<rect x="30.0" y="30.0" width="200.0" height="24" fill="#f5f5f5" stroke="#666666"/>
+<text x="130.0" y="46.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">email_tokens</text>
+<text x="35.0" y="67.0" font-size="10" font-weight="bold">PK</text>
+<text x="58.0" y="67.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="225.0" y="67.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="35.0" y="85.0" font-size="10" font-weight="bold">FK</text>
+<text x="58.0" y="85.0" font-size="10.5">user_id</text>
+<text x="225.0" y="85.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="58.0" y="103.0" font-size="10.5">purpose</text>
+<text x="225.0" y="103.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="121.0" font-size="10.5">token_hash</text>
+<text x="225.0" y="121.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="139.0" font-size="10.5">created_at</text>
+<text x="225.0" y="139.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="58.0" y="157.0" font-size="10.5">expires_at</text>
+<text x="225.0" y="157.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="58.0" y="175.0" font-size="10.5">used_at</text>
+<text x="225.0" y="175.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="30.0" y="270.0" width="200.0" height="168.0" fill="#fff" stroke="#666666"/>
+<rect x="30.0" y="270.0" width="200.0" height="24" fill="#f5f5f5" stroke="#666666"/>
+<text x="130.0" y="286.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">audit_log</text>
+<text x="35.0" y="307.0" font-size="10" font-weight="bold">PK</text>
+<text x="58.0" y="307.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="225.0" y="307.0" font-size="9.5" fill="#555" text-anchor="end">bigint</text>
+<text x="35.0" y="325.0" font-size="10" font-weight="bold">FK</text>
+<text x="58.0" y="325.0" font-size="10.5">user_id</text>
+<text x="225.0" y="325.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="58.0" y="343.0" font-size="10.5">action</text>
+<text x="225.0" y="343.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="361.0" font-size="10.5">entity</text>
+<text x="225.0" y="361.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="379.0" font-size="10.5">entity_id</text>
+<text x="225.0" y="379.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="58.0" y="397.0" font-size="10.5">ip_address</text>
+<text x="225.0" y="397.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="415.0" font-size="10.5">detail</text>
+<text x="225.0" y="415.0" font-size="9.5" fill="#555" text-anchor="end">jsonb</text>
+<text x="58.0" y="433.0" font-size="10.5">created_at</text>
+<text x="225.0" y="433.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="30.0" y="1000.0" width="200.0" height="204.0" fill="#fff" stroke="#666666"/>
+<rect x="30.0" y="1000.0" width="200.0" height="24" fill="#f5f5f5" stroke="#666666"/>
+<text x="130.0" y="1016.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">error_log</text>
+<text x="35.0" y="1037.0" font-size="10" font-weight="bold">PK</text>
+<text x="58.0" y="1037.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="225.0" y="1037.0" font-size="9.5" fill="#555" text-anchor="end">bigint</text>
+<text x="58.0" y="1055.0" font-size="10.5">occurred_at</text>
+<text x="225.0" y="1055.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="58.0" y="1073.0" font-size="10.5">method</text>
+<text x="225.0" y="1073.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="1091.0" font-size="10.5">path</text>
+<text x="225.0" y="1091.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="1109.0" font-size="10.5">status_code</text>
+<text x="225.0" y="1109.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="58.0" y="1127.0" font-size="10.5">error_type</text>
+<text x="225.0" y="1127.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="1145.0" font-size="10.5">message</text>
+<text x="225.0" y="1145.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="1163.0" font-size="10.5">location</text>
+<text x="225.0" y="1163.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="35.0" y="1181.0" font-size="10" font-weight="bold">FK</text>
+<text x="58.0" y="1181.0" font-size="10.5">user_id</text>
+<text x="225.0" y="1181.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="58.0" y="1199.0" font-size="10.5">request_id</text>
+<text x="225.0" y="1199.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<rect x="30.0" y="1260.0" width="200.0" height="132.0" fill="#fff" stroke="#666666"/>
+<rect x="30.0" y="1260.0" width="200.0" height="24" fill="#f5f5f5" stroke="#666666"/>
+<text x="130.0" y="1276.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">request_metrics</text>
+<text x="35.0" y="1297.0" font-size="10" font-weight="bold">PK</text>
+<text x="58.0" y="1297.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="225.0" y="1297.0" font-size="9.5" fill="#555" text-anchor="end">bigint</text>
+<text x="58.0" y="1315.0" font-size="10.5">method</text>
+<text x="225.0" y="1315.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="1333.0" font-size="10.5">path</text>
+<text x="225.0" y="1333.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="58.0" y="1351.0" font-size="10.5">status_code</text>
+<text x="225.0" y="1351.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="58.0" y="1369.0" font-size="10.5">duration_ms</text>
+<text x="225.0" y="1369.0" font-size="9.5" fill="#555" text-anchor="end">float</text>
+<text x="58.0" y="1387.0" font-size="10.5">created_at</text>
+<text x="225.0" y="1387.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="1410.0" y="30.0" width="200.0" height="114.0" fill="#fff" stroke="#82b366"/>
+<rect x="1410.0" y="30.0" width="200.0" height="24" fill="#d5e8d4" stroke="#82b366"/>
+<text x="1510.0" y="46.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">consent_texts</text>
+<text x="1415.0" y="67.0" font-size="10" font-weight="bold">PK</text>
+<text x="1438.0" y="67.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="1605.0" y="67.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1438.0" y="85.0" font-size="10.5">version</text>
+<text x="1605.0" y="85.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1438.0" y="103.0" font-size="10.5">body</text>
+<text x="1605.0" y="103.0" font-size="9.5" fill="#555" text-anchor="end">text</text>
+<text x="1438.0" y="121.0" font-size="10.5">is_active</text>
+<text x="1605.0" y="121.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="1438.0" y="139.0" font-size="10.5">created_at</text>
+<text x="1605.0" y="139.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="1120.0" y="30.0" width="200.0" height="348.0" fill="#fff" stroke="#82b366"/>
+<rect x="1120.0" y="30.0" width="200.0" height="24" fill="#d5e8d4" stroke="#82b366"/>
+<text x="1220.0" y="46.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">patients</text>
+<text x="1125.0" y="67.0" font-size="10" font-weight="bold">PK</text>
+<text x="1148.0" y="67.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="1315.0" y="67.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1148.0" y="85.0" font-size="10.5">rut</text>
+<text x="1315.0" y="85.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1148.0" y="103.0" font-size="10.5">first_name</text>
+<text x="1315.0" y="103.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1148.0" y="121.0" font-size="10.5">last_name</text>
+<text x="1315.0" y="121.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1148.0" y="139.0" font-size="10.5">birth_date</text>
+<text x="1315.0" y="139.0" font-size="9.5" fill="#555" text-anchor="end">date</text>
+<text x="1148.0" y="157.0" font-size="10.5">sex</text>
+<text x="1315.0" y="157.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1148.0" y="175.0" font-size="10.5">medical_history</text>
+<text x="1315.0" y="175.0" font-size="9.5" fill="#555" text-anchor="end">text</text>
+<text x="1148.0" y="193.0" font-size="10.5">family_history_first_degree</text>
+<text x="1315.0" y="193.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="1148.0" y="211.0" font-size="10.5">previous_breast_cancer</text>
+<text x="1315.0" y="211.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="1148.0" y="229.0" font-size="10.5">consent_given</text>
+<text x="1315.0" y="229.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="1148.0" y="247.0" font-size="10.5">consent_at</text>
+<text x="1315.0" y="247.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="1125.0" y="265.0" font-size="10" font-weight="bold">FK</text>
+<text x="1148.0" y="265.0" font-size="10.5">consent_registered_by</text>
+<text x="1315.0" y="265.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1125.0" y="283.0" font-size="10" font-weight="bold">FK</text>
+<text x="1148.0" y="283.0" font-size="10.5">consent_text_id</text>
+<text x="1315.0" y="283.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1148.0" y="301.0" font-size="10.5">blocked_at</text>
+<text x="1315.0" y="301.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="1125.0" y="319.0" font-size="10" font-weight="bold">FK</text>
+<text x="1148.0" y="319.0" font-size="10.5">blocked_by</text>
+<text x="1315.0" y="319.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1148.0" y="337.0" font-size="10.5">block_reason</text>
+<text x="1315.0" y="337.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1125.0" y="355.0" font-size="10" font-weight="bold">FK</text>
+<text x="1148.0" y="355.0" font-size="10.5">created_by</text>
+<text x="1315.0" y="355.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1148.0" y="373.0" font-size="10.5">created_at</text>
+<text x="1315.0" y="373.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="1410.0" y="230.0" width="200.0" height="150.0" fill="#fff" stroke="#82b366"/>
+<rect x="1410.0" y="230.0" width="200.0" height="24" fill="#d5e8d4" stroke="#82b366"/>
+<text x="1510.0" y="246.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">patient_consent_events</text>
+<text x="1415.0" y="267.0" font-size="10" font-weight="bold">PK</text>
+<text x="1438.0" y="267.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="1605.0" y="267.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1415.0" y="285.0" font-size="10" font-weight="bold">FK</text>
+<text x="1438.0" y="285.0" font-size="10.5">patient_id</text>
+<text x="1605.0" y="285.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1438.0" y="303.0" font-size="10.5">action</text>
+<text x="1605.0" y="303.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1415.0" y="321.0" font-size="10" font-weight="bold">FK</text>
+<text x="1438.0" y="321.0" font-size="10.5">consent_text_id</text>
+<text x="1605.0" y="321.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1438.0" y="339.0" font-size="10.5">occurred_at</text>
+<text x="1605.0" y="339.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="1415.0" y="357.0" font-size="10" font-weight="bold">FK</text>
+<text x="1438.0" y="357.0" font-size="10.5">registered_by</text>
+<text x="1605.0" y="357.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1438.0" y="375.0" font-size="10.5">note</text>
+<text x="1605.0" y="375.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<rect x="1410.0" y="440.0" width="200.0" height="222.0" fill="#fff" stroke="#82b366"/>
+<rect x="1410.0" y="440.0" width="200.0" height="24" fill="#d5e8d4" stroke="#82b366"/>
+<text x="1510.0" y="456.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">data_subject_requests</text>
+<text x="1415.0" y="477.0" font-size="10" font-weight="bold">PK</text>
+<text x="1438.0" y="477.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="1605.0" y="477.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1415.0" y="495.0" font-size="10" font-weight="bold">FK</text>
+<text x="1438.0" y="495.0" font-size="10.5">patient_id</text>
+<text x="1605.0" y="495.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1438.0" y="513.0" font-size="10.5">request_type</text>
+<text x="1605.0" y="513.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1438.0" y="531.0" font-size="10.5">status</text>
+<text x="1605.0" y="531.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1438.0" y="549.0" font-size="10.5">detail</text>
+<text x="1605.0" y="549.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1438.0" y="567.0" font-size="10.5">received_at</text>
+<text x="1605.0" y="567.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="1438.0" y="585.0" font-size="10.5">due_at</text>
+<text x="1605.0" y="585.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="1415.0" y="603.0" font-size="10" font-weight="bold">FK</text>
+<text x="1438.0" y="603.0" font-size="10.5">registered_by</text>
+<text x="1605.0" y="603.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1438.0" y="621.0" font-size="10.5">resolved_at</text>
+<text x="1605.0" y="621.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="1415.0" y="639.0" font-size="10" font-weight="bold">FK</text>
+<text x="1438.0" y="639.0" font-size="10.5">resolved_by</text>
+<text x="1605.0" y="639.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1438.0" y="657.0" font-size="10.5">resolution</text>
+<text x="1605.0" y="657.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<rect x="830.0" y="330.0" width="200.0" height="258.0" fill="#fff" stroke="#6c8ebf"/>
+<rect x="830.0" y="330.0" width="200.0" height="24" fill="#dae8fc" stroke="#6c8ebf"/>
+<text x="930.0" y="346.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">cases</text>
+<text x="835.0" y="367.0" font-size="10" font-weight="bold">PK</text>
+<text x="858.0" y="367.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="1025.0" y="367.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="858.0" y="385.0" font-size="10.5">code</text>
+<text x="1025.0" y="385.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="835.0" y="403.0" font-size="10" font-weight="bold">FK</text>
+<text x="858.0" y="403.0" font-size="10.5">patient_id</text>
+<text x="1025.0" y="403.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="835.0" y="421.0" font-size="10" font-weight="bold">FK</text>
+<text x="858.0" y="421.0" font-size="10.5">created_by</text>
+<text x="1025.0" y="421.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="835.0" y="439.0" font-size="10" font-weight="bold">FK</text>
+<text x="858.0" y="439.0" font-size="10.5">assigned_medico_id</text>
+<text x="1025.0" y="439.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="858.0" y="457.0" font-size="10.5">status</text>
+<text x="1025.0" y="457.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="858.0" y="475.0" font-size="10.5">palpable_mass</text>
+<text x="1025.0" y="475.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="858.0" y="493.0" font-size="10.5">nipple_discharge</text>
+<text x="1025.0" y="493.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="858.0" y="511.0" font-size="10.5">skin_or_nipple_changes</text>
+<text x="1025.0" y="511.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="858.0" y="529.0" font-size="10.5">birads_reported</text>
+<text x="1025.0" y="529.0" font-size="9.5" fill="#555" text-anchor="end">smallint</text>
+<text x="858.0" y="547.0" font-size="10.5">created_at</text>
+<text x="1025.0" y="547.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="858.0" y="565.0" font-size="10.5">updated_at</text>
+<text x="1025.0" y="565.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="858.0" y="583.0" font-size="10.5">closed_at</text>
+<text x="1025.0" y="583.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="540.0" y="620.0" width="200.0" height="258.0" fill="#fff" stroke="#6c8ebf"/>
+<rect x="540.0" y="620.0" width="200.0" height="24" fill="#dae8fc" stroke="#6c8ebf"/>
+<text x="640.0" y="636.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">images</text>
+<text x="545.0" y="657.0" font-size="10" font-weight="bold">PK</text>
+<text x="568.0" y="657.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="735.0" y="657.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="675.0" font-size="10.5">filename</text>
+<text x="735.0" y="675.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="568.0" y="693.0" font-size="10.5">filepath</text>
+<text x="735.0" y="693.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="568.0" y="711.0" font-size="10.5">mime_type</text>
+<text x="735.0" y="711.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="568.0" y="729.0" font-size="10.5">width</text>
+<text x="735.0" y="729.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="747.0" font-size="10.5">height</text>
+<text x="735.0" y="747.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="765.0" font-size="10.5">size_kb</text>
+<text x="735.0" y="765.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="783.0" font-size="10.5">exam_type</text>
+<text x="735.0" y="783.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="568.0" y="801.0" font-size="10.5">laterality</text>
+<text x="735.0" y="801.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="545.0" y="819.0" font-size="10" font-weight="bold">FK</text>
+<text x="568.0" y="819.0" font-size="10.5">uploaded_by</text>
+<text x="735.0" y="819.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="837.0" font-size="10.5">sha256</text>
+<text x="735.0" y="837.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="568.0" y="855.0" font-size="10.5">uploaded_at</text>
+<text x="735.0" y="855.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="545.0" y="873.0" font-size="10" font-weight="bold">FK</text>
+<text x="568.0" y="873.0" font-size="10.5">case_id</text>
+<text x="735.0" y="873.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<rect x="540.0" y="930.0" width="200.0" height="222.0" fill="#fff" stroke="#6c8ebf"/>
+<rect x="540.0" y="930.0" width="200.0" height="24" fill="#dae8fc" stroke="#6c8ebf"/>
+<text x="640.0" y="946.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">inference_results</text>
+<text x="545.0" y="967.0" font-size="10" font-weight="bold">PK</text>
+<text x="568.0" y="967.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="735.0" y="967.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="545.0" y="985.0" font-size="10" font-weight="bold">FK</text>
+<text x="568.0" y="985.0" font-size="10.5">image_id</text>
+<text x="735.0" y="985.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="1003.0" font-size="10.5">detected</text>
+<text x="735.0" y="1003.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="568.0" y="1021.0" font-size="10.5">confidence</text>
+<text x="735.0" y="1021.0" font-size="9.5" fill="#555" text-anchor="end">float</text>
+<text x="568.0" y="1039.0" font-size="10.5">detections</text>
+<text x="735.0" y="1039.0" font-size="9.5" fill="#555" text-anchor="end">json</text>
+<text x="568.0" y="1057.0" font-size="10.5">processing_time_ms</text>
+<text x="735.0" y="1057.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="1075.0" font-size="10.5">model_version</text>
+<text x="735.0" y="1075.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="568.0" y="1093.0" font-size="10.5">is_simulated</text>
+<text x="735.0" y="1093.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="568.0" y="1111.0" font-size="10.5">clinically_validated</text>
+<text x="735.0" y="1111.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="568.0" y="1129.0" font-size="10.5">message</text>
+<text x="735.0" y="1129.0" font-size="9.5" fill="#555" text-anchor="end">text</text>
+<text x="568.0" y="1147.0" font-size="10.5">created_at</text>
+<text x="735.0" y="1147.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="830.0" y="1000.0" width="200.0" height="222.0" fill="#fff" stroke="#6c8ebf"/>
+<rect x="830.0" y="1000.0" width="200.0" height="24" fill="#dae8fc" stroke="#6c8ebf"/>
+<text x="930.0" y="1016.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">ai_validations</text>
+<text x="835.0" y="1037.0" font-size="10" font-weight="bold">PK</text>
+<text x="858.0" y="1037.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="1025.0" y="1037.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="835.0" y="1055.0" font-size="10" font-weight="bold">FK</text>
+<text x="858.0" y="1055.0" font-size="10.5">image_id</text>
+<text x="1025.0" y="1055.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="835.0" y="1073.0" font-size="10" font-weight="bold">FK</text>
+<text x="858.0" y="1073.0" font-size="10.5">inference_result_id</text>
+<text x="1025.0" y="1073.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="835.0" y="1091.0" font-size="10" font-weight="bold">FK</text>
+<text x="858.0" y="1091.0" font-size="10.5">medico_id</text>
+<text x="1025.0" y="1091.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="858.0" y="1109.0" font-size="10.5">verdict</text>
+<text x="1025.0" y="1109.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="858.0" y="1127.0" font-size="10.5">comment</text>
+<text x="1025.0" y="1127.0" font-size="9.5" fill="#555" text-anchor="end">text</text>
+<text x="858.0" y="1145.0" font-size="10.5">ai_detected</text>
+<text x="1025.0" y="1145.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="858.0" y="1163.0" font-size="10.5">ai_model_version</text>
+<text x="1025.0" y="1163.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="858.0" y="1181.0" font-size="10.5">ai_was_simulated</text>
+<text x="1025.0" y="1181.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="858.0" y="1199.0" font-size="10.5">created_at</text>
+<text x="1025.0" y="1199.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="858.0" y="1217.0" font-size="10.5">updated_at</text>
+<text x="1025.0" y="1217.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="1120.0" y="650.0" width="200.0" height="132.0" fill="#fff" stroke="#6c8ebf"/>
+<rect x="1120.0" y="650.0" width="200.0" height="24" fill="#dae8fc" stroke="#6c8ebf"/>
+<text x="1220.0" y="666.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">notifications</text>
+<text x="1125.0" y="687.0" font-size="10" font-weight="bold">PK</text>
+<text x="1148.0" y="687.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="1315.0" y="687.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1125.0" y="705.0" font-size="10" font-weight="bold">FK</text>
+<text x="1148.0" y="705.0" font-size="10.5">user_id</text>
+<text x="1315.0" y="705.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1125.0" y="723.0" font-size="10" font-weight="bold">FK</text>
+<text x="1148.0" y="723.0" font-size="10.5">case_id</text>
+<text x="1315.0" y="723.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1148.0" y="741.0" font-size="10.5">message</text>
+<text x="1315.0" y="741.0" font-size="9.5" fill="#555" text-anchor="end">text</text>
+<text x="1148.0" y="759.0" font-size="10.5">read_at</text>
+<text x="1315.0" y="759.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="1148.0" y="777.0" font-size="10.5">created_at</text>
+<text x="1315.0" y="777.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="540.0" y="30.0" width="200.0" height="150.0" fill="#fff" stroke="#d6b656"/>
+<rect x="540.0" y="30.0" width="200.0" height="24" fill="#fff2cc" stroke="#d6b656"/>
+<text x="640.0" y="46.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">triage_configs</text>
+<text x="545.0" y="67.0" font-size="10" font-weight="bold">PK</text>
+<text x="568.0" y="67.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="735.0" y="67.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="85.0" font-size="10.5">version</text>
+<text x="735.0" y="85.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="103.0" font-size="10.5">params</text>
+<text x="735.0" y="103.0" font-size="9.5" fill="#555" text-anchor="end">jsonb</text>
+<text x="568.0" y="121.0" font-size="10.5">is_active</text>
+<text x="735.0" y="121.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="545.0" y="139.0" font-size="10" font-weight="bold">FK</text>
+<text x="568.0" y="139.0" font-size="10.5">created_by</text>
+<text x="735.0" y="139.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="157.0" font-size="10.5">created_at</text>
+<text x="735.0" y="157.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="568.0" y="175.0" font-size="10.5">change_reason</text>
+<text x="735.0" y="175.0" font-size="9.5" fill="#555" text-anchor="end">text</text>
+<rect x="540.0" y="260.0" width="200.0" height="240.0" fill="#fff" stroke="#d6b656"/>
+<rect x="540.0" y="260.0" width="200.0" height="24" fill="#fff2cc" stroke="#d6b656"/>
+<text x="640.0" y="276.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">triage_results</text>
+<text x="545.0" y="297.0" font-size="10" font-weight="bold">PK</text>
+<text x="568.0" y="297.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="735.0" y="297.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="545.0" y="315.0" font-size="10" font-weight="bold">FK</text>
+<text x="568.0" y="315.0" font-size="10.5">case_id</text>
+<text x="735.0" y="315.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="545.0" y="333.0" font-size="10" font-weight="bold">FK</text>
+<text x="568.0" y="333.0" font-size="10.5">config_version</text>
+<text x="735.0" y="333.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="351.0" font-size="10.5">score</text>
+<text x="735.0" y="351.0" font-size="9.5" fill="#555" text-anchor="end">numeric</text>
+<text x="568.0" y="369.0" font-size="10.5">computed_level</text>
+<text x="735.0" y="369.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="568.0" y="387.0" font-size="10.5">escalation_rule</text>
+<text x="735.0" y="387.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="568.0" y="405.0" font-size="10.5">breakdown</text>
+<text x="735.0" y="405.0" font-size="9.5" fill="#555" text-anchor="end">jsonb</text>
+<text x="568.0" y="423.0" font-size="10.5">final_level</text>
+<text x="735.0" y="423.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="545.0" y="441.0" font-size="10" font-weight="bold">FK</text>
+<text x="568.0" y="441.0" font-size="10.5">override_by</text>
+<text x="735.0" y="441.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="568.0" y="459.0" font-size="10.5">override_reason</text>
+<text x="735.0" y="459.0" font-size="9.5" fill="#555" text-anchor="end">text</text>
+<text x="568.0" y="477.0" font-size="10.5">is_current</text>
+<text x="735.0" y="477.0" font-size="9.5" fill="#555" text-anchor="end">boolean</text>
+<text x="568.0" y="495.0" font-size="10.5">computed_at</text>
+<text x="735.0" y="495.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="1120.0" y="830.0" width="200.0" height="222.0" fill="#fff" stroke="#9673a6"/>
+<rect x="1120.0" y="830.0" width="200.0" height="24" fill="#e1d5e7" stroke="#9673a6"/>
+<text x="1220.0" y="846.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">clinical_reviews</text>
+<text x="1125.0" y="867.0" font-size="10" font-weight="bold">PK</text>
+<text x="1148.0" y="867.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="1315.0" y="867.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1125.0" y="885.0" font-size="10" font-weight="bold">FK</text>
+<text x="1148.0" y="885.0" font-size="10.5">case_id</text>
+<text x="1315.0" y="885.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1125.0" y="903.0" font-size="10" font-weight="bold">FK</text>
+<text x="1148.0" y="903.0" font-size="10.5">medico_id</text>
+<text x="1315.0" y="903.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1148.0" y="921.0" font-size="10.5">birads_final</text>
+<text x="1315.0" y="921.0" font-size="9.5" fill="#555" text-anchor="end">smallint</text>
+<text x="1148.0" y="939.0" font-size="10.5">findings</text>
+<text x="1315.0" y="939.0" font-size="9.5" fill="#555" text-anchor="end">text</text>
+<text x="1148.0" y="957.0" font-size="10.5">recommendation</text>
+<text x="1315.0" y="957.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1148.0" y="975.0" font-size="10.5">triage_assessment</text>
+<text x="1315.0" y="975.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1148.0" y="993.0" font-size="10.5">triage_comment</text>
+<text x="1315.0" y="993.0" font-size="9.5" fill="#555" text-anchor="end">text</text>
+<text x="1148.0" y="1011.0" font-size="10.5">triage_level_at_review</text>
+<text x="1315.0" y="1011.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1148.0" y="1029.0" font-size="10.5">triage_config_version_at_review</text>
+<text x="1315.0" y="1029.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1148.0" y="1047.0" font-size="10.5">created_at</text>
+<text x="1315.0" y="1047.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<rect x="1410.0" y="760.0" width="200.0" height="132.0" fill="#fff" stroke="#9673a6"/>
+<rect x="1410.0" y="760.0" width="200.0" height="24" fill="#e1d5e7" stroke="#9673a6"/>
+<text x="1510.0" y="776.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">report_signatures</text>
+<text x="1415.0" y="797.0" font-size="10" font-weight="bold">PK</text>
+<text x="1438.0" y="797.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="1605.0" y="797.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1415.0" y="815.0" font-size="10" font-weight="bold">FK</text>
+<text x="1438.0" y="815.0" font-size="10.5">case_id</text>
+<text x="1605.0" y="815.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1415.0" y="833.0" font-size="10" font-weight="bold">FK</text>
+<text x="1438.0" y="833.0" font-size="10.5">medico_id</text>
+<text x="1605.0" y="833.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1438.0" y="851.0" font-size="10.5">signed_at</text>
+<text x="1605.0" y="851.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="1438.0" y="869.0" font-size="10.5">content_hash</text>
+<text x="1605.0" y="869.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1438.0" y="887.0" font-size="10.5">signature</text>
+<text x="1605.0" y="887.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<rect x="1410.0" y="980.0" width="200.0" height="150.0" fill="#fff" stroke="#9673a6"/>
+<rect x="1410.0" y="980.0" width="200.0" height="24" fill="#e1d5e7" stroke="#9673a6"/>
+<text x="1510.0" y="996.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">reports</text>
+<text x="1415.0" y="1017.0" font-size="10" font-weight="bold">PK</text>
+<text x="1438.0" y="1017.0" font-size="10.5" text-decoration="underline">id</text>
+<text x="1605.0" y="1017.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1415.0" y="1035.0" font-size="10" font-weight="bold">FK</text>
+<text x="1438.0" y="1035.0" font-size="10.5">case_id</text>
+<text x="1605.0" y="1035.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1415.0" y="1053.0" font-size="10" font-weight="bold">FK</text>
+<text x="1438.0" y="1053.0" font-size="10.5">generated_by</text>
+<text x="1605.0" y="1053.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<text x="1438.0" y="1071.0" font-size="10.5">generated_at</text>
+<text x="1605.0" y="1071.0" font-size="9.5" fill="#555" text-anchor="end">timestamp</text>
+<text x="1438.0" y="1089.0" font-size="10.5">dicom_metadata</text>
+<text x="1605.0" y="1089.0" font-size="9.5" fill="#555" text-anchor="end">jsonb</text>
+<text x="1438.0" y="1107.0" font-size="10.5">content_hash</text>
+<text x="1605.0" y="1107.0" font-size="9.5" fill="#555" text-anchor="end">varchar</text>
+<text x="1415.0" y="1125.0" font-size="10" font-weight="bold">FK</text>
+<text x="1438.0" y="1125.0" font-size="10.5">signature_id</text>
+<text x="1605.0" y="1125.0" font-size="9.5" fill="#555" text-anchor="end">integer</text>
+<path d="M1320.0 279.0 L1365.0 279.0 L1365.0 63.0 L1410.0 63.0" fill="none" stroke="#000"/>
+<line x1="1404.0" y1="57.0" x2="1404.0" y2="69.0" stroke="#000"/>
+<line x1="1399.0" y1="57.0" x2="1399.0" y2="69.0" stroke="#000"/>
+<line x1="1332.0" y1="279.0" x2="1320.0" y2="286.0" stroke="#000"/>
+<line x1="1332.0" y1="279.0" x2="1320.0" y2="279.0" stroke="#000"/>
+<line x1="1332.0" y1="279.0" x2="1320.0" y2="272.0" stroke="#000"/>
+<line x1="1334.0" y1="285.0" x2="1334.0" y2="273.0" stroke="#000"/>
+<path d="M1410.0 281.0 L1374.0 281.0 L1374.0 63.0 L1320.0 63.0" fill="none" stroke="#000"/>
+<line x1="1326.0" y1="69.0" x2="1326.0" y2="57.0" stroke="#000"/>
+<line x1="1331.0" y1="69.0" x2="1331.0" y2="57.0" stroke="#000"/>
+<line x1="1398.0" y1="281.0" x2="1410.0" y2="274.0" stroke="#000"/>
+<line x1="1398.0" y1="281.0" x2="1410.0" y2="281.0" stroke="#000"/>
+<line x1="1398.0" y1="281.0" x2="1410.0" y2="288.0" stroke="#000"/>
+<line x1="1396.0" y1="275.0" x2="1396.0" y2="287.0" stroke="#000"/>
+<path d="M1610.0 317.0 L1630.0 317.0 L1630.0 67.0 L1610.0 67.0" fill="none" stroke="#000"/>
+<line x1="1616.0" y1="73.0" x2="1616.0" y2="61.0" stroke="#000"/>
+<line x1="1621.0" y1="73.0" x2="1621.0" y2="61.0" stroke="#000"/>
+<line x1="1622.0" y1="317.0" x2="1610.0" y2="324.0" stroke="#000"/>
+<line x1="1622.0" y1="317.0" x2="1610.0" y2="317.0" stroke="#000"/>
+<line x1="1622.0" y1="317.0" x2="1610.0" y2="310.0" stroke="#000"/>
+<line x1="1624.0" y1="323.0" x2="1624.0" y2="311.0" stroke="#000"/>
+<path d="M1410.0 491.0 L1347.0 491.0 L1347.0 67.0 L1320.0 67.0" fill="none" stroke="#000"/>
+<line x1="1326.0" y1="73.0" x2="1326.0" y2="61.0" stroke="#000"/>
+<line x1="1331.0" y1="73.0" x2="1331.0" y2="61.0" stroke="#000"/>
+<line x1="1398.0" y1="491.0" x2="1410.0" y2="484.0" stroke="#000"/>
+<line x1="1398.0" y1="491.0" x2="1410.0" y2="491.0" stroke="#000"/>
+<line x1="1398.0" y1="491.0" x2="1410.0" y2="498.0" stroke="#000"/>
+<line x1="1396.0" y1="485.0" x2="1396.0" y2="497.0" stroke="#000"/>
+<path d="M1030.0 399.0 L1075.0 399.0 L1075.0 71.0 L1120.0 71.0" fill="none" stroke="#000"/>
+<line x1="1114.0" y1="65.0" x2="1114.0" y2="77.0" stroke="#000"/>
+<line x1="1109.0" y1="65.0" x2="1109.0" y2="77.0" stroke="#000"/>
+<line x1="1042.0" y1="399.0" x2="1030.0" y2="406.0" stroke="#000"/>
+<line x1="1042.0" y1="399.0" x2="1030.0" y2="399.0" stroke="#000"/>
+<line x1="1042.0" y1="399.0" x2="1030.0" y2="392.0" stroke="#000"/>
+<line x1="1044.0" y1="405.0" x2="1044.0" y2="393.0" stroke="#000"/>
+<path d="M740.0 869.0 L785.0 869.0 L785.0 363.0 L830.0 363.0" fill="none" stroke="#000"/>
+<line x1="824.0" y1="357.0" x2="824.0" y2="369.0" stroke="#000"/>
+<line x1="819.0" y1="357.0" x2="819.0" y2="369.0" stroke="#000"/>
+<line x1="752.0" y1="869.0" x2="740.0" y2="876.0" stroke="#000"/>
+<line x1="752.0" y1="869.0" x2="740.0" y2="869.0" stroke="#000"/>
+<line x1="752.0" y1="869.0" x2="740.0" y2="862.0" stroke="#000"/>
+<line x1="754.0" y1="875.0" x2="754.0" y2="863.0" stroke="#000"/>
+<path d="M740.0 311.0 L794.0 311.0 L794.0 367.0 L830.0 367.0" fill="none" stroke="#000"/>
+<line x1="824.0" y1="361.0" x2="824.0" y2="373.0" stroke="#000"/>
+<line x1="819.0" y1="361.0" x2="819.0" y2="373.0" stroke="#000"/>
+<line x1="752.0" y1="311.0" x2="740.0" y2="318.0" stroke="#000"/>
+<line x1="752.0" y1="311.0" x2="740.0" y2="311.0" stroke="#000"/>
+<line x1="752.0" y1="311.0" x2="740.0" y2="304.0" stroke="#000"/>
+<line x1="754.0" y1="317.0" x2="754.0" y2="305.0" stroke="#000"/>
+<path d="M740.0 329.0 L760.0 329.0 L760.0 63.0 L740.0 63.0" fill="none" stroke="#000"/>
+<line x1="746.0" y1="69.0" x2="746.0" y2="57.0" stroke="#000"/>
+<line x1="751.0" y1="69.0" x2="751.0" y2="57.0" stroke="#000"/>
+<line x1="752.0" y1="329.0" x2="740.0" y2="336.0" stroke="#000"/>
+<line x1="752.0" y1="329.0" x2="740.0" y2="329.0" stroke="#000"/>
+<line x1="752.0" y1="329.0" x2="740.0" y2="322.0" stroke="#000"/>
+<line x1="754.0" y1="335.0" x2="754.0" y2="323.0" stroke="#000"/>
+<path d="M740.0 981.0 L769.0 981.0 L769.0 653.0 L740.0 653.0" fill="none" stroke="#000"/>
+<line x1="746.0" y1="659.0" x2="746.0" y2="647.0" stroke="#000"/>
+<line x1="751.0" y1="659.0" x2="751.0" y2="647.0" stroke="#000"/>
+<line x1="752.0" y1="981.0" x2="740.0" y2="988.0" stroke="#000"/>
+<line x1="752.0" y1="981.0" x2="740.0" y2="981.0" stroke="#000"/>
+<line x1="752.0" y1="981.0" x2="740.0" y2="974.0" stroke="#000"/>
+<line x1="754.0" y1="987.0" x2="754.0" y2="975.0" stroke="#000"/>
+<path d="M830.0 1051.0 L767.0 1051.0 L767.0 657.0 L740.0 657.0" fill="none" stroke="#000"/>
+<line x1="746.0" y1="663.0" x2="746.0" y2="651.0" stroke="#000"/>
+<line x1="751.0" y1="663.0" x2="751.0" y2="651.0" stroke="#000"/>
+<line x1="818.0" y1="1051.0" x2="830.0" y2="1044.0" stroke="#000"/>
+<line x1="818.0" y1="1051.0" x2="830.0" y2="1051.0" stroke="#000"/>
+<line x1="818.0" y1="1051.0" x2="830.0" y2="1058.0" stroke="#000"/>
+<line x1="816.0" y1="1045.0" x2="816.0" y2="1057.0" stroke="#000"/>
+<path d="M830.0 1069.0 L803.0 1069.0 L803.0 963.0 L740.0 963.0" fill="none" stroke="#000"/>
+<line x1="746.0" y1="969.0" x2="746.0" y2="957.0" stroke="#000"/>
+<line x1="751.0" y1="969.0" x2="751.0" y2="957.0" stroke="#000"/>
+<line x1="818.0" y1="1069.0" x2="830.0" y2="1062.0" stroke="#000"/>
+<line x1="818.0" y1="1069.0" x2="830.0" y2="1069.0" stroke="#000"/>
+<line x1="818.0" y1="1069.0" x2="830.0" y2="1076.0" stroke="#000"/>
+<line x1="816.0" y1="1063.0" x2="816.0" y2="1075.0" stroke="#000"/>
+<path d="M1120.0 719.0 L1084.0 719.0 L1084.0 371.0 L1030.0 371.0" fill="none" stroke="#000"/>
+<line x1="1036.0" y1="377.0" x2="1036.0" y2="365.0" stroke="#000"/>
+<line x1="1041.0" y1="377.0" x2="1041.0" y2="365.0" stroke="#000"/>
+<line x1="1108.0" y1="719.0" x2="1120.0" y2="712.0" stroke="#000"/>
+<line x1="1108.0" y1="719.0" x2="1120.0" y2="719.0" stroke="#000"/>
+<line x1="1108.0" y1="719.0" x2="1120.0" y2="726.0" stroke="#000"/>
+<line x1="1106.0" y1="713.0" x2="1106.0" y2="725.0" stroke="#000"/>
+<path d="M1120.0 881.0 L1057.0 881.0 L1057.0 375.0 L1030.0 375.0" fill="none" stroke="#000"/>
+<line x1="1036.0" y1="381.0" x2="1036.0" y2="369.0" stroke="#000"/>
+<line x1="1041.0" y1="381.0" x2="1041.0" y2="369.0" stroke="#000"/>
+<line x1="1108.0" y1="881.0" x2="1120.0" y2="874.0" stroke="#000"/>
+<line x1="1108.0" y1="881.0" x2="1120.0" y2="881.0" stroke="#000"/>
+<line x1="1108.0" y1="881.0" x2="1120.0" y2="888.0" stroke="#000"/>
+<line x1="1106.0" y1="875.0" x2="1106.0" y2="887.0" stroke="#000"/>
+<path d="M1030.0 363.0 L1093.0 363.0 L1093.0 1096.0 L1383.0 1096.0 L1383.0 811.0 L1410.0 811.0" fill="none" stroke="#000"/>
+<line x1="1398.0" y1="811.0" x2="1410.0" y2="804.0" stroke="#000"/>
+<line x1="1398.0" y1="811.0" x2="1410.0" y2="811.0" stroke="#000"/>
+<line x1="1398.0" y1="811.0" x2="1410.0" y2="818.0" stroke="#000"/>
+<line x1="1396.0" y1="805.0" x2="1396.0" y2="817.0" stroke="#000"/>
+<line x1="1036.0" y1="369.0" x2="1036.0" y2="357.0" stroke="#000"/>
+<line x1="1041.0" y1="369.0" x2="1041.0" y2="357.0" stroke="#000"/>
+<path d="M1030.0 367.0 L1048.0 367.0 L1048.0 1102.0 L1338.0 1102.0 L1338.0 1031.0 L1410.0 1031.0" fill="none" stroke="#000"/>
+<line x1="1398.0" y1="1031.0" x2="1410.0" y2="1024.0" stroke="#000"/>
+<line x1="1398.0" y1="1031.0" x2="1410.0" y2="1031.0" stroke="#000"/>
+<line x1="1398.0" y1="1031.0" x2="1410.0" y2="1038.0" stroke="#000"/>
+<line x1="1396.0" y1="1025.0" x2="1396.0" y2="1037.0" stroke="#000"/>
+<line x1="1036.0" y1="373.0" x2="1036.0" y2="361.0" stroke="#000"/>
+<line x1="1041.0" y1="373.0" x2="1041.0" y2="361.0" stroke="#000"/>
+<path d="M1610.0 1121.0 L1639.0 1121.0 L1639.0 793.0 L1610.0 793.0" fill="none" stroke="#000"/>
+<line x1="1616.0" y1="799.0" x2="1616.0" y2="787.0" stroke="#000"/>
+<line x1="1621.0" y1="799.0" x2="1621.0" y2="787.0" stroke="#000"/>
+<line x1="1622.0" y1="1121.0" x2="1610.0" y2="1128.0" stroke="#000"/>
+<line x1="1622.0" y1="1121.0" x2="1610.0" y2="1121.0" stroke="#000"/>
+<line x1="1622.0" y1="1121.0" x2="1610.0" y2="1114.0" stroke="#000"/>
+<line x1="1624.0" y1="1127.0" x2="1624.0" y2="1115.0" stroke="#000"/>
+<path d="M230.0 81.0 L250.0 81.0 L250.0 593.0 L230.0 593.0" fill="none" stroke="#000"/>
+<line x1="236.0" y1="599.0" x2="236.0" y2="587.0" stroke="#000"/>
+<line x1="241.0" y1="599.0" x2="241.0" y2="587.0" stroke="#000"/>
+<line x1="242.0" y1="81.0" x2="230.0" y2="88.0" stroke="#000"/>
+<line x1="242.0" y1="81.0" x2="230.0" y2="81.0" stroke="#000"/>
+<line x1="242.0" y1="81.0" x2="230.0" y2="74.0" stroke="#000"/>
+<line x1="244.0" y1="87.0" x2="244.0" y2="75.0" stroke="#000"/>
+<path d="M230.0 321.0 L259.0 321.0 L259.0 597.0 L230.0 597.0" fill="none" stroke="#000"/>
+<line x1="236.0" y1="603.0" x2="236.0" y2="591.0" stroke="#000"/>
+<line x1="241.0" y1="603.0" x2="241.0" y2="591.0" stroke="#000"/>
+<line x1="242.0" y1="321.0" x2="230.0" y2="328.0" stroke="#000"/>
+<line x1="242.0" y1="321.0" x2="230.0" y2="321.0" stroke="#000"/>
+<line x1="242.0" y1="321.0" x2="230.0" y2="314.0" stroke="#000"/>
+<line x1="244.0" y1="327.0" x2="244.0" y2="315.0" stroke="#000"/>
+<path d="M230.0 1177.0 L232.0 1177.0 L232.0 601.0 L230.0 601.0" fill="none" stroke="#000"/>
+<line x1="236.0" y1="607.0" x2="236.0" y2="595.0" stroke="#000"/>
+<line x1="241.0" y1="607.0" x2="241.0" y2="595.0" stroke="#000"/>
+<line x1="242.0" y1="1177.0" x2="230.0" y2="1184.0" stroke="#000"/>
+<line x1="242.0" y1="1177.0" x2="230.0" y2="1177.0" stroke="#000"/>
+<line x1="242.0" y1="1177.0" x2="230.0" y2="1170.0" stroke="#000"/>
+<line x1="244.0" y1="1183.0" x2="244.0" y2="1171.0" stroke="#000"/>
+<text x="32.0" y="1413.0" text-anchor="start" font-size="11" fill="#000">Notación de pata de gallo: | | = uno y solo uno; pata de gallo = muchos. Colores: gris, identidad y acceso; verde, pacientes y privacidad; azul, casos e imágenes; amarillo, triage; morado, revisión y reportes.</text>
+<text x="32.0" y="1426.2" text-anchor="start" font-size="11" fill="#000">Las columnas FK hacia users (autoría, médico asignado o revisor) se muestran en cada tabla y no se dibujan como líneas para no saturar el diagrama.</text></svg>

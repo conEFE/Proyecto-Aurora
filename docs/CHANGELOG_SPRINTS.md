@@ -999,6 +999,40 @@ Solo frontend (más el título de la API): no cambia la base de datos ni los end
 
 ---
 
+## 2.12.0 — Rendimiento bajo carga y modelo de respaldo
+
+Medido en local con datos de demostración (`seed_demo`, 250 pacientes y 283 casos) y 60.000 filas en
+`request_metrics`, con la API en un proceso fijado a un núcleo y `scripts/load_test.py` durante 60 s:
+
+| Prueba | Solicitudes/s | p50 | p95 | Errores |
+|---|---|---|---|---|
+| 2.11.0, 50 usuarios | 23,4 | 1.075 ms | 7.050 ms | 0 |
+| 2.12.0, 50 usuarios | 94,6 | 390 ms | 1.142 ms | 0 |
+| 2.12.0, 100 usuarios | 99,0 | 695 ms | 2.532 ms | 0 |
+
+No reemplaza a PC-01 en AWS: hay que repetirla en el entorno de demostración (sobre una copia de la base).
+
+- **`GET /cases`**: de 63 a 6 consultas por página. El paciente de toda la página se carga en una consulta
+  (`selectinload`), y la cantidad de imágenes y el nivel vigente en una consulta cada uno (`case_service.to_out_many`),
+  no tres consultas por caso.
+- **`GET /patients/page` y la búsqueda de pacientes**: de 54 a 6 consultas. El commit de la auditoría expiraba los
+  pacientes y cada uno, con su texto de consentimiento, se recargaba por separado; ahora se recargan juntos.
+- **`GET /triage/queue`**: de 34 a 3 consultas (nombre del paciente con `joinedload`).
+- **`GET /dashboard/metrics`**: el p95 y el total de solicitudes se calculan en PostgreSQL (`percentile_disc(0.95)`,
+  el mismo método del rango más cercano) en vez de traer todas las duraciones de `request_metrics` a Python: de
+  213 a 51 ms con 60.000 filas.
+- **Modelo de respaldo**: `INFERENCE_BACKUP_URL` (opcional). Orden: servicio principal (PC de Juan por Tailscale) →
+  respaldo (servicio en una instancia de AWS, en CPU) → IA simulada con su badge. El resultado del respaldo dice
+  «(servicio de respaldo)» en el mensaje. `INFERENCE_CONNECT_TIMEOUT_SECONDS` (5 s): si el PC está apagado se pasa
+  al respaldo en segundos, sin esperar los 60 s de lectura. `GET /inference/status` agrega `source` (`primary` o
+  `backup`) y `backup_reachable`; el Dashboard y la portada del administrador muestran «Conectado (respaldo)».
+  En CPU el modelo usa ≈ 900 MB de RAM y ≈ 1 s por imagen (medido en local): no cabe junto a la plataforma en la
+  `t4g.micro`; va en una instancia aparte (`docs/inferencia_remota.md`, sección 5).
+- Pruebas: `test_query_counts.py` (el número de consultas no crece con las filas; falla con la 2.11.0) y cinco
+  pruebas del respaldo en `test_inference_model.py`. 340 pruebas.
+
+---
+
 ## Pendiente para S8 (no implementado, según la regla 2)
 Pruebas de carga con Locust y soporte DICOM en la carga (el servicio del modelo ya lee DICOM; la plataforma
 todavía no lo acepta). De S7 queda ejecutar el

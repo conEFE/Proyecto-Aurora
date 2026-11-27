@@ -1,0 +1,26 @@
+/* Estilo común de los diagramas de la iteración 15 (se exportan a PNG con render.js). */
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; font-family: "DejaVu Sans", "Liberation Sans", Arial, sans-serif; color: #1f2937; }
+#lienzo { position: relative; padding: 28px 32px 24px; }
+h1 { font-size: 22px; margin: 0 0 2px; color: #111827; }
+.sub { font-size: 13px; color: #4b5563; margin: 0 0 18px; }
+.zona { position: relative; border: 1.5px solid #9ca3af; border-radius: 12px; padding: 30px 14px 14px; background: #f9fafb; }
+.zona > .rot { position: absolute; top: 8px; left: 14px; font-size: 13px; font-weight: 700; color: #374151; }
+.zona > .rot small { font-weight: 400; color: #6b7280; }
+.caja { position: relative; border: 1.5px solid #374151; border-radius: 9px; background: #fff; padding: 8px 10px; font-size: 12px; line-height: 1.35; z-index: 2; }
+.caja b { display: block; font-size: 13px; margin-bottom: 2px; color: #111827; }
+.caja .det { color: #4b5563; font-size: 11.5px; }
+.tag { display: inline-block; font-size: 10.5px; padding: 1px 6px; border-radius: 999px; background: #eef2ff; color: #3730a3; margin: 3px 3px 0 0; border: 1px solid #c7d2fe; }
+.c-pres { background: #eff6ff; border-color: #1d4ed8; }
+.c-neg { background: #ecfdf5; border-color: #047857; }
+.c-ia { background: #f5f3ff; border-color: #6d28d9; }
+.c-dat { background: #fefce8; border-color: #a16207; }
+.c-op { background: #f3f4f6; border-color: #4b5563; }
+.c-seg { background: #fef2f2; border-color: #b91c1c; }
+.c-ext { background: #fff; border-style: dashed; }
+.leyenda { margin-top: 14px; font-size: 11.5px; color: #374151; display: flex; gap: 18px; flex-wrap: wrap; }
+.leyenda span::before { content: ""; display: inline-block; width: 26px; height: 0; border-top: 2px solid #374151; vertical-align: middle; margin-right: 6px; }
+.leyenda span.d::before { border-top-style: dashed; }
+.leyenda span.p::before { border-top-style: dotted; }
+svg#flechas { position: absolute; left: 0; top: 0; z-index: 1; pointer-events: none; overflow: visible; }
+.et { font-size: 10.5px; fill: #374151; paint-order: stroke; stroke: #fff; stroke-width: 4px; }

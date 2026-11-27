@@ -1,0 +1,21 @@
+﻿AURORA - VERSIÓN LOCAL DE PRUEBA
+Proyecto de título, INACAP. Equipo Proyecto Aurora.
+
+PARA QUÉ SIRVE ESTA INSTALACIÓN
+
+Esta versión es SOLO para recorrer el flujo de la plataforma a modo de prueba
+(registrar pacientes, crear casos, cargar imágenes, priorizar, revisar y firmar).
+
+- La IA es SIMULADA: los resultados están marcados «IA SIMULADA», no provienen
+  del modelo real y no son resultados clínicos.
+- Use solo datos ficticios y RUT de prueba. No ingrese datos reales de pacientes.
+- Queda disponible solo en este PC (http://localhost).
+
+LA PLATAFORMA REAL, con el modelo de IA conectado, está en:
+
+    https://demo.auroracare.cl
+
+Requisitos: Docker Desktop y conexión a internet durante la primera construcción
+(5 a 15 minutos).
+
+Al continuar, declara que entiende que esta instalación es solo de prueba.

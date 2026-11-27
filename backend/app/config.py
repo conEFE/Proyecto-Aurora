@@ -32,10 +32,16 @@ class Settings(BaseSettings):
     # Proveedor de inferencia: "simulated" (por defecto) o "http" (servicio YOLO en INFERENCE_URL)
     INFERENCE_PROVIDER: str = "simulated"
     INFERENCE_URL: str = "http://localhost:8080"
+    # Respaldo opcional (por ejemplo, el servicio en una instancia de AWS): se usa si INFERENCE_URL no responde.
+    # Vacío = sin respaldo. Usa el mismo INFERENCE_API_TOKEN.
+    INFERENCE_BACKUP_URL: str = ""
     # Token compartido con el servicio de inferencia (Authorization: Bearer). Vacío = sin token (solo en local)
     INFERENCE_API_TOKEN: str = ""
     # En CPU (AWS) una imagen puede tardar varios segundos; con GPU, menos de uno
     INFERENCE_TIMEOUT_SECONDS: float = 60.0
+    # Tiempo para establecer la conexión: si el PC del modelo está apagado, se pasa al respaldo en segundos,
+    # sin esperar INFERENCE_TIMEOUT_SECONDS completo
+    INFERENCE_CONNECT_TIMEOUT_SECONDS: float = 5.0
     # Si el servicio no responde, usar la IA simulada (marcada) en vez de dejar la imagen sin resultado
     INFERENCE_FALLBACK_SIMULATED: bool = True
 

@@ -1,0 +1,79 @@
+{
+  "_como_usar": "Complete solo los campos que ya tenga; deje \"\" en el resto. Luego ejecute herramientas/completar_pendientes.sh (ver trabajo/PENDIENTES_EQUIPO.md). Lo vacío no se toca, y lo ya aplicado no se aplica dos veces.",
+  "dedicatoria": "",
+  "agradecimientos": "",
+  "referencias": {
+    "_nota": "Clave = comienzo exacto de la entrada actual (no lo cambie). Valor = la entrada nueva completa en APA 7, por ejemplo con «Recuperado el 20 de noviembre de 2026 de https://...». Vacío = no se toca.",
+    "Shah et al. (2023).": "",
+    "Equipo Proyecto Aurora. (2026b).": "",
+    "Equipo Proyecto Aurora. (2026c).": "",
+    "Organización Mundial de la Salud. (2026).": "",
+    "National Electrical Manufacturers Association. (2026).": "",
+    "American College of Radiology. (2025).": ""
+  },
+  "cita_shah_en_el_texto": {
+    "_nota": "Solo si la referencia nueva no es de Shah et al. (2023): escriba cómo debe quedar la cita del capítulo IV, por ejemplo «Pérez y Soto, 2024». Vacío = la cita se mantiene.",
+    "nueva": ""
+  },
+  "marcas_capitulo_II": {
+    "_nota": "Dos afirmaciones del capítulo II llevan hoy la marca «[FALTA INFORMACIÓN…]». Para cada una escriba la cita en el texto, sin paréntesis (p. ej. «Ferlay et al., 2024»), y la entrada completa para la lista de referencias en APA 7. Con ambos campos, la marca se borra, la cita queda al final de la frase y la referencia se inserta en orden alfabético. Si además hay que corregir una cifra o un plazo, use «frase_corregida» con la frase completa nueva (opcional).",
+    "globocan": {
+      "afirmacion": "De acuerdo con las estimaciones de GLOBOCAN 2024, en Chile se registraron aproximadamente 5.141 casos nuevos de cáncer de mama y 1.829 defunciones asociadas a esta enfermedad.",
+      "cita": "",
+      "referencia": "",
+      "frase_corregida": ""
+    },
+    "ges": {
+      "afirmacion": "Entre ellos, se considera un plazo de 45 días para la confirmación diagnóstica desde la sospecha, 45 días para la etapificación desde la confirmación diagnóstica y 30 días para el inicio del tratamiento primario desde la etapificación.",
+      "cita": "",
+      "referencia": "",
+      "frase_corregida": ""
+    }
+  },
+  "despliegue_2_12_0": {
+    "_nota": "Fecha en que se desplegó la versión 2.12.0 en demo.auroracare.cl (formato DD-MM-AAAA).",
+    "fecha": ""
+  },
+  "pc01_aws_2_12_0": {
+    "_nota": "Resultados de repetir PC-01 en el entorno de demostración con la 2.12.0 (backend/scripts/load_test.py sobre una copia de la base; método en evidencias/rendimiento_aws_2026-11-24/README.md). Copie los valores del bloque \"total\" de cada JSON. La fila de 100 usuarios es obligatoria: decide si PC-01 se aprueba (p95 <= 3000 ms). Guarde los JSON en evidencias/rendimiento_aws_<fecha>/.",
+    "fecha": "",
+    "carpeta_evidencia": "",
+    "filas": [
+      {
+        "usuarios": 25,
+        "duracion": "60 s",
+        "solicitudes": "",
+        "errores": "",
+        "solicitudes_s": "",
+        "p50_ms": "",
+        "p95_ms": "",
+        "max_ms": ""
+      },
+      {
+        "usuarios": 50,
+        "duracion": "60 s",
+        "solicitudes": "",
+        "errores": "",
+        "solicitudes_s": "",
+        "p50_ms": "",
+        "p95_ms": "",
+        "max_ms": ""
+      },
+      {
+        "usuarios": 100,
+        "duracion": "15 min",
+        "solicitudes": "",
+        "errores": "",
+        "solicitudes_s": "",
+        "p50_ms": "",
+        "p95_ms": "",
+        "max_ms": ""
+      }
+    ]
+  },
+  "respaldo_inferencia": {
+    "_nota": "Cuando exista la instancia de respaldo del modelo en AWS (docs/inferencia_remota.md, sección 5.1): fecha de creación (DD-MM-AAAA) y si se probó el paso al respaldo apagando el PC de Juan (true/false).",
+    "fecha_creacion": "",
+    "probado_paso_al_respaldo": false
+  }
+}

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Arquitectura de la solución</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  #lienzo { width: 1500px; }
+  .grid { display: grid; grid-template-columns: 1fr 300px; gap: 18px; }
+  .capas { display: flex; flex-direction: column; gap: 26px; }
+  .capa { display: grid; grid-template-columns: 170px 1fr; gap: 12px; align-items: stretch; }
+  .nom { border-radius: 9px; padding: 10px; font-size: 13px; font-weight: 700; display: flex; flex-direction: column; justify-content: center; }
+  .nom small { font-weight: 400; font-size: 11px; color: #4b5563; margin-top: 3px; }
+  .fila { display: flex; gap: 12px; }
+  .fila > .caja { flex: 1; }
+  .lado { display: flex; flex-direction: column; gap: 10px; }
+</style></head>
+<body><div id="lienzo">
+<h1>Arquitectura de la solución: por capas (N-tier), monolito modular</h1>
+<p class="sub">Versión 2.11.0 desplegada en el entorno de demostración (25-11-2026). Solo la capa de lógica de negocio accede a los datos; el análisis automatizado es un servicio aparte, detrás de una interfaz de proveedor.</p>
+<div class="grid">
+ <div class="capas">
+  <div class="capa"><div class="nom c-ext" style="border:1.5px dashed #374151">Usuarios<small>Navegador web</small></div>
+   <div class="fila">
+    <div class="caja c-ext" id="u1"><b>Personal administrativo</b><span class="det">Pacientes, consentimiento, casos e imágenes</span></div>
+    <div class="caja c-ext" id="u2"><b>Médico</b><span class="det">Cola de triage, revisión, validación de IA, firma, dashboard</span></div>
+    <div class="caja c-ext" id="u3"><b>Administrador · Jefatura y finanzas</b><span class="det">Usuarios, parámetros, bitácora, privacidad · dashboard y comparador de médicos</span></div>
+   </div></div>
+  <div class="capa"><div class="nom c-pres">Presentación<small>Contenedor web (Caddy)</small></div>
+   <div class="fila">
+    <div class="caja c-pres" id="spa"><b>Aurora Web (SPA)</b><span class="det">Se ejecuta en el navegador; llama a la API en /api. React 18 + TypeScript + Vite + Tailwind; React Router (una dirección por pantalla); informes PDF con jsPDF en el navegador</span></div>
+    <div class="caja c-pres" id="caddy" style="flex:.7;margin-left:22px"><b>Caddy</b><span class="det">HTTPS con certificado Let's Encrypt; sirve el sitio; proxy inverso de /api; encabezados de seguridad (CSP, HSTS, COOP, CORP)</span></div>
+   </div></div>
+  <div class="capa"><div class="nom c-neg">Lógica de negocio<small>Contenedor backend</small></div>
+   <div class="caja c-neg" id="api"><b>API REST FastAPI (Python): monolito modular</b>
+    <span class="det">JSON + JWT; middleware de métricas, límite de solicitudes simultáneas y encabezados; SQLAlchemy 2 + Alembic</span><br>
+    <span class="tag">autenticación y roles</span><span class="tag">pacientes y consentimiento</span><span class="tag">casos</span><span class="tag">imágenes</span><span class="tag">motor de triage (parámetros versionados)</span><span class="tag">revisión y firma</span><span class="tag">reportes</span><span class="tag">dashboard / KPI</span><span class="tag">privacidad (Ley 21.719)</span><span class="tag">administración</span><span class="tag">bitácora de auditoría</span><span class="tag">proveedor de inferencia</span>
+   </div></div>
+  <div class="capa"><div class="nom c-ia">Análisis automatizado<small>Servicio independiente</small></div>
+   <div class="fila" style="padding:0 44px">
+    <div class="caja c-ia" id="inf"><b>Servicio de inferencia (FastAPI)</b><span class="det">POST /predict y GET /health; CNN ResNet18 (probabilidad de malignidad) + YOLO11s (detección de masas). Prototipo sin validación clínica</span></div>
+    <div class="caja c-ia" id="sim" style="flex:.6"><b>Proveedor simulado</b><span class="det">Respaldo si el servicio no responde; resultados marcados «IA SIMULADA»</span></div>
+   </div></div>
+  <div class="capa"><div class="nom c-dat">Datos<small>Persistencia</small></div>
+   <div class="fila">
+    <div class="caja c-dat" id="pg"><b>PostgreSQL 16 (Amazon RDS)</b><span class="det">19 tablas: pacientes, casos, triage, resultados y validaciones de IA, revisiones y firmas, consentimiento, bitácora append-only, métricas, tokens de activación</span></div>
+    <div class="caja c-dat" id="s3"><b>Almacenamiento de imágenes (Amazon S3)</b><span class="det">Cifrado en la aplicación (Fernet) y en reposo (SSE-KMS); versionado; también guarda los respaldos diarios</span></div>
+   </div></div>
+ </div>
+ <div class="lado">
+  <div class="caja c-op"><b>Integración y entrega continua</b><span class="det">GitHub Actions: análisis estático, 340 pruebas, auditoría de dependencias, prueba de humo; imágenes en GHCR</span></div>
+  <div class="caja c-op"><b>Operación</b><span class="det">Despliegue con Docker Compose por Session Manager; respaldo diario a S3; registros en CloudWatch Logs</span></div>
+  <div class="caja c-op"><b>Monitoreo</b><span class="det">Chequeo de /health cada minuto; alarmas de CloudWatch con aviso por correo (SNS)</span></div>
+  <div class="caja c-seg"><b>Seguridad</b><span class="det">Secretos fuera del repositorio; rol IAM de mínimo privilegio; DNS en Route 53; solo puertos 80/443 abiertos</span></div>
+  <div class="caja c-seg"><b>Red privada para la inferencia</b><span class="det">Tailscale entre el servidor y el equipo con GPU; token Bearer en /predict</span></div>
+ </div>
+</div>
+<div class="leyenda"><span>solicitud</span><span class="d">respaldo o alternativa</span></div>
+<script>
+window.FLECHAS = [
+ {de:'u1', a:'spa', lado_de:'b:0.5', lado_a:'t', recto:true},
+ {de:'u2', a:'spa', lado_de:'b:0.25', lado_a:'t', recto:true, txt:'HTTPS 443'},
+ {de:'u3', a:'caddy', lado_de:'b:0.5', lado_a:'t', recto:true},
+ {de:'spa', a:'caddy', lado_de:'r:0.5', lado_a:'l:0.5', doble:true},
+ {de:'caddy', a:'api', lado_de:'b:0.5', lado_a:'t', recto:true, txt:'/api (HTTP interno)'},
+ {de:'api', a:'inf', lado_de:'b:0.3', lado_a:'t', recto:true, txt:'HTTP + token (Tailscale)'},
+ {de:'api', a:'sim', lado_de:'b:0.8', lado_a:'t', recto:true, estilo:'d', txt:'si no responde'},
+ {de:'api', a:'pg', lado_de:'b:0.015', lado_a:'t', recto:true, txt:'SQL/TLS 5432', dx:6, dy:-44},
+ {de:'api', a:'s3', lado_de:'b:0.985', lado_a:'t', recto:true, txt:'HTTPS', dx:-44, dy:-44},
+];
+</script>
+</div></body></html>

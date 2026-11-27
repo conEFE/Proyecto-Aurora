@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Análisis automatizado de imágenes</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  #lienzo { width: 1180px; }
+  .centro { display: flex; justify-content: center; }
+  .w60 { width: 62%; }
+  .ramas { display: grid; grid-template-columns: 1.35fr 1fr; gap: 40px; margin: 34px 0; }
+  .pila { display: flex; flex-direction: column; gap: 26px; }
+  .etapas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; }
+  .etapas div { border: 1.5px solid #6d28d9; border-radius: 7px; background: #fff; text-align: center; font-size: 11.5px; padding: 5px 2px; }
+  .mod { box-shadow: inset 0 0 0 2px #2563eb; background: #eff6ff !important; }
+</style></head>
+<body><div id="lienzo">
+<h1>Componente de análisis automatizado de imágenes</h1>
+<p class="sub">Servicio de inferencia «cnn-resnet18-672x1024+yolo11s-masa-1280» (backend/inference_service). En azul, las capas de ResNet18 adaptadas. Prototipo sin validación clínica.</p>
+<div class="centro"><div class="caja c-ext w60" id="in"><b>Mamografía</b><span class="det">PNG, JPEG o DICOM; se lee en escala de grises (1 canal)</span></div></div>
+<div class="centro" style="margin-top:26px"><div class="caja c-op w60" id="pre"><b>Preprocesamiento</b><span class="det">Ecualización de contraste CLAHE (límite 2,0; teselas de 8 × 8)</span></div></div>
+<div class="ramas">
+ <div class="pila">
+  <div class="caja c-ia" id="cnn0"><b>Etapa 1 · Clasificación (CNN)</b><span class="det">Ajuste sin deformar a 672 × 1024 con relleno</span></div>
+  <div class="caja c-ia mod" id="c1"><b>Capa inicial adaptada</b><span class="det">Convolución de 1 canal: 64 filtros de 7 × 7, paso 2</span></div>
+  <div class="caja c-ia" id="body"><b>Cuerpo de ResNet18: 4 etapas residuales de 2 bloques</b>
+   <div class="etapas"><div>64 filtros</div><div>128 filtros</div><div>256 filtros</div><div>512 filtros</div></div></div>
+  <div class="caja c-ia" id="gap"><b>Promedio global</b><span class="det">512 mapas → 512 valores</span></div>
+  <div class="caja c-ia mod" id="fc"><b>Capa de salida reemplazada</b><span class="det">Abandono de 40 % + 1 neurona (512 → 1) + sigmoide</span></div>
+  <div class="caja c-ia" id="prob"><b>Probabilidad de malignidad</b><span class="det">Entre 0 y 1; desde 0,35 la imagen se marca como sospechosa</span></div>
+ </div>
+ <div class="pila">
+  <div class="caja c-ia" id="y0"><b>Etapa 2 · Localización (YOLO11s)</b><span class="det">Lado mayor a 1.280 píxeles; 3 canales, como en el entrenamiento</span></div>
+  <div class="caja c-ia" id="y1"><b>Detección de la clase «masa»</b><span class="det">Cajas con confianza mínima de 0,25; no detecta calcificaciones</span></div>
+ </div>
+</div>
+<div class="centro"><div class="caja c-neg w60" id="out"><b>Respuesta a la plataforma (POST /predict)</b><span class="det">Probabilidad, sospecha, cajas con su confianza, tiempo de proceso y versión del modelo. La plataforma la guarda en inference_results; el médico la valida (concordante, falso positivo o no evaluable)</span></div></div>
+<script>
+window.FLECHAS = [
+ {de:'in', a:'pre', lado_de:'b', lado_a:'t', recto:true},
+ {de:'pre', a:'cnn0', lado_de:'b:0.3', lado_a:'t', recto:true},
+ {de:'pre', a:'y0', lado_de:'b:0.85', lado_a:'t:0.5', via:[[null,'@pre:b:16'],['b','@pre:b:16']]},
+ {de:'cnn0', a:'c1', lado_de:'b', lado_a:'t', recto:true},
+ {de:'c1', a:'body', lado_de:'b', lado_a:'t', recto:true},
+ {de:'body', a:'gap', lado_de:'b', lado_a:'t', recto:true},
+ {de:'gap', a:'fc', lado_de:'b', lado_a:'t', recto:true},
+ {de:'fc', a:'prob', lado_de:'b', lado_a:'t', recto:true},
+ {de:'y0', a:'y1', lado_de:'b', lado_a:'t', recto:true},
+ {de:'prob', a:'out', lado_de:'b:0.6', lado_a:'t', recto:true},
+ {de:'y1', a:'out', lado_de:'b:0.5', lado_a:'t:0.9', via:[[null,'@out:t:-18'],['b','@out:t:-18']]},
+];
+</script>
+</div></body></html>

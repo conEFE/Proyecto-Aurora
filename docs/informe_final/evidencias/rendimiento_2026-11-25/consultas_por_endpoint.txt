@@ -1,0 +1,22 @@
+# 2.11.0
+11 /cases                           consultas=   63  mediana=   40.6 ms  p95=   53.1 ms
+11 /cases?page=2                    consultas=   62  mediana=   46.7 ms  p95=   55.8 ms
+11 /triage/queue                    consultas=   34  mediana=   36.2 ms  p95=   45.9 ms
+11 /patients/page                   consultas=   54  mediana=   41.6 ms  p95=   50.5 ms
+11 /notifications                   consultas=    2  mediana=   11.0 ms  p95=   12.7 ms
+11 /dashboard/metrics               consultas=    8  mediana=  212.9 ms  p95=  271.4 ms
+11 /dashboard/cases                 consultas=    6  mediana=   34.7 ms  p95=   43.1 ms
+11 /cases/181                       consultas=    7  mediana=   12.3 ms  p95=   14.8 ms
+33 /dashboard/metrics               consultas=    8  mediana=  211.8 ms  p95=  254.0 ms
+33 /dashboard/doctors/compare       consultas=   11  mediana=   22.0 ms  p95=   25.0 ms
+# 2.12.0
+11 /cases                           consultas=    6  mediana=   13.9 ms  p95=   15.0 ms
+11 /cases?page=2                    consultas=    6  mediana=   11.4 ms  p95=   13.5 ms
+11 /triage/queue                    consultas=    3  mediana=   12.2 ms  p95=   15.0 ms
+11 /patients/page                   consultas=    6  mediana=   13.3 ms  p95=   16.2 ms
+11 /notifications                   consultas=    2  mediana=    9.5 ms  p95=   10.3 ms
+11 /dashboard/metrics               consultas=    8  mediana=   50.8 ms  p95=   67.4 ms
+11 /dashboard/cases                 consultas=    6  mediana=   36.0 ms  p95=   39.6 ms
+11 /cases/181                       consultas=    7  mediana=   13.2 ms  p95=   14.7 ms
+33 /dashboard/metrics               consultas=    8  mediana=   57.9 ms  p95=   68.9 ms
+33 /dashboard/doctors/compare       consultas=   11  mediana=   21.5 ms  p95=   25.3 ms

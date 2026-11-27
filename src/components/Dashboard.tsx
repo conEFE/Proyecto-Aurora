@@ -351,7 +351,7 @@ function ModelStatusLine({ status }: { status: InferenceStatus }) {
     <p className="flex flex-wrap items-center gap-2 text-sm">
       <span aria-hidden className={cn('w-2 h-2 rounded-full', online ? 'bg-baja' : real ? 'bg-media' : 'bg-muted-foreground')} />
       {online
-        ? `Modelo conectado: ${status.model_version ?? 'sin versión'}${status.clinically_validated ? '' : ', prototipo sin validación clínica'}.`
+        ? `Modelo conectado${status.source === 'backup' ? ' (servicio de respaldo)' : ''}: ${status.model_version ?? 'sin versión'}${status.clinically_validated ? '' : ', prototipo sin validación clínica'}.`
         : real
           ? 'El modelo no responde: los resultados nuevos usan la IA simulada.'
           : 'Sin modelo conectado: los resultados usan la IA simulada.'}

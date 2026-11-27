@@ -1,0 +1,7 @@
+inicio 03:35:48
+fin 10 03:36:51 rc=0
+fin 25 03:38:59 rc=0
+fin 50 03:41:10 rc=0
+inicio PC-01 03:42:15
+fin 100 03:57:29 rc=0
+TERMINADO 03:57:56

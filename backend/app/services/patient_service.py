@@ -45,6 +45,29 @@ def with_version(db: Session, patient: Patient) -> Patient:
     return patient
 
 
+def _reload_with_versions(db: Session, ids: list[int]) -> list[Patient]:
+    """Pacientes (en el orden de `ids`) con la versión del consentimiento, en dos consultas.
+
+    Se usa después de auditar: el commit de la auditoría expira los objetos de la sesión y, sin esto, cada
+    paciente y su texto de consentimiento se recargarían con una consulta por fila.
+    """
+    from app.db.models.privacy import ConsentText
+
+    if not ids:
+        return []
+    by_id = {p.id: p for p in db.query(Patient).filter(Patient.id.in_(ids)).all()}
+    text_ids = {p.consent_text_id for p in by_id.values() if p.consent_text_id}
+    versions = (
+        dict(db.query(ConsentText.id, ConsentText.version).filter(ConsentText.id.in_(text_ids)).all())
+        if text_ids
+        else {}
+    )
+    patients = [by_id[i] for i in ids if i in by_id]
+    for p in patients:
+        p.consent_text_version = versions.get(p.consent_text_id)
+    return patients
+
+
 def get_patient(db: Session, patient_id: int, actor: User, ip: str | None = None) -> Patient:
     patient = db.get(Patient, patient_id)
     if patient is None:
@@ -107,9 +130,10 @@ def search_patients(
     patients = (
         _patients_query(db, search, include_blocked, status).order_by(Patient.created_at.desc()).limit(limit).all()
     )
+    ids = [p.id for p in patients]
     # Se registra la consulta sin el término buscado (puede contener un RUT)
-    audit(db, actor, "VIEW", "patient", None, {"list": True, "results": len(patients)}, ip)
-    return [with_version(db, p) for p in patients]
+    audit(db, actor, "VIEW", "patient", None, {"list": True, "results": len(ids)}, ip)
+    return _reload_with_versions(db, ids)
 
 
 def page_patients(
@@ -126,8 +150,9 @@ def page_patients(
     q = _patients_query(db, search, include_blocked, status)
     total = q.count()
     patients = q.order_by(Patient.created_at.desc(), Patient.id.desc()).offset((page - 1) * size).limit(size).all()
-    audit(db, actor, "VIEW", "patient", None, {"list": True, "results": len(patients), "page": page}, ip)
-    return [with_version(db, p) for p in patients], total
+    ids = [p.id for p in patients]
+    audit(db, actor, "VIEW", "patient", None, {"list": True, "results": len(ids), "page": page}, ip)
+    return _reload_with_versions(db, ids), total
 
 
 def update_patient(
