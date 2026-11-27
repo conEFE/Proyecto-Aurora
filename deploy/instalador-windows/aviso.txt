@@ -1,0 +1,13 @@
+﻿AURORA - Plataforma de apoyo a la priorización (triage) de casos con sospecha de cáncer de mama
+Proyecto de título, INACAP. Equipo Proyecto Aurora.
+
+AVISO IMPORTANTE
+
+1. Aurora es un PROTOTIPO académico. Apoya, y no reemplaza, el criterio médico.
+2. Esta instalación local usa IA SIMULADA: sus resultados están marcados como simulados y no son resultados clínicos.
+3. Use solo datos ficticios y RUT de prueba. No ingrese datos reales de pacientes.
+4. Aurora queda disponible solo en este PC (http://localhost). Los secretos se generan al instalar y se guardan
+   en el archivo .env de la carpeta de instalación, legible solo por el usuario que instaló.
+5. Requiere Docker Desktop y conexión a internet durante la primera construcción (5 a 15 minutos).
+
+Al continuar, declara que entiende estas condiciones.
