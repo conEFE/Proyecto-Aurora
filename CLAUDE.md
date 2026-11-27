@@ -16,11 +16,14 @@ Plataforma web de apoyo a la **detección temprana y priorización (triage)** de
   11-11-2026 (`INFERENCE_PROVIDER=http`, con respaldo simulado; `docs/guia_modelo_juan.md`). `aurora-admin` v1 (una instancia por institución; ejecutable con menú y clave de
   operador de Felipe) está hecho y falta probarlo en AWS. Detalle y orden en `docs/ESTADO_AWS.md`, sección 2.
 - **Informe Final y presentación (rama `claude/bold-maxwell-13fkwp`, 27-11-2026):** maestro **1.8-rc** en
-  `docs/informe_final/` (traspaso: `HANDOFF_ITERACION_18.md`, iteración 18 en `trabajo/ESTADO_ITERACION.md`; lo que falta y cómo completarlo:
+  `docs/informe_final/` (traspaso: `HANDOFF_ITERACION_19.md`; lo que falta y cómo completarlo:
   `trabajo/PENDIENTES_EQUIPO.md` + `trabajo/pendientes_equipo.json` + `herramientas/completar_pendientes.sh`).
   Presentación de defensa (16 + 12 diapositivas, estética de la U2): `docs/informe_final/presentacion/`
   (traspaso: `HANDOFF_PRESENTACION.md`). Versión **2.12.0** (optimización de consultas y respaldo del modelo) en esa
   rama, sin fusionar en `main` ni desplegar.
+- **Instalación (27-11-2026, misma rama):** instalador local de prueba para Windows (`deploy/instalador-windows/`,
+  release `instalador-windows`), plantilla de AWS para la consola (`deploy/aws-consola/`, release `aws-consola`) y
+  manual de instalación (`docs/manual_instalacion/`).
 - Rediseño visual «Orden de mamografía» (modo claro rosado/blanco y oscuro morado/negro) integrado: el sistema
   visual está en **`DESIGN.md`** y el contexto de producto en **`PRODUCT.md`**. Toda pantalla nueva usa esos tokens.
 
