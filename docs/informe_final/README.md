@@ -9,3 +9,4 @@ las iteraciones, el mapa de fuentes y las reglas de trabajo.
   `cap6_contenido.py`) y para generar figuras (`gantt.py`).
 
 Los informes de Unidad 1 y Unidad 2 y la plantilla institucional son fuentes de consulta y no se versionan aquí.
+- `presentacion/`: presentación de defensa del informe final y su generador (leer `presentacion/HANDOFF_PRESENTACION.md`).

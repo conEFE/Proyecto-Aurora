@@ -7,9 +7,9 @@ from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 
-exec(open("lib3.py", encoding="utf-8").read())
+exec(open("lib_presentacion.py", encoding="utf-8").read())
 
-FIG = "/home/user/Proyecto-Aurora/docs/informe_final/figuras/"
+FIG = "../figuras/"
 RED, GRAY, PINK, TXT = RGBColor(0xC0, 0, 0), RGBColor(0xF2, 0xF2, 0xF2), RGBColor(0xFB, 0xED, 0xED), RGBColor(0x53, 0x53, 0x53)
 
 

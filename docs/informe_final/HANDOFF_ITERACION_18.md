@@ -5,6 +5,16 @@ PDF de 199 páginas, 68 tablas y 28 figuras. Reemplaza a `HANDOFF_ITERACION_17.m
 
 Lee este documento, luego `trabajo/PENDIENTES_EQUIPO.md` y `trabajo/ESTADO_ITERACION.md`.
 
+**Actualización 27-11-2026:**
+- Iteración **17b**: diagramas de componentes y de topología regenerados (respaldo del modelo en punteado, rol de
+  jefatura, 19 tablas); `herramientas/iter17b_figuras.py`, registro 4.23. Las 28 figuras revisadas; solo queda decidir
+  si se actualiza el corte de la carta Gantt de ejecución (Figura 18, hoy al 23-11).
+- `completar_pendientes.py` actualiza también XI (K2), la trazabilidad de RNF03, la capacidad en XIII y la condición
+  técnica de la Tabla 61 según el resultado de PC-01 (probado con ambos resultados).
+- **Rúbrica EA5** (diagnóstico del 23-11, sin el archivo original a mano): los 6 indicadores están cubiertos
+  (4.8, 9.2.1, 8.3.1, 14.3.1, XII); el punto débil es el 6 (PC-01 no cumple en AWS). Pedir el .xlsx para una revisión literal.
+- **Presentación de defensa:** `presentacion/` (ver `presentacion/HANDOFF_PRESENTACION.md`).
+
 ## 1. Estado
 
 - **Código:** `main` = 2.11.0, **desplegada** en `demo.auroracare.cl` el 25-11-2026. Esta rama = **2.12.0** (merge de

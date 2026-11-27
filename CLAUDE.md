@@ -15,6 +15,12 @@ Plataforma web de apoyo a la **detección temprana y priorización (triage)** de
 - Dominio `auroracare.cl` activo (NIC Chile + Route 53). **Modelo de Juan conectado** por Tailscale desde el
   11-11-2026 (`INFERENCE_PROVIDER=http`, con respaldo simulado; `docs/guia_modelo_juan.md`). `aurora-admin` v1 (una instancia por institución; ejecutable con menú y clave de
   operador de Felipe) está hecho y falta probarlo en AWS. Detalle y orden en `docs/ESTADO_AWS.md`, sección 2.
+- **Informe Final y presentación (rama `claude/bold-maxwell-13fkwp`, 27-11-2026):** maestro **1.7-rc** en
+  `docs/informe_final/` (traspaso: `HANDOFF_ITERACION_18.md`; lo que falta y cómo completarlo:
+  `trabajo/PENDIENTES_EQUIPO.md` + `trabajo/pendientes_equipo.json` + `herramientas/completar_pendientes.sh`).
+  Presentación de defensa (16 + 12 diapositivas, estética de la U2): `docs/informe_final/presentacion/`
+  (traspaso: `HANDOFF_PRESENTACION.md`). Versión **2.12.0** (optimización de consultas y respaldo del modelo) en esa
+  rama, sin fusionar en `main` ni desplegar.
 - Rediseño visual «Orden de mamografía» (modo claro rosado/blanco y oscuro morado/negro) integrado: el sistema
   visual está en **`DESIGN.md`** y el contexto de producto en **`PRODUCT.md`**. Toda pantalla nueva usa esos tokens.
 
