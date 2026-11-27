@@ -11,7 +11,8 @@ function New-Secreto([int]$bytes) {
 function UrlSafe([byte[]]$b) { [Convert]::ToBase64String($b).Replace('+', '-').Replace('/', '_') }
 
 if (-not $Puerto) { $Puerto = if (Test-Path $EnvFile) { [int](Get-EnvValue 'HTTP_PORT') } else { 8080 } }
-Write-Host "Aurora: configuración inicial (solo datos ficticios; IA SIMULADA)" -ForegroundColor Magenta
+Write-Host "Aurora: versión local de PRUEBA (IA SIMULADA, solo datos ficticios)" -ForegroundColor Magenta
+Write-Host "La plataforma real está en https://demo.auroracare.cl" -ForegroundColor Magenta
 
 if (-not (Test-Path $EnvFile)) {
     Write-Paso "Generando la configuración y los secretos"
@@ -62,6 +63,7 @@ if ($d) {
     if ($LASTEXITCODE -ne 0) { Write-Host "No se pudo crear el administrador (puede que ya exista)." -ForegroundColor Yellow }
 }
 
-Write-Host "`nAurora está lista en http://localhost:$Puerto" -ForegroundColor Green
+Write-Host "`nAurora (prueba) está lista en http://localhost:$Puerto" -ForegroundColor Green
+Write-Host "Recuerde: la IA es simulada. La plataforma real está en https://demo.auroracare.cl" -ForegroundColor Yellow
 Open-Url "http://localhost:$Puerto"
 if (-not $env:CI) { Start-Sleep 3 }

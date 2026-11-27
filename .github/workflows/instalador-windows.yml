@@ -85,11 +85,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          notes="Instalador de Aurora para Windows (un PC, http://localhost). Requiere Docker Desktop; el instalador ofrece instalarlo.
-          Prototipo académico: IA SIMULADA y solo datos ficticios. Compilado desde ${GITHUB_SHA::7}."
+          notes="Versión local de PRUEBA de Aurora para Windows: solo para recorrer el flujo, con IA SIMULADA y datos ficticios.
+          La plataforma real, con el modelo de IA conectado, está en https://demo.auroracare.cl.
+          Requiere Docker Desktop (el instalador ofrece instalarlo). Compilado desde ${GITHUB_SHA::7}."
           if gh release view instalador-windows --repo "$REPO" > /dev/null 2>&1; then
-            gh release edit instalador-windows --repo "$REPO" --notes "$notes"
+            gh release edit instalador-windows --repo "$REPO" --notes "$notes" --title "Aurora: versión local de prueba (Windows)"
             gh release upload instalador-windows out/*.exe --repo "$REPO" --clobber
           else
-            gh release create instalador-windows out/*.exe --repo "$REPO" --title "Instalador de Aurora para Windows" --notes "$notes" --latest=false
+            gh release create instalador-windows out/*.exe --repo "$REPO" --title "Aurora: versión local de prueba (Windows)" --notes "$notes" --latest=false
           fi

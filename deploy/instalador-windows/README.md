@@ -1,7 +1,8 @@
 # Instalador de Aurora para Windows
 
-`AuroraSetup-<versión>.exe` instala Aurora completa en un PC (PostgreSQL + API + sitio) en `http://localhost:8080`.
-Prototipo académico: IA SIMULADA y solo datos ficticios.
+`AuroraSetup-<versión>.exe` instala una **versión local de prueba** de Aurora (PostgreSQL + API + sitio) en
+`http://localhost:8080`, solo para recorrer el flujo: la IA es **SIMULADA** y se usan solo datos ficticios.
+**La plataforma real, con el modelo de IA conectado, está en https://demo.auroracare.cl.**
 
 ## Usarlo
 

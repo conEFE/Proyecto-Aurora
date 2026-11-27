@@ -1,4 +1,5 @@
-﻿; Instalador de Aurora para Windows (instalación local, un solo PC). Lo compila el workflow
+﻿; Instalador de Aurora para Windows: versión local de PRUEBA para recorrer el flujo (IA SIMULADA).
+; La plataforma real está en https://demo.auroracare.cl. Lo compila el workflow
 ; .github/workflows/instalador-windows.yml con Inno Setup 6:  ISCC /DAppVersion=2.12.0 deploy\instalador-windows\aurora.iss
 ; Requiere Docker Desktop (el instalador ofrece instalarlo con winget). Solo datos ficticios; IA SIMULADA.
 
@@ -11,7 +12,7 @@
 AppId={{A8DA6E37-4F38-4FAA-A782-9D9E1B9FE340}
 AppName=Aurora
 AppVersion={#AppVersion}
-AppVerName=Aurora {#AppVersion}
+AppVerName=Aurora {#AppVersion} (versión local de prueba)
 AppPublisher=Equipo Proyecto Aurora (INACAP)
 DefaultDirName={localappdata}\Aurora
 DefaultGroupName=Aurora
@@ -52,6 +53,7 @@ Source: "{#Repo}\tailwind.config.js"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "{#Repo}\eslint.config.js"; DestDir: "{app}\app"; Flags: ignoreversion
 
 [Icons]
+Name: "{group}\Plataforma real (demo.auroracare.cl)"; Filename: "https://demo.auroracare.cl"
 Name: "{group}\Abrir Aurora"; Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Minimized -File ""{app}\scripts\iniciar.ps1"""; WorkingDir: "{app}"
 Name: "{group}\Detener Aurora"; Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\detener.ps1"""; WorkingDir: "{app}"
 Name: "{group}\Terminar configuración de Aurora"; Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\configurar.ps1"" -PedirAdmin"; WorkingDir: "{app}"
@@ -208,6 +210,11 @@ end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
+  if CurPageID = wpFinished then
+    WizardForm.FinishedLabel.Caption :=
+      'Aurora (versión local de PRUEBA) quedó instalada en este PC. Sirve solo para recorrer el flujo: ' +
+      'la IA es SIMULADA y se deben usar solo datos ficticios.' + #13#10#13#10 +
+      'La plataforma real, con el modelo de IA conectado, está en https://demo.auroracare.cl';
   if (CurPageID = wpFinished) and DockerRecienInstalado then
     WizardForm.FinishedLabel.Caption :=
       'Se instaló Docker Desktop. Reinicie el PC, abra Docker Desktop y acepte sus condiciones; ' +
