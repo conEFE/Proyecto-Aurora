@@ -1,0 +1,283 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Aurora: instalacion completa en una cuenta de AWS desde la consola (CloudFormation). Crea un servidor EC2 con
+  Docker, IP fija, bucket S3 cifrado para imagenes y respaldos, registros en CloudWatch y HTTPS automatico.
+  Sin dominio propio, el sitio queda en https://<IP>.sslip.io. Prototipo academico: IA simulada, solo datos ficticios.
+  Manual: docs/manual_instalacion (Proyecto Aurora).
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label: { default: "Primer administrador (con esta cuenta entrara por primera vez)" }
+        Parameters: [AdminRut, AdminNombre, AdminCorreo, AdminClaveTemporal]
+      - Label: { default: "Opciones (puede dejar los valores por defecto)" }
+        Parameters: [TamanoServidor, DominioPropio, VersionAurora, RepoRef]
+    ParameterLabels:
+      AdminRut: { default: "RUT del administrador (ej. 11111111-1)" }
+      AdminNombre: { default: "Nombre del administrador" }
+      AdminCorreo: { default: "Correo del administrador" }
+      AdminClaveTemporal: { default: "Contrasena temporal (minimo 10 caracteres, con letras y numeros)" }
+      TamanoServidor: { default: "Tamano del servidor" }
+      DominioPropio: { default: "Dominio propio (opcional; vacio = se usa <IP>.sslip.io)" }
+      VersionAurora: { default: "Version de Aurora (no cambiar)" }
+      RepoRef: { default: "Version de los archivos de instalacion (no cambiar)" }
+
+Parameters:
+  AdminRut:
+    Type: String
+    AllowedPattern: "^[0-9]{7,8}-[0-9kK]$"
+    ConstraintDescription: "RUT sin puntos y con guion, por ejemplo 11111111-1"
+  AdminNombre:
+    Type: String
+    MinLength: 3
+    AllowedPattern: "^[^'\"\\\\$`]+$"
+    ConstraintDescription: "Sin comillas, $ ni barras invertidas"
+  AdminCorreo:
+    Type: String
+    AllowedPattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    ConstraintDescription: "Correo valido, por ejemplo admin@ejemplo.cl"
+  AdminClaveTemporal:
+    Type: String
+    NoEcho: true
+    MinLength: 10
+    AllowedPattern: "^(?=.*[A-Za-z])(?=.*[0-9])[^'\"\\\\$`]+$"
+    ConstraintDescription: "Minimo 10 caracteres, con letras y numeros, sin comillas, $ ni barras invertidas"
+  TamanoServidor:
+    Type: String
+    Default: t4g.micro
+    AllowedValues: [t4g.micro, t4g.small, t4g.medium]
+    Description: "t4g.micro (1 GB, unos USD 8 al mes) basta para probar; t4g.small (2 GB) para varios usuarios a la vez"
+  DominioPropio:
+    Type: String
+    Default: ""
+    Description: "Si tiene un dominio, escriba por ejemplo aurora.midominio.cl y despues apunte su registro A a la IP de la salida"
+  VersionAurora:
+    Type: String
+    Default: sha-8a5e19fa6eb711408f7d88fc6c7ca4eed9845565
+    Description: "Imagenes publicadas en ghcr.io/conefe/proyecto-aurora-* (2.11.0, la misma de demo.auroracare.cl)"
+  RepoRef:
+    Type: String
+    Default: 8a5e19fa6eb711408f7d88fc6c7ca4eed9845565
+  AmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64
+
+Conditions:
+  TieneDominio: !Not [!Equals [!Ref DominioPropio, ""]]
+
+Resources:
+  DataBucket:
+    Type: AWS::S3::Bucket
+    # Se conserva al borrar la pila para no perder imagenes ni respaldos por error (se borra a mano)
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: respaldos
+            Status: Enabled
+            Prefix: backups/
+            ExpirationInDays: 35
+            NoncurrentVersionExpirationInDays: 7
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aurora/${AWS::StackName}
+      RetentionInDays: 30
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ec2.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: aurora-servidor
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ImagenesYRespaldos
+                Effect: Allow
+                Action: [s3:GetObject, s3:PutObject, s3:DeleteObject]
+                Resource:
+                  - !Sub ${DataBucket.Arn}/images/*
+                  - !Sub ${DataBucket.Arn}/backups/*
+              - Sid: ListarPrefijos
+                Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt DataBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix: [images/*, backups/*]
+              - Sid: Logs
+                Effect: Allow
+                Action: [logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents, logs:DescribeLogStreams]
+                Resource:
+                  - !GetAtt LogGroup.Arn
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aurora/${AWS::StackName}:*
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref InstanceRole]
+
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Aurora - HTTP y HTTPS, sin SSH
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: 0.0.0.0/0 }
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0 }
+        - { IpProtocol: udp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0 }
+
+  # La IP se reserva antes que el servidor para que la instalacion conozca su direccion (<IP>.sslip.io)
+  PublicIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - { Key: Name, Value: !Sub "aurora-${AWS::StackName}" }
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        MetadataOptions:
+          HttpTokens: required
+          HttpEndpoint: enabled
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs: { VolumeSize: 12, VolumeType: gp3, Encrypted: true, DeleteOnTermination: true }
+
+  Instance:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT30M
+    Properties:
+      ImageId: !Ref AmiId
+      InstanceType: !Ref TamanoServidor
+      IamInstanceProfile: !Ref InstanceProfile
+      SecurityGroupIds: [!GetAtt WebSecurityGroup.GroupId]
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      Tags:
+        - { Key: Name, Value: !Sub "aurora-${AWS::StackName}" }
+      UserData:
+        Fn::Base64: !Sub
+          - |
+            #!/bin/bash
+            # Instala Aurora (pila ${AWS::StackName}). Registro de la instalacion: /var/log/aurora-bootstrap.log
+            exec > >(tee -a /var/log/aurora-bootstrap.log) 2>&1
+            set -euo pipefail
+            signal() { /opt/aws/bin/cfn-signal -e "$1" --stack ${AWS::StackName} --resource Instance --region ${AWS::Region} || true; }
+            trap 'signal 1' ERR
+
+            dnf install -y docker git cronie aws-cfn-bootstrap python3
+            systemctl enable --now docker crond
+            usermod -aG docker ec2-user
+            mkdir -p /usr/local/lib/docker/cli-plugins
+            curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" \
+              -o /usr/local/lib/docker/cli-plugins/docker-compose
+            chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+            if [ ! -f /swapfile ]; then
+              dd if=/dev/zero of=/swapfile bs=1M count=2048 && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+              echo '/swapfile swap swap defaults 0 0' >> /etc/fstab
+            fi
+
+            mkdir -p /opt/aurora && cd /opt/aurora
+            [ -d .git ] || git clone --quiet https://github.com/conEFE/Proyecto-Aurora.git .
+            git fetch --quiet origin ${RepoRef} && git checkout --quiet FETCH_HEAD
+
+            # deploy/.env con secretos generados aqui (no salen del servidor)
+            if [ ! -f deploy/.env ]; then
+            python3 - <<'PY'
+            import base64, os, re, secrets
+            values = {
+                'AURORA_IMAGE_PREFIX': 'ghcr.io/conefe/proyecto-aurora',
+                'AURORA_VERSION': '${VersionAurora}',
+                'COMPOSE_PROFILES': 'db',
+                'POSTGRES_PASSWORD': secrets.token_urlsafe(32),
+                'SECRET_KEY': secrets.token_urlsafe(48),
+                'ENCRYPTION_KEY': base64.urlsafe_b64encode(os.urandom(32)).decode(),
+                'SITE_ADDRESS': '${Sitio}',
+                'PUBLIC_URL': 'https://${Sitio}',
+                'STORAGE_BACKEND': 's3',
+                'S3_BUCKET': '${DataBucket}',
+                'BACKUP_BUCKET': '${DataBucket}',
+                'AWS_REGION': '${AWS::Region}',
+                'CLOUDWATCH_LOG_GROUP': '/aurora/${AWS::StackName}',
+                'INFERENCE_PROVIDER': 'simulated',
+                'EMAIL_PROVIDER': 'console',
+            }
+            text = open('/opt/aurora/deploy/.env.example').read()
+            for key, value in values.items():
+                line = f'{key}={value}'
+                text, n = re.subn(rf'^{key}=.*$', lambda m: line, text, flags=re.M)
+                if n == 0:
+                    text += f'\n{line}\n'
+            open('/opt/aurora/deploy/.env', 'w').write(text)
+            PY
+            fi
+            chmod 600 deploy/.env
+            chown -R ec2-user:ec2-user /opt/aurora
+
+            dc() { sudo -u ec2-user docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml --env-file deploy/.env "$@"; }
+            dc pull --quiet
+            dc up -d
+            for i in $(seq 1 60); do
+              [ "$(docker inspect -f '{{.State.Health.Status}}' aurora-backend-1 2>/dev/null)" = healthy ] && break
+              sleep 5
+            done
+            [ "$(docker inspect -f '{{.State.Health.Status}}' aurora-backend-1)" = healthy ]
+            dc exec -T -e AURORA_ADMIN_RUT='${AdminRut}' -e AURORA_ADMIN_NAME='${AdminNombre}' \
+              -e AURORA_ADMIN_EMAIL='${AdminCorreo}' -e AURORA_ADMIN_PASSWORD='${AdminClaveTemporal}' \
+              backend python init_user.py || echo "init_user: el administrador ya existia"
+
+            # Respaldo diario de la base a S3, a las 03:15 hora de Chile
+            echo 'CRON_TZ=America/Santiago
+            15 3 * * * cd /opt/aurora && ./deploy/backup_db.sh >> /home/ec2-user/aurora-backup.log 2>&1' | sed 's/^ *//' | crontab -u ec2-user -
+            signal 0
+          - Sitio: !If [TieneDominio, !Ref DominioPropio, !Sub "${PublicIp}.sslip.io"]
+
+  IpAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt PublicIp.AllocationId
+      InstanceId: !Ref Instance
+
+Outputs:
+  DireccionAurora:
+    Description: Abra esta direccion en el navegador (el certificado HTTPS puede tardar 1 a 2 minutos mas)
+    Value: !If [TieneDominio, !Sub "https://${DominioPropio}", !Sub "https://${PublicIp}.sslip.io"]
+  IpPublica:
+    Description: Si uso dominio propio, cree un registro A con esta IP
+    Value: !Ref PublicIp
+  Servidor:
+    Description: Servidor EC2 (EC2 > Instancias)
+    Value: !Ref Instance
+  BucketDatos:
+    Description: Imagenes cifradas y respaldos diarios (se conserva al eliminar la pila)
+    Value: !Ref DataBucket
+  Registros:
+    Description: Registros de la aplicacion (CloudWatch > Grupos de registros)
+    Value: !Ref LogGroup

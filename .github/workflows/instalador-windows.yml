@@ -10,7 +10,7 @@ on:
   push:
     branches: ["**"]
     tags: ["v*"]
-    paths: ["deploy/instalador-windows/**", ".github/workflows/instalador-windows.yml"]
+    paths: ["deploy/instalador-windows/**", "deploy/aws-consola/**", ".github/workflows/instalador-windows.yml"]
 
 permissions:
   contents: write
@@ -76,6 +76,7 @@ jobs:
     needs: [prueba, compilar]
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: out
@@ -93,4 +94,17 @@ jobs:
             gh release upload instalador-windows out/*.exe --repo "$REPO" --clobber
           else
             gh release create instalador-windows out/*.exe --repo "$REPO" --title "Aurora: versión local de prueba (Windows)" --notes "$notes" --latest=false
+          fi
+      - name: Publicar la plantilla de AWS en el release «aws-consola»
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          notes="Plantilla de CloudFormation para instalar Aurora en una cuenta de AWS desde la consola (manual de instalación, parte B).
+          Prototipo académico: IA SIMULADA y solo datos ficticios. La plataforma real está en https://demo.auroracare.cl."
+          if gh release view aws-consola --repo "$REPO" > /dev/null 2>&1; then
+            gh release edit aws-consola --repo "$REPO" --notes "$notes"
+            gh release upload aws-consola deploy/aws-consola/aurora-aws.yaml --repo "$REPO" --clobber
+          else
+            gh release create aws-consola deploy/aws-consola/aurora-aws.yaml --repo "$REPO" --title "Aurora: plantilla para AWS (consola)" --notes "$notes" --latest=false --target "$GITHUB_SHA"
           fi
