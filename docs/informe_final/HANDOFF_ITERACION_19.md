@@ -1,7 +1,7 @@
 # Handoff — después de la iteración 18 del Informe Final (Proyecto Aurora)
 
 **Fecha:** 27-11-2026 · **Rama:** `claude/bold-maxwell-13fkwp` · **Punto de partida:** maestro **1.8-rc**, registro
-**v0.27** (secciones 4.24 y 4.25), PDF de 201 páginas, 71 tablas y 28 figuras. Reemplaza a `HANDOFF_ITERACION_18.md`
+**v0.27** (secciones 4.24 y 4.25), PDF de 197 páginas, 71 tablas y 25 figuras (18c: sin figuras de diseño de U1 y U2). Reemplaza a `HANDOFF_ITERACION_18.md`
 (queda como historia). Lee también `trabajo/PENDIENTES_EQUIPO.md` y `trabajo/ESTADO_ITERACION.md`.
 
 ## 1. Qué se hizo el 27-11-2026
