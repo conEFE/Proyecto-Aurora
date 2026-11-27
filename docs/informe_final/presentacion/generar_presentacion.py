@@ -130,14 +130,14 @@ notes(s, "(35 s) Son 20 casos de uso y cuatro actores con mínimo privilegio. La
 # ---- 6. Arquitectura e infraestructura
 s = SL[9]
 set_text(sh(s, 3), "Infraestructura desplegada en AWS")
-put_image(s, 5, FIG + "it15_cloud.png")
+put_image(s, 5, FIG + "cap10_infraestructura.png")
 set_text(sh(s, 7), ["AWS · US-EAST-2 (OHIO)", "EC2 con contenedores · RDS PostgreSQL privado y cifrado · S3 cifrado · Route 53 · CloudWatch"])
 set_text(sh(s, 8), "COMPONENTES Y CONTINUIDAD")
 set_text(sh(s, 11), "Caddy: HTTPS y proxy inverso hacia la API")
 set_text(sh(s, 14), "Respaldo diario de la base en S3; restauración probada")
 set_text(sh(s, 17), "Chequeo de /health cada minuto con alarma por correo")
-set_text(sh(s, 20), "Modelo en PC con GPU por Tailscale; respaldo en AWS (2.12.0)")
-notes(s, "(40 s) El usuario entra por HTTPS a demo.auroracare.cl, resuelto por Route 53. Un servidor EC2 ejecuta los contenedores: Caddy termina TLS y sirve el sitio, y la API FastAPI atiende las solicitudes. La base PostgreSQL está en RDS, privada y cifrada; las imágenes van cifradas a S3. Hay respaldo diario de la base con restauración probada y un chequeo de disponibilidad cada minuto con alarma por correo. El modelo corre en un equipo con GPU por Tailscale; la versión 2.12.0 agrega un respaldo en AWS.")
+set_text(sh(s, 20), "Modelo en PC con GPU por Tailscale; respaldo en AWS planificado")
+notes(s, "(40 s) El usuario entra por HTTPS a demo.auroracare.cl, resuelto por Route 53. Un servidor EC2 ejecuta los contenedores: Caddy termina TLS y sirve el sitio, y la API FastAPI atiende las solicitudes. La base PostgreSQL está en RDS, privada y cifrada; las imágenes van cifradas a S3. Hay respaldo diario de la base con restauración probada y un chequeo de disponibilidad cada minuto con alarma por correo. El modelo corre en un equipo con GPU por Tailscale; la versión 2.12.0 permite un respaldo en AWS, todavía planificado.")
 
 # ---- 7. Factibilidad económica
 s = SL[10]
@@ -312,11 +312,11 @@ notes(s, "La mantención controla siete elementos de configuración con versione
 # ---- Arquitectura por capas
 s = SL[8]
 set_text(sh(s, 2), "Arquitectura"); set_text(sh(s, 3), "Arquitectura de la solución")
-put_image(s, 5, FIG + "it15_arquitectura.png")
+put_image(s, 5, FIG + "cap10_arquitectura.png")
 set_text(sh(s, 6), "Capas: usuarios · presentación · lógica · análisis · datos, con operación y seguridad transversales")
 set_text(sh(s, 8), ["MONOLITO MODULAR POR CAPAS", "Una API FastAPI con módulos separados; solo la lógica accede a los datos"])
 set_text(sh(s, 10), ["LAS HERRAMIENTAS SE COMPLEMENTAN", "React, Caddy, FastAPI, PostgreSQL y S3, con integración continua"])
-set_text(sh(s, 12), ["IA DESACOPLADA", "PC con GPU, respaldo en AWS (2.12.0) y, al final, IA simulada marcada"])
+set_text(sh(s, 12), ["IA DESACOPLADA", "PC con GPU, respaldo en AWS (planificado) y, al final, IA simulada marcada"])
 notes(s, "(40 s) Arquitectura por capas implementada como monolito modular. El análisis automatizado está detrás de una interfaz de proveedor: equipo con GPU, respaldo en AWS y, si nada responde, IA simulada marcada.")
 
 # ---- Componente de IA
