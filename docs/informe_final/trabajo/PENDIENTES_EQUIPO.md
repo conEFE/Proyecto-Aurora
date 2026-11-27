@@ -34,7 +34,7 @@ Se puede ejecutar cuantas veces se quiera: lo ya aplicado no se repite y lo vac�
 | 9 | **Crear la instancia de respaldo del modelo** (`t4g.small`, detenida salvo en demostraciones) y probar el paso al respaldo | X (infraestructura), XIII, XV, XVI | Pasos en `docs/inferencia_remota.md`, sección 5.1; luego `respaldo_inferencia` | Juan / Felipe |
 | 10 | Día de la defensa: PC de Juan encendido, sin suspensión, con Tailscale y el servicio arriba; respaldo encendido la víspera | — (operación) | `docs/guia_modelo_juan.md` y sección 5.1 de `docs/inferencia_remota.md` | Juan |
 | 11 | **Correcciones del docente** a U1/U2 | Según lo que indique | A mano: pásenselas a Claude con el documento | Equipo + Claude |
-| 12 | **A3**: desarrollo del modelo de IA (CNN, datos, entrenamiento, umbrales, 7 intentos) en 10.7.1 | X, 10.7.1 | A mano: reenviar U2 a Claude (sección 3.8) | Claude, con U2 |
+| 12 | ~~**A3**: desarrollo del modelo de IA~~ **Hecho** el 27-11-2026 (10.7.1.1, iteración 18) | X, 10.7.1 | — | — |
 | 13 | Confirmar **CU18** y los casos **PI-06 a PS-09\*** (agregados en el informe) | X, XII y anexos | Leer y avisar si algo no corresponde | Equipo |
 | 14 | **Etiquetas de versión** v2.10.1 a v2.12.0 en GitHub (hoy la última es v2.10.0) | XIII («Elementos de configuración») | Crearlas y avisar a Claude para actualizar el texto | Felipe |
 | 15 | Alerta de presupuesto de AWS ajustada al costo real | XVI (recomendación) | En AWS Billing; avisar a Claude | Felipe |

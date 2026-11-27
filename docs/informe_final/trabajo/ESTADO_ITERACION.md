@@ -1,10 +1,21 @@
 # Proyecto Aurora — Estado del plan de revisión y avance del informe
 
-**Actualización:** 25-11-2026 (iteración 17: versiones 2.11.0 y 2.12.0, ejecución de pruebas y pendientes del equipo)
-**Versiones vigentes:** documento maestro **1.7-rc** · registro de revisiones v0.26 · PDF `Proyecto_Aurora_Informe_Final.pdf` (199 páginas)
+**Actualización:** 27-11-2026 (iteración 18: diagrama de casos de uso del equipo y desarrollo del modelo de IA, A3)
+**Versiones vigentes:** documento maestro **1.8-rc** · registro de revisiones v0.27 · PDF `Proyecto_Aurora_Informe_Final.pdf` (201 páginas, 71 tablas, 28 figuras)
 **Estado general:** todo lo que depende del código y del repositorio está integrado. Lo que falta depende del equipo y
 está en `PENDIENTES_EQUIPO.md`, con su archivo de insumos (`pendientes_equipo.json`) y el comando que los aplica
 (`../herramientas/completar_pendientes.sh`). Traspaso al siguiente agente: `../HANDOFF_ITERACION_18.md`.
+
+## Iteración 18 — Casos de uso y desarrollo del modelo de IA (maestro 1.8-rc)
+
+Pedida por el usuario el 27-11-2026, con la U2 reenviada y la imagen del diagrama de casos de uso que quiere el equipo.
+
+- **Casos de uso:** `herramientas/casos_uso_drawio.py` genera desde una sola especificación `figuras/drawio/cap10_casos_uso.drawio`
+  (editable en draw.io), el SVG y el PNG (`herramientas/svg_a_png.cjs`). Sin actor secundario; CU17 a CU20 en amarillo.
+- **A3:** subsección 10.7.1.1 «Desarrollo del modelo» con 3 tablas de la U2 (datos, etapas, 7 intentos) y 4 referencias
+  (He 2016, Deng 2009, Paszke 2019, Zuiderveld 1994). Script `herramientas/iter18_modelo_cu.py`; registro 4.24.
+- **Pendiente de decisión:** rehacer los demás diagramas propios (componentes, modelo lógico, topología, arquitectura,
+  cloud, CNN) en notación estándar y como archivos `.drawio`, igual que el de casos de uso.
 
 ## Iteración 17 — Versiones 2.11.0 y 2.12.0, ejecución de pruebas y pendientes del equipo (maestro 1.7-rc)
 
