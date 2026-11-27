@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" font-family="Helvetica, Arial, &apos;Liberation Sans&apos;, sans-serif"><rect width="1600" height="900" fill="#fff"/><path d="M30.0 50.0 l10 -10 h190.0 v80.0 l-10 10" fill="#f5f5f5" stroke="#666666"/>
+<line x1="220.0" y1="50.0" x2="230.0" y2="40.0" stroke="#666666"/>
+<rect x="30.0" y="50.0" width="190.0" height="80.0" fill="#f5f5f5" stroke="#666666"/>
+<text x="125.0" y="80.7" text-anchor="middle" font-size="11" font-style="italic" fill="#000">«device»</text>
+<text x="125.0" y="93.9" text-anchor="middle" font-size="11" fill="#000">Usuarios</text>
+<text x="125.0" y="107.1" text-anchor="middle" font-size="11" fill="#000">(navegador)</text>
+<rect x="300.0" y="40.0" width="250.0" height="90.0" rx="0" fill="#f5f5f5" stroke="#666666"/>
+<text x="425.0" y="75.7" text-anchor="middle" font-size="11" font-style="italic" fill="#000">«external»</text>
+<text x="425.0" y="88.9" text-anchor="middle" font-size="11" fill="#000">GitHub</text>
+<text x="425.0" y="102.1" text-anchor="middle" font-size="11" fill="#000">Actions · GHCR</text>
+<path d="M1300.0 50.0 l10 -10 h250.0 v100.0 l-10 10" fill="#e1d5e7" stroke="#9673a6"/>
+<line x1="1550.0" y1="50.0" x2="1560.0" y2="40.0" stroke="#9673a6"/>
+<rect x="1300.0" y="50.0" width="250.0" height="100.0" fill="#e1d5e7" stroke="#9673a6"/>
+<text x="1425.0" y="90.7" text-anchor="middle" font-size="11" font-style="italic" fill="#000">«device»</text>
+<text x="1425.0" y="103.9" text-anchor="middle" font-size="11" font-weight="bold" fill="#000">PC con GPU (fuera de AWS)</text>
+<text x="1425.0" y="117.1" text-anchor="middle" font-size="11" fill="#000">CNN + YOLO</text>
+<rect x="30.0" y="190.0" width="1540.0" height="680.0" rx="0" fill="#ffffff" stroke="#000000"/>
+<text x="36.0" y="208.0" text-anchor="start" font-size="12" font-weight="bold" fill="#000">Proyecto de AWS · región us-east-2 (plan gratuito con créditos)</text>
+<rect x="60.0" y="240.0" width="190.0" height="70.0" rx="0" fill="#ffffff" stroke="#000000"/>
+<text x="155.0" y="272.2" text-anchor="middle" font-size="11" fill="#000">Route 53</text>
+<text x="155.0" y="285.4" text-anchor="middle" font-size="11" fill="#000">demo.auroracare.cl</text>
+<path d="M130.0 130.0 L130.0 240.0" fill="none" stroke="#000" stroke-dasharray="6 4"/>
+<path d="M130.0 240.0 L134.5 229.0 L130.0 232.0 L125.5 229.0 z" fill="#000"/>
+<rect x="117.9" y="152.4" width="24.2" height="15.2" fill="#fff"/>
+<text x="130.0" y="163.8" text-anchor="middle" font-size="11" fill="#000">DNS</text>
+<path d="M300.0 250.0 l10 -10 h870.0 v290.0 l-10 10" fill="#d5e8d4" stroke="#82b366"/>
+<line x1="1170.0" y1="250.0" x2="1180.0" y2="240.0" stroke="#82b366"/>
+<rect x="300.0" y="250.0" width="870.0" height="290.0" fill="#d5e8d4" stroke="#82b366"/>
+<text x="735.0" y="267.0" text-anchor="middle" font-size="11" font-style="italic" fill="#000">«device» EC2 aurora-prod · t4g.micro arm64 · Amazon Linux 2023 · disco cifrado · IMDSv2</text>
+<rect x="330.0" y="300.0" width="190.0" height="80.0" fill="#ffffff" stroke="#000000"/>
+<rect x="501.0" y="306.0" width="14" height="16" fill="#fff" stroke="#000000"/>
+<rect x="498.0" y="309.0" width="8" height="4" fill="#fff" stroke="#000000"/>
+<rect x="498.0" y="315.0" width="8" height="4" fill="#fff" stroke="#000000"/>
+<text x="425.0" y="337.2" text-anchor="middle" font-size="11" font-style="italic" fill="#000">«container»</text>
+<text x="425.0" y="350.4" text-anchor="middle" font-size="11" fill="#000">web (Caddy)</text>
+<rect x="570.0" y="300.0" width="190.0" height="80.0" fill="#ffffff" stroke="#000000"/>
+<rect x="741.0" y="306.0" width="14" height="16" fill="#fff" stroke="#000000"/>
+<rect x="738.0" y="309.0" width="8" height="4" fill="#fff" stroke="#000000"/>
+<rect x="738.0" y="315.0" width="8" height="4" fill="#fff" stroke="#000000"/>
+<text x="665.0" y="337.2" text-anchor="middle" font-size="11" font-style="italic" fill="#000">«container»</text>
+<text x="665.0" y="350.4" text-anchor="middle" font-size="11" fill="#000">backend (FastAPI)</text>
+<rect x="810.0" y="300.0" width="160.0" height="80.0" rx="0" fill="#ffffff" stroke="#000000"/>
+<text x="890.0" y="337.2" text-anchor="middle" font-size="11" fill="#000">agente</text>
+<text x="890.0" y="350.4" text-anchor="middle" font-size="11" fill="#000">Tailscale</text>
+<rect x="1000.0" y="300.0" width="150.0" height="80.0" rx="0" fill="#ffffff" stroke="#000000"/>
+<text x="1075.0" y="337.2" text-anchor="middle" font-size="11" fill="#000">monitor_salud.sh</text>
+<text x="1075.0" y="350.4" text-anchor="middle" font-size="11" fill="#000">(cada minuto)</text>
+<rect x="330.0" y="430.0" width="190.0" height="80.0" rx="0" fill="#ffffff" stroke="#000000"/>
+<text x="425.0" y="467.2" text-anchor="middle" font-size="11" fill="#000">backup_db.sh</text>
+<text x="425.0" y="480.4" text-anchor="middle" font-size="11" fill="#000">(diario, 03:15)</text>
+<path d="M520.0 340.0 L570.0 340.0" fill="none" stroke="#000"/>
+<path d="M570.0 340.0 L559.0 335.5 L562.0 340.0 L559.0 344.5 z" fill="#000"/>
+<rect x="529.9" y="332.4" width="30.2" height="15.2" fill="#fff"/>
+<text x="545.0" y="343.8" text-anchor="middle" font-size="11" fill="#000">/api</text>
+<path d="M760.0 340.0 L810.0 340.0" fill="none" stroke="#000"/>
+<path d="M810.0 340.0 L799.0 335.5 L802.0 340.0 L799.0 344.5 z" fill="#000"/>
+<path d="M230.0 85.0 L260.0 85.0 L260.0 340.0 L330.0 340.0" fill="none" stroke="#000"/>
+<path d="M330.0 340.0 L319.0 335.5 L322.0 340.0 L319.0 344.5 z" fill="#000"/>
+<rect x="229.8" y="152.4" width="60.5" height="15.2" fill="#fff"/>
+<text x="260.0" y="163.8" text-anchor="middle" font-size="11" fill="#000">HTTPS 443</text>
+<path d="M425.0 130.0 L425.0 300.0" fill="none" stroke="#000" stroke-dasharray="6 4"/>
+<path d="M425.0 300.0 L429.5 289.0 L425.0 292.0 L420.5 289.0 z" fill="#000"/>
+<rect x="397.8" y="202.4" width="54.4" height="15.2" fill="#fff"/>
+<text x="425.0" y="213.8" text-anchor="middle" font-size="11" fill="#000">imágenes</text>
+<path d="M890.0 300.0 L890.0 95.0 L1300.0 95.0" fill="none" stroke="#000"/>
+<path d="M1300.0 95.0 L1289.0 90.5 L1292.0 95.0 L1289.0 99.5 z" fill="#000"/>
+<rect x="1011.4" y="87.4" width="157.2" height="15.2" fill="#fff"/>
+<text x="1090.0" y="98.9" text-anchor="middle" font-size="11" fill="#000">POST /predict (Tailscale)</text>
+<rect x="300.0" y="600.0" width="880.0" height="230.0" rx="0" fill="#ffffff" stroke="#000000"/>
+<text x="306.0" y="617.0" text-anchor="start" font-size="11" font-weight="bold" fill="#000">Datos (sin acceso público)</text>
+<path d="M340.0 660.0 a150.0 10 0 0 1 300.0 0 v120.0 a150.0 10 0 0 1 -300.0 0 z" fill="#dae8fc" stroke="#6c8ebf"/>
+<path d="M340.0 660.0 a150.0 10 0 0 0 300.0 0" fill="none" stroke="#6c8ebf"/>
+<text x="490.0" y="704.1" text-anchor="middle" font-size="11" font-style="italic" fill="#000">«database»</text>
+<text x="490.0" y="717.3" text-anchor="middle" font-size="11" fill="#000">Amazon RDS aurora-demo-db</text>
+<text x="490.0" y="730.5" text-anchor="middle" font-size="11" fill="#000">PostgreSQL 16 · db.t4g.micro</text>
+<text x="490.0" y="743.7" text-anchor="middle" font-size="11" fill="#000">20 GB cifrados</text>
+<path d="M780.0 668.0 h4.0 l6 -8 h102.0 l6 8 h222.0 v112.0 h-340.0 z" fill="#fff2cc" stroke="#d6b656"/>
+<text x="950.0" y="710.7" text-anchor="middle" font-size="11" font-style="italic" fill="#000">«storage»</text>
+<text x="950.0" y="723.9" text-anchor="middle" font-size="11" fill="#000">Amazon S3 (privado, versionado)</text>
+<text x="950.0" y="737.1" text-anchor="middle" font-size="11" fill="#000">images/ · backups/ (35 días)</text>
+<path d="M640.0 380.0 L640.0 560.0 L490.0 560.0 L490.0 650.0" fill="none" stroke="#000"/>
+<path d="M490.0 650.0 L494.5 639.0 L490.0 642.0 L485.5 639.0 z" fill="#000"/>
+<rect x="525.7" y="552.4" width="78.6" height="15.2" fill="#fff"/>
+<text x="565.0" y="563.9" text-anchor="middle" font-size="11" fill="#000">SQL/TLS 5432</text>
+<path d="M700.0 380.0 L700.0 580.0 L950.0 580.0 L950.0 660.0" fill="none" stroke="#000"/>
+<path d="M950.0 660.0 L954.5 649.0 L950.0 652.0 L945.5 649.0 z" fill="#000"/>
+<rect x="806.9" y="572.4" width="36.2" height="15.2" fill="#fff"/>
+<text x="825.0" y="583.9" text-anchor="middle" font-size="11" fill="#000">HTTPS</text>
+<path d="M425.0 510.0 L425.0 545.0 L1000.0 545.0 L1000.0 660.0" fill="none" stroke="#000" stroke-dasharray="6 4"/>
+<path d="M1000.0 660.0 L1004.5 649.0 L1000.0 652.0 L995.5 649.0 z" fill="#000"/>
+<rect x="845.8" y="537.4" width="48.4" height="15.2" fill="#fff"/>
+<text x="870.0" y="548.9" text-anchor="middle" font-size="11" fill="#000">volcado</text>
+<rect x="1240.0" y="240.0" width="300.0" height="80.0" rx="0" fill="#ffffff" stroke="#000000"/>
+<text x="1390.0" y="277.2" text-anchor="middle" font-size="11" fill="#000">CloudWatch Logs</text>
+<text x="1390.0" y="290.4" text-anchor="middle" font-size="11" fill="#000">/aurora/prod · /aurora/monitor</text>
+<rect x="1240.0" y="360.0" width="300.0" height="70.0" rx="0" fill="#ffffff" stroke="#000000"/>
+<text x="1390.0" y="398.8" text-anchor="middle" font-size="11" fill="#000">Alarmas de CloudWatch</text>
+<rect x="1240.0" y="470.0" width="300.0" height="70.0" rx="0" fill="#ffffff" stroke="#000000"/>
+<text x="1390.0" y="502.2" text-anchor="middle" font-size="11" fill="#000">Amazon SNS aurora-alertas</text>
+<text x="1390.0" y="515.5" text-anchor="middle" font-size="11" fill="#000">(aviso por correo)</text>
+<path d="M1150.0 340.0 L1200.0 340.0 L1200.0 280.0 L1240.0 280.0" fill="none" stroke="#000" stroke-dasharray="2 3"/>
+<path d="M1240.0 280.0 L1229.0 275.5 L1232.0 280.0 L1229.0 284.5 z" fill="#000"/>
+<rect x="1175.8" y="302.4" width="48.4" height="15.2" fill="#fff"/>
+<text x="1200.0" y="313.8" text-anchor="middle" font-size="11" fill="#000">métrica</text>
+<path d="M1390.0 320.0 L1390.0 360.0" fill="none" stroke="#000" stroke-dasharray="2 3"/>
+<path d="M1390.0 360.0 L1394.5 349.0 L1390.0 352.0 L1385.5 349.0 z" fill="#000"/>
+<path d="M1390.0 430.0 L1390.0 470.0" fill="none" stroke="#000" stroke-dasharray="2 3"/>
+<path d="M1390.0 470.0 L1394.5 459.0 L1390.0 462.0 L1385.5 459.0 z" fill="#000"/>
+<rect x="1240.0" y="600.0" width="300.0" height="110.0" rx="0" fill="#f8cecc" stroke="#b85450"/>
+<text x="1390.0" y="639.1" text-anchor="middle" font-size="11" font-weight="bold" fill="#000">Seguridad</text>
+<text x="1390.0" y="652.3" text-anchor="middle" font-size="11" fill="#000">IAM (rol de mínimo privilegio)</text>
+<text x="1390.0" y="665.5" text-anchor="middle" font-size="11" fill="#000">Secrets Manager · Session Manager</text>
+<text x="1390.0" y="678.7" text-anchor="middle" font-size="11" fill="#000">grupos aurora-web y aurora-rds</text>
+<rect x="1240.0" y="750.0" width="300.0" height="70.0" rx="0" fill="#ffffff" stroke="#000000"/>
+<text x="1390.0" y="782.2" text-anchor="middle" font-size="11" fill="#000">Presupuesto USD 15/mes</text>
+<text x="1390.0" y="795.5" text-anchor="middle" font-size="11" fill="#000">(alertas al 85 % y 100 %)</text></svg>

@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="800" viewBox="0 0 1500 800" font-family="Helvetica, Arial, &apos;Liberation Sans&apos;, sans-serif"><rect width="1500" height="800" fill="#fff"/><text x="650.0" y="34.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Componentes de software</text>
+<text x="1305.0" y="34.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Infraestructura</text>
+<rect x="30.0" y="50.0" width="160.0" height="105.0" rx="0" fill="#f5f5f5" stroke="#666666"/>
+<text x="110.0" y="106.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Usuarios</text>
+<rect x="200.0" y="50.0" width="920.0" height="105.0" rx="0" fill="#f5f5f5" stroke="#666666"/>
+<rect x="210.0" y="65.0" width="217.5" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="318.8" y="99.8" text-anchor="middle" font-size="11" fill="#000">Personal</text>
+<text x="318.8" y="113.0" text-anchor="middle" font-size="11" fill="#000">administrativo</text>
+<rect x="437.5" y="65.0" width="217.5" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="546.2" y="106.4" text-anchor="middle" font-size="11" fill="#000">Médico</text>
+<rect x="665.0" y="65.0" width="217.5" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="773.8" y="106.4" text-anchor="middle" font-size="11" fill="#000">Administrador</text>
+<rect x="892.5" y="65.0" width="217.5" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="1001.2" y="99.8" text-anchor="middle" font-size="11" fill="#000">Jefatura y</text>
+<text x="1001.2" y="113.0" text-anchor="middle" font-size="11" fill="#000">finanzas</text>
+<rect x="1140.0" y="50.0" width="330.0" height="105.0" rx="0" fill="#f5f5f5" stroke="#666666"/>
+<text x="1305.0" y="106.4" text-anchor="middle" font-size="11" fill="#000">Navegador web (HTTPS)</text>
+<rect x="30.0" y="173.0" width="160.0" height="105.0" rx="0" fill="#dae8fc" stroke="#6c8ebf"/>
+<text x="110.0" y="229.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Presentación</text>
+<rect x="200.0" y="173.0" width="920.0" height="105.0" rx="0" fill="#dae8fc" stroke="#6c8ebf"/>
+<rect x="210.0" y="188.0" width="445.0" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="432.5" y="222.8" text-anchor="middle" font-size="11" fill="#000">Aurora Web</text>
+<text x="432.5" y="235.9" text-anchor="middle" font-size="11" fill="#000">React + TypeScript</text>
+<rect x="665.0" y="188.0" width="445.0" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="887.5" y="222.8" text-anchor="middle" font-size="11" fill="#000">Caddy</text>
+<text x="887.5" y="235.9" text-anchor="middle" font-size="11" fill="#000">HTTPS y proxy /api</text>
+<rect x="1140.0" y="173.0" width="330.0" height="105.0" rx="0" fill="#dae8fc" stroke="#6c8ebf"/>
+<text x="1305.0" y="229.3" text-anchor="middle" font-size="11" fill="#000">Contenedor web en EC2</text>
+<path d="M660.0 155.0 L660.0 173.0" fill="none" stroke="#000"/>
+<path d="M660.0 173.0 L664.5 162.0 L660.0 165.0 L655.5 162.0 z" fill="#000"/>
+<rect x="30.0" y="296.0" width="160.0" height="105.0" rx="0" fill="#d5e8d4" stroke="#82b366"/>
+<text x="110.0" y="352.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Lógica de negocio</text>
+<rect x="200.0" y="296.0" width="920.0" height="105.0" rx="0" fill="#d5e8d4" stroke="#82b366"/>
+<rect x="210.0" y="311.0" width="103.8" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="261.9" y="345.8" text-anchor="middle" font-size="11" fill="#000">Autenticación</text>
+<text x="261.9" y="358.9" text-anchor="middle" font-size="11" fill="#000">y roles</text>
+<rect x="323.8" y="311.0" width="103.8" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="375.6" y="345.8" text-anchor="middle" font-size="11" fill="#000">Pacientes</text>
+<text x="375.6" y="358.9" text-anchor="middle" font-size="11" fill="#000">y casos</text>
+<rect x="437.5" y="311.0" width="103.8" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="489.4" y="352.3" text-anchor="middle" font-size="11" fill="#000">Imágenes</text>
+<rect x="551.2" y="311.0" width="103.8" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="603.1" y="345.8" text-anchor="middle" font-size="11" fill="#000">Motor de</text>
+<text x="603.1" y="358.9" text-anchor="middle" font-size="11" fill="#000">triage</text>
+<rect x="665.0" y="311.0" width="103.8" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="716.9" y="345.8" text-anchor="middle" font-size="11" fill="#000">Revisión</text>
+<text x="716.9" y="358.9" text-anchor="middle" font-size="11" fill="#000">y firma</text>
+<rect x="778.8" y="311.0" width="103.8" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="830.6" y="345.8" text-anchor="middle" font-size="11" fill="#000">Reportes y</text>
+<text x="830.6" y="358.9" text-anchor="middle" font-size="11" fill="#000">dashboard</text>
+<rect x="892.5" y="311.0" width="103.8" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="944.4" y="352.3" text-anchor="middle" font-size="11" fill="#000">Privacidad</text>
+<rect x="1006.2" y="311.0" width="103.8" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="1058.1" y="352.3" text-anchor="middle" font-size="11" fill="#000">Auditoría</text>
+<rect x="1140.0" y="296.0" width="330.0" height="105.0" rx="0" fill="#d5e8d4" stroke="#82b366"/>
+<text x="1305.0" y="345.8" text-anchor="middle" font-size="11" fill="#000">Contenedor backend en EC2</text>
+<text x="1305.0" y="358.9" text-anchor="middle" font-size="11" fill="#000">(API FastAPI)</text>
+<path d="M660.0 278.0 L660.0 296.0" fill="none" stroke="#000"/>
+<path d="M660.0 296.0 L664.5 285.0 L660.0 288.0 L655.5 285.0 z" fill="#000"/>
+<rect x="30.0" y="419.0" width="160.0" height="105.0" rx="0" fill="#e1d5e7" stroke="#9673a6"/>
+<text x="110.0" y="475.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Análisis automatizado</text>
+<rect x="200.0" y="419.0" width="920.0" height="105.0" rx="0" fill="#e1d5e7" stroke="#9673a6"/>
+<rect x="210.0" y="434.0" width="445.0" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="432.5" y="468.8" text-anchor="middle" font-size="11" fill="#000">Proveedor de inferencia</text>
+<text x="432.5" y="481.9" text-anchor="middle" font-size="11" fill="#000">(principal → respaldo → simulado)</text>
+<rect x="665.0" y="434.0" width="445.0" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="887.5" y="468.8" text-anchor="middle" font-size="11" fill="#000">Servicio CNN ResNet18</text>
+<text x="887.5" y="481.9" text-anchor="middle" font-size="11" fill="#000">+ YOLO11s</text>
+<rect x="1140.0" y="419.0" width="330.0" height="105.0" rx="0" fill="#e1d5e7" stroke="#9673a6"/>
+<text x="1305.0" y="468.8" text-anchor="middle" font-size="11" fill="#000">PC con GPU (Tailscale);</text>
+<text x="1305.0" y="481.9" text-anchor="middle" font-size="11" fill="#000">respaldo en AWS planificado</text>
+<path d="M660.0 401.0 L660.0 419.0" fill="none" stroke="#000"/>
+<path d="M660.0 419.0 L664.5 408.0 L660.0 411.0 L655.5 408.0 z" fill="#000"/>
+<rect x="30.0" y="542.0" width="160.0" height="105.0" rx="0" fill="#fff2cc" stroke="#d6b656"/>
+<text x="110.0" y="598.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Datos</text>
+<rect x="200.0" y="542.0" width="920.0" height="105.0" rx="0" fill="#fff2cc" stroke="#d6b656"/>
+<rect x="210.0" y="557.0" width="445.0" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="432.5" y="591.8" text-anchor="middle" font-size="11" fill="#000">PostgreSQL 16</text>
+<text x="432.5" y="605.0" text-anchor="middle" font-size="11" fill="#000">19 tablas</text>
+<rect x="665.0" y="557.0" width="445.0" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="887.5" y="591.8" text-anchor="middle" font-size="11" fill="#000">Imágenes cifradas</text>
+<text x="887.5" y="605.0" text-anchor="middle" font-size="11" fill="#000">(Fernet + SSE-KMS)</text>
+<rect x="1140.0" y="542.0" width="330.0" height="105.0" rx="0" fill="#fff2cc" stroke="#d6b656"/>
+<text x="1305.0" y="598.4" text-anchor="middle" font-size="11" fill="#000">Amazon RDS · Amazon S3</text>
+<path d="M660.0 524.0 L660.0 542.0" fill="none" stroke="#000"/>
+<path d="M660.0 542.0 L664.5 531.0 L660.0 534.0 L655.5 531.0 z" fill="#000"/>
+<rect x="30.0" y="665.0" width="160.0" height="105.0" rx="0" fill="#f5f5f5" stroke="#666666"/>
+<text x="110.0" y="721.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#000">Operación</text>
+<rect x="200.0" y="665.0" width="920.0" height="105.0" rx="0" fill="#f5f5f5" stroke="#666666"/>
+<rect x="210.0" y="680.0" width="217.5" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="318.8" y="714.8" text-anchor="middle" font-size="11" fill="#000">Respaldo</text>
+<text x="318.8" y="728.0" text-anchor="middle" font-size="11" fill="#000">diario</text>
+<rect x="437.5" y="680.0" width="217.5" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="546.2" y="714.8" text-anchor="middle" font-size="11" fill="#000">Registros y</text>
+<text x="546.2" y="728.0" text-anchor="middle" font-size="11" fill="#000">alarmas</text>
+<rect x="665.0" y="680.0" width="217.5" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="773.8" y="714.8" text-anchor="middle" font-size="11" fill="#000">Integración</text>
+<text x="773.8" y="728.0" text-anchor="middle" font-size="11" fill="#000">continua</text>
+<rect x="892.5" y="680.0" width="217.5" height="75.0" rx="8" fill="#ffffff" stroke="#000000"/>
+<text x="1001.2" y="714.8" text-anchor="middle" font-size="11" fill="#000">DNS y</text>
+<text x="1001.2" y="728.0" text-anchor="middle" font-size="11" fill="#000">secretos</text>
+<rect x="1140.0" y="665.0" width="330.0" height="105.0" rx="0" fill="#f5f5f5" stroke="#666666"/>
+<text x="1305.0" y="714.8" text-anchor="middle" font-size="11" fill="#000">CloudWatch · GitHub Actions</text>
+<text x="1305.0" y="728.0" text-anchor="middle" font-size="11" fill="#000">Route 53 · Secrets Manager</text>
+<path d="M660.0 647.0 L660.0 665.0" fill="none" stroke="#000"/>
+<path d="M660.0 665.0 L664.5 654.0 L660.0 657.0 L655.5 654.0 z" fill="#000"/></svg>

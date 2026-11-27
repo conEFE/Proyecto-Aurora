@@ -14,8 +14,9 @@ Pedida por el usuario el 27-11-2026, con la U2 reenviada y la imagen del diagram
   (editable en draw.io), el SVG y el PNG (`herramientas/svg_a_png.cjs`). Sin actor secundario; CU17 a CU20 en amarillo.
 - **A3:** subsección 10.7.1.1 «Desarrollo del modelo» con 3 tablas de la U2 (datos, etapas, 7 intentos) y 4 referencias
   (He 2016, Deng 2009, Paszke 2019, Zuiderveld 1994). Script `herramientas/iter18_modelo_cu.py`; registro 4.24.
-- **Pendiente de decisión:** rehacer los demás diagramas propios (componentes, modelo lógico, topología, arquitectura,
-  cloud, CNN) en notación estándar y como archivos `.drawio`, igual que el de casos de uso.
+- **18b:** los otros seis diagramas propios (componentes UML, modelo lógico ER, topología e infraestructura como
+  despliegue UML, arquitectura por capas y CNN) rehechos con `herramientas/diagramas_drawio.py` + `drawio_lib.py`; fuentes
+  editables en `figuras/drawio/`. Registro 4.25.
 
 ## Iteración 17 — Versiones 2.11.0 y 2.12.0, ejecución de pruebas y pendientes del equipo (maestro 1.7-rc)
 
